@@ -1,11 +1,36 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import Layout from "../layouts/Layout.astro";
 ---
 
 <Layout>
-	<Welcome />
+  <main
+    class="min-h-screen flex flex-col justify-center px-phi-4 max-w-[65ch] mx-auto"
+  >
+    <header class="mb-phi-6">
+      <h1 class="text-3xl font-light tracking-tight mb-phi-3">Dev Wells</h1>
+      <p class="text-lg text-bark-600 leading-relaxed">
+        A midwestern Dad. Software Engineer. Reader/writer/climber.
+      </p>
+    </header>
+
+    <nav class="flex flex-col space-y-phi-2 text-lg">
+      <a
+        href="/garden"
+        class="text-forest hover:text-sage-600 transition-colors"
+      >
+        /garden <span class="text-bark-400">→ cultivated, words & thoughts</span
+        >
+      </a>
+      <a
+        href="/seeds"
+        class="text-forest hover:text-sage-600 transition-colors"
+      >
+        /seeds <span class="text-bark-400">→ ideas</span>
+      </a>
+    </nav>
+
+    <footer class="mt-phi-8 text-sm text-bark-500">
+      <p>Since 1993</p>
+    </footer>
+  </main>
 </Layout>
