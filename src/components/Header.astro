@@ -1,81 +1,134 @@
 ---
+import Brand from "./Brand.astro";
+import Navigation from "./Navigation.astro";
 ---
 
-<header class="fixed top-0 left-0 right-0 z-10 px-phi-4 py-phi-3 bg-paper/80 dark:bg-paper-dark/80 backdrop-blur-sm border-b border-sage-100 dark:border-bark-800">
-  <div class="max-w-[65ch] mx-auto flex justify-between items-center">
-    <nav class="flex gap-phi-4">
-      <a 
-        href="/" 
-        data-key="0"
-        class="text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
-      >
-        <span class="text-bark-400 dark:text-bark-600 mr-1">0:</span>home
-      </a>
-      <a 
-        href="/lore"
-        data-key="1" 
-        class="text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
-      >
-        <span class="text-bark-400 dark:text-bark-600 mr-1">1:</span>lore
-      </a>
-      <a 
-        href="/garden"
-        data-key="2" 
-        class="text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
-      >
-        <span class="text-bark-400 dark:text-bark-600 mr-1">2:</span>garden
-      </a>
-    </nav>
-    
+<header class="fixed top-0 left-0 right-0 z-10 scroll-header" id="main-header">
+  <div
+    class="flex justify-between items-center px-phi-4 py-phi-3 bg-paper/80 dark:bg-paper-dark/80 backdrop-blur-sm"
+    id="header-container"
+  >
+    <Brand />
+    <Navigation />
   </div>
 </header>
 
 <style>
-  a.active {
-    color: var(--color-sage-600);
-  }
-  
-  .dark a.active {
-    color: var(--color-sage-400);
-  }
-  
-  .highlight {
-    background-color: var(--color-sage-100);
-    transition: background-color 200ms ease-out;
-  }
-  
-  .dark .highlight {
-    background-color: var(--color-sage-900);
+  .scroll-header {
+    will-change: transform, backdrop-filter, background-color;
   }
 </style>
 
 <script>
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    
-    const key = e.key;
-    if (key >= '0' && key <= '2') {
-      e.preventDefault();
-      const link = document.querySelector(`[data-key="${key}"]`) as HTMLAnchorElement;
-      if (link) {
-        link.classList.add('highlight');
-        setTimeout(() => link.classList.remove('highlight'), 200);
-        link.click();
+  // Header scroll behavior with Anime.js
+  import { animate } from "animejs";
+
+  // Animation configurations
+  const SCROLL_ANIMATIONS = {
+    hide: {
+      header: {
+        translateY: "-100%",
+        duration: 350,
+        ease: "out(3)",
+      },
+      links: {
+        opacity: 0,
+        translateY: "-10px",
+        duration: 200,
+        delay: (_, i) => i * 40,
+        ease: "out(2)",
+      },
+    },
+    show: {
+      header: {
+        translateY: "0%",
+        duration: 300,
+        ease: "spring(1, 100, 10)",
+      },
+      links: {
+        opacity: 1,
+        translateY: "0px",
+        duration: 200,
+        delay: (_, i) => i * 30,
+        ease: "out(2)",
+      },
+    },
+  };
+
+  // DOM elements
+  const header = document.getElementById("main-header");
+
+  if (header) {
+    // State
+    let lastScrollY = window.scrollY;
+    let headerIsHidden = false;
+    let headerIsAnimating = false;
+
+    // Animation functions
+    function hideHeader() {
+      if (headerIsHidden || headerIsAnimating) return;
+      headerIsHidden = true;
+      headerIsAnimating = true;
+
+      animate(header, {
+        ...SCROLL_ANIMATIONS.hide.header,
+        onComplete: () => {
+          headerIsAnimating = false;
+        },
+      });
+
+      // Get nav links from Navigation component
+      const navLinks = document.querySelectorAll(".nav-link");
+      if (navLinks.length > 0) {
+        animate(navLinks, SCROLL_ANIMATIONS.hide.links);
       }
     }
-  });
-  
-  // Active link highlighting
-  const currentPath = window.location.pathname;
-  document.querySelectorAll('nav a').forEach(link => {
-    const href = link.getAttribute('href');
-    if (
-      (href === '/' && currentPath === '/') ||
-      (href !== '/' && currentPath.startsWith(href))
-    ) {
-      link.classList.add('active');
+
+    function showHeader() {
+      if (!headerIsHidden || headerIsAnimating) return;
+      headerIsHidden = false;
+      headerIsAnimating = true;
+
+      animate(header, {
+        ...SCROLL_ANIMATIONS.show.header,
+        onComplete: () => {
+          headerIsAnimating = false;
+        },
+      });
+
+      // Get nav links from Navigation component
+      const navLinks = document.querySelectorAll(".nav-link");
+      if (navLinks.length > 0) {
+        animate(navLinks, SCROLL_ANIMATIONS.show.links);
+      }
     }
-  });
-  
+
+    // Scroll handler
+    let ticking = false;
+    function handleScroll() {
+      const currentScrollY = window.scrollY;
+      const scrollDelta = currentScrollY - lastScrollY;
+
+      if (currentScrollY > 200 && scrollDelta > 8) {
+        hideHeader();
+      } else if (scrollDelta < -8 || currentScrollY <= 100) {
+        showHeader();
+      }
+
+      lastScrollY = currentScrollY;
+      ticking = false;
+    }
+
+    // Initialize scroll listener
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (!ticking) {
+          requestAnimationFrame(handleScroll);
+          ticking = true;
+        }
+      },
+      { passive: true },
+    );
+  } // End header null check
 </script>
