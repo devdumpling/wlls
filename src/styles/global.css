@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
 @theme {
+  /* Dark mode colors */
+  --color-sage-950: oklch(0.15 0.10 142);
+  --color-bark-950: oklch(0.10 0.02 85);
+  --color-flower-950: oklch(0.20 0.08 30);
+  --color-forest-dark: oklch(0.90 0.02 200);
+  --color-ivory-dark: oklch(0.18 0.01 90);
+
   /* Colors - Our organic palette */
   --color-sage-50: oklch(0.97 0.02 142);
   --color-sage-100: oklch(0.95 0.04 142);
@@ -68,4 +75,22 @@
   --breakpoint-md: 61.803rem;  /* ~989px */
   --breakpoint-lg: 100rem;     /* 1600px */
   --breakpoint-xl: 161.803rem; /* ~2589px */
+}
+
+/* Prose utility for article content */
+.prose p {
+  @apply mb-phi-4 leading-relaxed text-forest dark:text-forest-dark;
+}
+
+.prose h3 {
+  @apply text-sage-700 dark:text-sage-400 text-2xl font-light mb-phi-4 mt-phi-5;
+}
+
+.prose ol,
+.prose ul {
+  @apply my-phi-4 pl-phi-4 text-forest dark:text-forest-dark;
+}
+
+.prose li {
+  @apply mb-phi-2 leading-relaxed;
 }

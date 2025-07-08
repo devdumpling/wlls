@@ -1,5 +1,6 @@
 ---
 import "./src/styles/global.css";
+import Header from "../components/Header.astro";
 
 export interface Props {
   title?: string;
@@ -22,10 +23,34 @@ const {
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
   </head>
-  <body class="bg-ivory text-forest">
-    <slot />
+  <body class="bg-ivory dark:bg-ivory-dark text-forest dark:text-forest-dark transition-colors">
+    <Header />
+    <div class="pt-[calc(var(--spacing-phi-3)*2+1rem)]">
+      <slot />
+    </div>
   </body>
 </html>
+
+<script is:inline>
+  // This needs to run immediately to prevent flash
+  const theme = (() => {
+    if (typeof localStorage !== 'undefined' && localStorage.getItem('theme')) {
+      return localStorage.getItem('theme');
+    }
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  })();
+
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark');
+  } else {
+    document.documentElement.classList.remove('dark');
+  }
+  
+  window.localStorage.setItem('theme', theme);
+</script>
 
 <style is:global>
   html {
@@ -48,5 +73,10 @@ const {
   ::selection {
     background-color: var(--color-sage-200);
     color: var(--color-forest);
+  }
+
+  .dark ::selection {
+    background-color: var(--color-sage-700);
+    color: var(--color-forest-dark);
   }
 </style>
