@@ -6,74 +6,116 @@ import Layout from "../layouts/Layout.astro";
   <div class="min-h-screen px-phi-4 py-phi-6 max-w-[65ch] mx-auto">
     <main>
       <h1 class="text-3xl font-light tracking-tight mb-phi-4">Seeds</h1>
-      <p class="text-bark-600 dark:text-bark-400 italic mb-phi-5 text-lg leading-relaxed">
-        Raw ideas, snippets, and thoughts in their earliest form. Some may grow, others may not.
+      <p
+        class="text-bark-600 dark:text-bark-400 italic mb-phi-5 text-lg leading-relaxed"
+      >
+        Raw ideas, snippets, and thoughts in their earliest form. Some may grow,
+        others may not.
       </p>
-      
-      <div class="text-bark-400 dark:text-bark-600 text-center my-phi-5 font-mono">
+
+      <div
+        class="text-bark-400 dark:text-bark-600 text-center my-phi-5 font-mono"
+      >
         ━━━ ◈ ━━━
       </div>
 
       <div class="grid gap-phi-4">
         <!-- Seed cards -->
-        <div class="bg-sage-50 dark:bg-sage-950 border border-sage-200 dark:border-sage-800 rounded-sm p-phi-4">
-          <h3 class="text-sage-700 dark:text-sage-400 font-mono text-sm mb-phi-2">
-            💭 Thought
+        <div
+          class="group bg-paper dark:bg-paper-dark border border-bark-200 dark:border-bark-800 border-l-4 border-l-sage-500 dark:border-l-sage-400 rounded-sm p-phi-4 hover:shadow-md hover:translate-x-1 transition-all duration-200 cursor-pointer"
+        >
+          <h3
+            class="text-sage-700 dark:text-sage-400 font-mono text-sm mb-phi-2 flex items-center gap-2"
+          >
+            <span class="text-lg group-hover:scale-110 transition-transform"
+              >💭</span
+            > Thought
           </h3>
           <p class="text-ink dark:text-ink-dark leading-relaxed">
-            What if we treated our codebases like gardens instead of factories? 
-            Pruning old growth, composting dead code, letting good patterns propagate naturally.
+            What if we treated our codebases like gardens instead of factories?
+            Pruning old growth, composting dead code, letting good patterns
+            propagate naturally.
           </p>
           <time class="text-xs text-bark-500 dark:text-bark-400 mt-phi-2 block">
             Just now
           </time>
         </div>
 
-        <div class="bg-flower-50 dark:bg-flower-950 border border-flower-200 dark:border-flower-800 rounded-sm p-phi-4">
-          <h3 class="text-flower-700 dark:text-flower-400 font-mono text-sm mb-phi-2">
-            🔧 Tool Idea
+        <div
+          class="group bg-paper dark:bg-paper-dark border border-bark-200 dark:border-bark-800 border-l-4 border-l-flower-500 dark:border-l-flower-400 rounded-sm p-phi-4 hover:shadow-md hover:translate-x-1 transition-all duration-200 cursor-pointer"
+        >
+          <h3
+            class="text-flower-700 dark:text-flower-400 font-mono text-sm mb-phi-2 flex items-center gap-2"
+          >
+            <span class="text-lg group-hover:scale-110 transition-transform"
+              >🔧</span
+            > Tool Idea
           </h3>
           <p class="text-ink dark:text-ink-dark leading-relaxed">
-            A CLI that analyzes your git history and suggests which files might benefit from refactoring 
-            based on change frequency and size growth patterns.
+            A CLI that analyzes your git history and suggests which files might
+            benefit from refactoring based on change frequency and size growth
+            patterns.
           </p>
           <time class="text-xs text-bark-500 dark:text-bark-400 mt-phi-2 block">
             2 days ago
           </time>
         </div>
 
-        <div class="bg-bark-50 dark:bg-bark-950 border border-bark-200 dark:border-bark-800 rounded-sm p-phi-4">
-          <h3 class="text-bark-700 dark:text-bark-400 font-mono text-sm mb-phi-2">
-            📝 Quote
+        <div
+          class="group bg-paper dark:bg-paper-dark border border-bark-200 dark:border-bark-800 border-l-4 border-l-bark-500 dark:border-l-bark-400 rounded-sm p-phi-4 hover:shadow-md hover:translate-x-1 transition-all duration-200 cursor-pointer"
+        >
+          <h3
+            class="text-bark-700 dark:text-bark-400 font-mono text-sm mb-phi-2 flex items-center gap-2"
+          >
+            <span class="text-lg group-hover:scale-110 transition-transform"
+              >📝</span
+            > Quote
           </h3>
-          <blockquote class="text-ink dark:text-ink-dark leading-relaxed italic">
-            "The amateur software engineer worries about code. The professional worries about data structures and their relationships."
+          <blockquote
+            class="text-ink dark:text-ink-dark leading-relaxed italic"
+          >
+            "The amateur software engineer worries about code. The professional
+            worries about data structures and their relationships."
           </blockquote>
           <cite class="text-xs text-bark-500 dark:text-bark-400 mt-phi-2 block">
             — Rob Pike (attributed)
           </cite>
         </div>
 
-        <div class="bg-sage-50 dark:bg-sage-950 border border-sage-200 dark:border-sage-800 rounded-sm p-phi-4">
-          <h3 class="text-sage-700 dark:text-sage-400 font-mono text-sm mb-phi-2">
-            🌱 Experiment
+        <div
+          class="group bg-paper dark:bg-paper-dark border border-bark-200 dark:border-bark-800 border-l-4 border-l-sage-500 dark:border-l-sage-400 rounded-sm p-phi-4 hover:shadow-md hover:translate-x-1 transition-all duration-200 cursor-pointer"
+        >
+          <h3
+            class="text-sage-700 dark:text-sage-400 font-mono text-sm mb-phi-2 flex items-center gap-2"
+          >
+            <span class="text-lg group-hover:scale-110 transition-transform"
+              >🌱</span
+            > Experiment
           </h3>
           <p class="text-ink dark:text-ink-dark leading-relaxed">
-            Building this site with golden ratio spacing everywhere. So far the 1.618 scale feels 
-            surprisingly natural for both typography and layout rhythm.
+            Building this site with golden ratio spacing everywhere. So far the
+            1.618 scale feels surprisingly natural for both typography and
+            layout rhythm.
           </p>
           <time class="text-xs text-bark-500 dark:text-bark-400 mt-phi-2 block">
             1 week ago
           </time>
         </div>
 
-        <div class="bg-flower-50 dark:bg-flower-950 border border-flower-200 dark:border-flower-800 rounded-sm p-phi-4">
-          <h3 class="text-flower-700 dark:text-flower-400 font-mono text-sm mb-phi-2">
-            🤔 Question
+        <div
+          class="group bg-paper dark:bg-paper-dark border border-bark-200 dark:border-bark-800 border-l-4 border-l-flower-500 dark:border-l-flower-400 rounded-sm p-phi-4 hover:shadow-md hover:translate-x-1 transition-all duration-200 cursor-pointer"
+        >
+          <h3
+            class="text-flower-700 dark:text-flower-400 font-mono text-sm mb-phi-2 flex items-center gap-2"
+          >
+            <span class="text-lg group-hover:scale-110 transition-transform"
+              >🤔</span
+            > Question
           </h3>
           <p class="text-ink dark:text-ink-dark leading-relaxed">
-            Why do we call it "technical debt" when it's really more like "technical entropy"? 
-            Debt implies intention to repay. Entropy just... happens.
+            Why do we call it "technical debt" when it's really more like
+            "technical entropy"? Debt implies intention to repay. Entropy
+            just... happens.
           </p>
           <time class="text-xs text-bark-500 dark:text-bark-400 mt-phi-2 block">
             2 weeks ago
@@ -81,7 +123,9 @@ import Layout from "../layouts/Layout.astro";
         </div>
       </div>
 
-      <footer class="mt-phi-8 pt-phi-6 border-t border-sage-200 dark:border-sage-800">
+      <footer
+        class="mt-phi-8 pt-phi-6 border-t border-sage-200 dark:border-sage-800"
+      >
         <p class="text-sm text-bark-500 dark:text-bark-400 text-center italic">
           Not all seeds become trees, but all trees were once seeds.
         </p>
@@ -89,3 +133,36 @@ import Layout from "../layouts/Layout.astro";
     </main>
   </div>
 </Layout>
+
+<style>
+  .grid > div {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .grid > div::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: inherit;
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.3s ease;
+  }
+
+  .grid > div:hover::before {
+    transform: scaleY(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .grid > div {
+      transition: none !important;
+    }
+    .grid > div span {
+      transition: none !important;
+    }
+  }
+</style>
