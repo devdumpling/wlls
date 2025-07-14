@@ -20,10 +20,8 @@ import Navigation from "./Navigation.astro";
 </style>
 
 <script>
-  // Header scroll behavior with Anime.js
   import { animate } from "animejs";
 
-  // Animation configurations
   const SCROLL_ANIMATIONS = {
     hide: {
       header: {
@@ -35,6 +33,7 @@ import Navigation from "./Navigation.astro";
         opacity: 0,
         translateY: "-10px",
         duration: 200,
+        // @ts-ignore
         delay: (_, i) => i * 40,
         ease: "out(2)",
       },
@@ -49,24 +48,22 @@ import Navigation from "./Navigation.astro";
         opacity: 1,
         translateY: "0px",
         duration: 200,
+        // @ts-ignore
         delay: (_, i) => i * 30,
         ease: "out(2)",
       },
     },
   };
 
-  // DOM elements
   const header = document.getElementById("main-header");
 
   if (header) {
-    // State
     let lastScrollY = window.scrollY;
     let headerIsHidden = false;
     let headerIsAnimating = false;
 
-    // Animation functions
     function hideHeader() {
-      if (headerIsHidden || headerIsAnimating) return;
+      if (headerIsHidden || headerIsAnimating || !header) return;
       headerIsHidden = true;
       headerIsAnimating = true;
 
@@ -77,7 +74,6 @@ import Navigation from "./Navigation.astro";
         },
       });
 
-      // Get nav links from Navigation component
       const navLinks = document.querySelectorAll(".nav-link");
       if (navLinks.length > 0) {
         animate(navLinks, SCROLL_ANIMATIONS.hide.links);
@@ -85,7 +81,7 @@ import Navigation from "./Navigation.astro";
     }
 
     function showHeader() {
-      if (!headerIsHidden || headerIsAnimating) return;
+      if (!headerIsHidden || headerIsAnimating || !header) return;
       headerIsHidden = false;
       headerIsAnimating = true;
 
@@ -96,14 +92,12 @@ import Navigation from "./Navigation.astro";
         },
       });
 
-      // Get nav links from Navigation component
       const navLinks = document.querySelectorAll(".nav-link");
       if (navLinks.length > 0) {
         animate(navLinks, SCROLL_ANIMATIONS.show.links);
       }
     }
 
-    // Scroll handler
     let ticking = false;
     function handleScroll() {
       const currentScrollY = window.scrollY;
@@ -119,7 +113,6 @@ import Navigation from "./Navigation.astro";
       ticking = false;
     }
 
-    // Initialize scroll listener
     window.addEventListener(
       "scroll",
       () => {
@@ -130,5 +123,5 @@ import Navigation from "./Navigation.astro";
       },
       { passive: true },
     );
-  } // End header null check
+  }
 </script>

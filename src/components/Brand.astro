@@ -1,13 +1,27 @@
 ---
+
 ---
 
-<a href="/" class="flex items-center gap-phi-3 hover:opacity-80 transition-opacity" id="brand-section">
-  <svg width="16" height="16" viewBox="0 0 24 24" class="text-sage-500" id="brand-icon">
-    <path id="leaf-path" d="M17,8 C8,10 5.9,16.17 3.82,21.34 L5.71,22 L6.66,19.7 C7.14,19.87 7.64,20 8,20 C19,20 22,3 22,3 C21,5 14,5.25 9,6.25 C4,7.25 2,11.5 2,13.5 C2,15.5 3.75,17.25 3.75,17.25 C7,8 17,8 17,8 Z" fill="currentColor" />
+<a
+  href="/"
+  class="flex items-center gap-phi-3 hover:opacity-80 transition-opacity"
+  id="brand-section"
+>
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    class="text-sage-500"
+    id="brand-icon"
+  >
+    <path
+      id="leaf-path"
+      d="M17,8 C8,10 5.9,16.17 3.82,21.34 L5.71,22 L6.66,19.7 C7.14,19.87 7.64,20 8,20 C19,20 22,3 22,3 C21,5 14,5.25 9,6.25 C4,7.25 2,11.5 2,13.5 C2,15.5 3.75,17.25 3.75,17.25 C7,8 17,8 17,8 Z"
+      fill="currentColor"></path>
     <g id="dots-group" opacity="0">
-      <circle cx="6" cy="18" r="2" fill="currentColor" />
-      <circle cx="12" cy="18" r="2" fill="currentColor" />
-      <circle cx="18" cy="18" r="2" fill="currentColor" />
+      <circle cx="6" cy="18" r="2" fill="currentColor"></circle>
+      <circle cx="12" cy="18" r="2" fill="currentColor"></circle>
+      <circle cx="18" cy="18" r="2" fill="currentColor"></circle>
     </g>
   </svg>
   <span class="text-sm font-mono text-bark-600 dark:text-bark-400">wlls</span>
@@ -24,42 +38,44 @@
 </style>
 
 <script>
-  import { animate } from 'animejs';
-  
-  const leafPath = document.getElementById('leaf-path');
-  const dotsGroup = document.getElementById('dots-group');
-  const brandSection = document.getElementById('brand-section');
-  
+  import { animate } from "animejs";
+
+  const leafPath = document.getElementById("leaf-path");
+  const dotsGroup = document.getElementById("dots-group");
+  const brandSection = document.getElementById("brand-section");
+
   if (leafPath && dotsGroup && brandSection) {
     let leafAnimation: any;
     let isAnimating = false;
-    
+
     function startLeafAnimation() {
-      if (isAnimating) return;
+      if (isAnimating || !leafPath) return;
       isAnimating = true;
-      
+
       // Animate leaf falling/swaying
       leafAnimation = animate(leafPath, {
         rotate: [0, -5, 5, 0],
         scale: [1, 0.95, 1.05, 1],
         duration: 1500,
-        ease: 'inOutSine',
-        loop: true
+        ease: "inOutSine",
+        loop: true,
       });
     }
-    
+
     function stopLeafAnimation() {
       if (leafAnimation) {
         leafAnimation.pause();
       }
       isAnimating = false;
-      
+
+      if (!leafPath || !dotsGroup) return;
+
       // Fade out leaf, fade in dots
       animate(leafPath, {
         opacity: [1, 0],
         scale: [1, 0.8],
         duration: 400,
-        ease: 'out(3)',
+        ease: "out(3)",
         onComplete: () => {
           // Show dots
           animate(dotsGroup, {
@@ -67,7 +83,7 @@
             scale: [0.5, 1],
             duration: 300,
             delay: (el, i) => i * 100,
-            ease: 'spring(1, 80, 10)',
+            ease: "spring(1, 80, 10)",
             onComplete: () => {
               // After dots settle, return to leaf
               setTimeout(() => {
@@ -75,7 +91,7 @@
                   opacity: [1, 0],
                   scale: [1, 0.5],
                   duration: 300,
-                  ease: 'out(2)',
+                  ease: "out(2)",
                   onComplete: () => {
                     // Restore leaf
                     animate(leafPath, {
@@ -83,18 +99,18 @@
                       scale: [0.8, 1],
                       rotate: 0,
                       duration: 400,
-                      ease: 'spring(1, 80, 10)'
+                      ease: "spring(1, 80, 10)",
                     });
-                  }
+                  },
                 });
               }, 1000);
-            }
+            },
           });
-        }
+        },
       });
     }
-    
-    brandSection.addEventListener('mouseenter', startLeafAnimation);
-    brandSection.addEventListener('mouseleave', stopLeafAnimation);
+
+    brandSection.addEventListener("mouseenter", startLeafAnimation);
+    brandSection.addEventListener("mouseleave", stopLeafAnimation);
   }
 </script>

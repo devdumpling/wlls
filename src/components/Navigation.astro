@@ -1,26 +1,27 @@
 ---
+
 ---
 
 <nav class="flex gap-phi-4" id="nav-container">
-  <a 
+  <a
     href="/garden"
-    data-key="1" 
+    data-key="1"
     data-page="garden"
     class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
   >
     <span class="text-bark-400 dark:text-bark-600 mr-1">1:</span>garden
   </a>
-  <a 
+  <a
     href="/seeds"
-    data-key="2" 
+    data-key="2"
     data-page="seeds"
     class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
   >
     <span class="text-bark-400 dark:text-bark-600 mr-1">2:</span>seeds
   </a>
-  <a 
+  <a
     href="/lore"
-    data-key="3" 
+    data-key="3"
     data-page="lore"
     class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
   >
@@ -32,16 +33,16 @@
   a.active {
     color: var(--color-sage-600);
   }
-  
+
   .dark a.active {
     color: var(--color-sage-400);
   }
-  
+
   .highlight {
     background-color: var(--color-sage-100);
     transition: background-color 200ms ease-out;
   }
-  
+
   .dark .highlight {
     background-color: var(--color-sage-900);
   }
@@ -52,48 +53,49 @@
 </style>
 
 <script>
-  // Navigation initialization and keyboard handling
-  const navLinks = document.querySelectorAll('.nav-link');
-  
-  // Initialize active navigation
+  const navLinks = document.querySelectorAll(".nav-link");
+
   function initializeNav() {
     const currentPath = window.location.pathname;
-    
+
     for (const link of navLinks) {
-      const href = link.getAttribute('href');
-      if (href !== '/' && currentPath.startsWith(href)) {
-        link.classList.add('active');
+      const href = link.getAttribute("href");
+      if (href && href !== "/" && currentPath.startsWith(href)) {
+        link.classList.add("active");
         break;
       }
     }
   }
-  
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    
+
+  document.addEventListener("keydown", (e) => {
+    // Only handle key presses without modifier keys
+    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
+      return;
+    }
+
     const key = e.key;
-    if (key === '0') {
+
+    if (key === "0") {
       e.preventDefault();
-      window.location.href = '/';
-    } else if (key >= '1' && key <= '3') {
+      window.location.href = "/";
+    } else if (key >= "1" && key <= "3") {
       e.preventDefault();
-      const link = document.querySelector(`[data-key="${key}"]`) as HTMLAnchorElement;
+      const link = document.querySelector(
+        `[data-key="${key}"]`,
+      ) as HTMLAnchorElement;
       if (link) {
-        link.classList.add('highlight');
+        link.classList.add("highlight");
         requestAnimationFrame(() => {
-          setTimeout(() => link.classList.remove('highlight'), 200);
+          setTimeout(() => link.classList.remove("highlight"), 200);
         });
         link.click();
       }
     }
   });
-  
-  // Initialize
+
   initializeNav();
-  
-  // Export navigation links for use by parent components
-  if (typeof window !== 'undefined') {
+
+  if (typeof window !== "undefined") {
     (window as any).navLinks = navLinks;
   }
 </script>
