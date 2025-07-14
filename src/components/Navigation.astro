@@ -53,49 +53,64 @@
 </style>
 
 <script>
+  const NAV_CONFIG = {
+    keys: {
+      home: "0",
+      garden: "1",
+      seeds: "2",
+      lore: "3",
+    },
+    highlightDuration: 200,
+  } as const;
+
   const navLinks = document.querySelectorAll(".nav-link");
 
-  function initializeNav() {
+  function setActiveLink() {
     const currentPath = window.location.pathname;
 
-    for (const link of navLinks) {
+    navLinks.forEach((link) => {
       const href = link.getAttribute("href");
-      if (href && href !== "/" && currentPath.startsWith(href)) {
-        link.classList.add("active");
-        break;
+      const isActive = href && href !== "/" && currentPath.startsWith(href);
+      link.classList.toggle("active", !!isActive);
+
+      // Set aria-current for accessibility
+      if (isActive) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
       }
-    }
+    });
   }
 
-  document.addEventListener("keydown", (e) => {
-    // Only handle key presses without modifier keys
-    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
-      return;
-    }
+  function handleKeyboardNavigation(e: KeyboardEvent) {
+    // Skip if any modifier keys are pressed
+    if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
 
     const key = e.key;
 
-    if (key === "0") {
+    if (key === NAV_CONFIG.keys.home) {
       e.preventDefault();
       window.location.href = "/";
-    } else if (key >= "1" && key <= "3") {
+    } else if (key >= NAV_CONFIG.keys.garden && key <= NAV_CONFIG.keys.lore) {
       e.preventDefault();
       const link = document.querySelector(
         `[data-key="${key}"]`,
       ) as HTMLAnchorElement;
+
       if (link) {
         link.classList.add("highlight");
         requestAnimationFrame(() => {
-          setTimeout(() => link.classList.remove("highlight"), 200);
+          setTimeout(
+            () => link.classList.remove("highlight"),
+            NAV_CONFIG.highlightDuration,
+          );
         });
         link.click();
       }
     }
-  });
-
-  initializeNav();
-
-  if (typeof window !== "undefined") {
-    (window as any).navLinks = navLinks;
   }
+
+  document.addEventListener("keydown", handleKeyboardNavigation);
+
+  setActiveLink();
 </script>

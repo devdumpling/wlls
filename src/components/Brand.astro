@@ -40,49 +40,67 @@
 <script>
   import { animate } from "animejs";
 
-  const leafPath = document.getElementById("leaf-path");
-  const dotsGroup = document.getElementById("dots-group");
-  const brandSection = document.getElementById("brand-section");
+  const ANIMATION_TIMINGS = {
+    leaf: {
+      sway: 1500,
+      fadeOut: 400,
+      fadeIn: 400,
+    },
+    dots: {
+      fadeIn: 300,
+      staggerDelay: 100,
+      displayDuration: 1000,
+      fadeOut: 300,
+    },
+  } as const;
 
-  if (leafPath && dotsGroup && brandSection) {
-    let leafAnimation: any;
+  const elements = {
+    leaf: document.getElementById("leaf-path"),
+    dots: document.getElementById("dots-group"),
+    brand: document.getElementById("brand-section"),
+  };
+
+  if (elements.leaf && elements.dots && elements.brand) {
+    // Capture elements as constants after verification
+    const leafPath = elements.leaf;
+    const dotsGroup = elements.dots;
+    const brandSection = elements.brand;
+
+    let leafAnimation: ReturnType<typeof animate> | null = null;
     let isAnimating = false;
 
     function startLeafAnimation() {
-      if (isAnimating || !leafPath) return;
+      if (isAnimating) return;
       isAnimating = true;
 
       // Animate leaf falling/swaying
       leafAnimation = animate(leafPath, {
         rotate: [0, -5, 5, 0],
         scale: [1, 0.95, 1.05, 1],
-        duration: 1500,
+        duration: ANIMATION_TIMINGS.leaf.sway,
         ease: "inOutSine",
         loop: true,
       });
     }
 
     function stopLeafAnimation() {
-      if (leafAnimation) {
-        leafAnimation.pause();
-      }
+      leafAnimation?.pause();
+      leafAnimation = null;
       isAnimating = false;
-
-      if (!leafPath || !dotsGroup) return;
 
       // Fade out leaf, fade in dots
       animate(leafPath, {
         opacity: [1, 0],
         scale: [1, 0.8],
-        duration: 400,
+        duration: ANIMATION_TIMINGS.leaf.fadeOut,
         ease: "out(3)",
         onComplete: () => {
           // Show dots
           animate(dotsGroup, {
             opacity: [0, 1],
             scale: [0.5, 1],
-            duration: 300,
-            delay: (el, i) => i * 100,
+            duration: ANIMATION_TIMINGS.dots.fadeIn,
+            delay: (el, i) => i * ANIMATION_TIMINGS.dots.staggerDelay,
             ease: "spring(1, 80, 10)",
             onComplete: () => {
               // After dots settle, return to leaf
@@ -90,7 +108,7 @@
                 animate(dotsGroup, {
                   opacity: [1, 0],
                   scale: [1, 0.5],
-                  duration: 300,
+                  duration: ANIMATION_TIMINGS.dots.fadeOut,
                   ease: "out(2)",
                   onComplete: () => {
                     // Restore leaf
@@ -98,12 +116,12 @@
                       opacity: [0, 1],
                       scale: [0.8, 1],
                       rotate: 0,
-                      duration: 400,
+                      duration: ANIMATION_TIMINGS.leaf.fadeIn,
                       ease: "spring(1, 80, 10)",
                     });
                   },
                 });
-              }, 1000);
+              }, ANIMATION_TIMINGS.dots.displayDuration);
             },
           });
         },

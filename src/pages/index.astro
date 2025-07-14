@@ -13,25 +13,53 @@ import Layout from "../layouts/Layout.astro";
       </p>
     </header>
 
-    <nav class="flex flex-col space-y-phi-2 text-lg">
+    <nav
+      class="flex flex-col space-y-phi-2 text-lg"
+      aria-label="Main navigation"
+    >
       <a
         href="/garden"
-        class="text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
+        class="group font-mono text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-all hover:translate-x-1"
       >
-        /garden <span class="text-bark-400 dark:text-bark-500"
-          >→ cultivated, words & thoughts</span
+        <span class="text-bark-400 dark:text-bark-600 mr-1">1:</span>/garden
+        <span
+          class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors"
+          >→ cultivated thoughts</span
         >
       </a>
       <a
         href="/seeds"
-        class="text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
+        class="group font-mono text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-all hover:translate-x-1"
       >
-        /seeds <span class="text-bark-400 dark:text-bark-500">→ ideas</span>
+        <span class="text-bark-400 dark:text-bark-600 mr-1">2:</span>/seeds
+        <span
+          class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors"
+          >→ short musings</span
+        >
+      </a>
+      <a
+        href="/lore"
+        class="group font-mono text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-all hover:translate-x-1"
+      >
+        <span class="text-bark-400 dark:text-bark-600 mr-1">3:</span>/lore
+        <span
+          class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors"
+          >→ backstory</span
+        >
       </a>
     </nav>
 
+    <aside class="mt-phi-4 text-sm text-bark-500 dark:text-bark-400">
+      <p>
+        <kbd class="px-1 py-0.5 bg-bark-100 dark:bg-bark-800 rounded text-xs"
+          >0-3</kbd
+        >
+        for quick navigation
+      </p>
+    </aside>
+
     <footer class="mt-phi-8 text-sm text-bark-500 dark:text-bark-400">
-      <p>Since 1993</p>
+      <p>Since <time datetime="1993">1993</time></p>
     </footer>
   </main>
 </Layout>
