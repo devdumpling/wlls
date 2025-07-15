@@ -10,12 +10,46 @@ import Layout from "../layouts/Layout.astro";
 
   document.addEventListener("DOMContentLoaded", () => {
     new ScrollAnimationManager();
+    
+    // Toast dismiss functionality
+    const toast = document.getElementById("toast");
+    if (toast) {
+      toast.addEventListener("click", () => {
+        toast.style.transform = "translateY(100%)";
+        toast.style.opacity = "0";
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      });
+    }
   });
 </script>
 
-<style></style>
+<style>
+  @keyframes slide-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.5s ease-out 0.5s both;
+  }
+</style>
 
 <Layout>
+  <!-- Toast notification -->
+  <div id="toast" class="fixed bottom-4 left-4 z-50 px-phi-4 py-phi-3 bg-ink/10 dark:bg-ink-dark/10 rounded-lg border border-sage-200 dark:border-sage-800 shadow-lg backdrop-blur-sm animate-slide-up hover:scale-105 transition-all duration-300 cursor-pointer">
+    <p class="text-sage-700 dark:text-sage-300 font-medium text-sm">
+      <span class="inline-block hover:animate-bounce">🌻</span> Work in progress! Actively migrating content.
+    </p>
+  </div>
+
   <div class="story-container">
     <ProgressIndicator />
 
