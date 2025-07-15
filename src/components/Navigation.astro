@@ -7,7 +7,7 @@
     href="/garden"
     data-key="1"
     data-page="garden"
-    class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
+    class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors whitespace-nowrap"
   >
     <span class="text-bark-400 dark:text-bark-600 mr-1">1:</span>garden
   </a>
@@ -15,7 +15,7 @@
     href="/seeds"
     data-key="2"
     data-page="seeds"
-    class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
+    class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors whitespace-nowrap"
   >
     <span class="text-bark-400 dark:text-bark-600 mr-1">2:</span>seeds
   </a>
@@ -23,32 +23,28 @@
     href="/lore"
     data-key="3"
     data-page="lore"
-    class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors"
+    class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors whitespace-nowrap"
   >
     <span class="text-bark-400 dark:text-bark-600 mr-1">3:</span>lore
   </a>
 </nav>
 
 <style>
-  a.active {
+  .nav-link.active {
     color: var(--color-sage-600);
   }
 
-  .dark a.active {
+  .dark .nav-link.active {
     color: var(--color-sage-400);
   }
 
-  .highlight {
+  .nav-link.highlight {
     background-color: var(--color-sage-100);
     transition: background-color 200ms ease-out;
   }
 
-  .dark .highlight {
+  .dark .nav-link.highlight {
     background-color: var(--color-sage-900);
-  }
-
-  .nav-link {
-    white-space: nowrap;
   }
 </style>
 

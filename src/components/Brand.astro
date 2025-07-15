@@ -4,14 +4,14 @@
 
 <a
   href="/"
-  class="flex items-center gap-phi-3 hover:opacity-80 transition-opacity"
+  class="group flex items-center gap-phi-3 hover:opacity-80 transition-opacity"
   id="brand-section"
 >
   <svg
     width="16"
     height="16"
     viewBox="0 0 24 24"
-    class="text-sage-500"
+    class="text-sage-500 transition-colors group-hover:text-flower-400"
     id="brand-icon"
   >
     <path
@@ -26,16 +26,6 @@
   </svg>
   <span class="text-sm font-mono text-bark-600 dark:text-bark-400">wlls</span>
 </a>
-
-<style>
-  #brand-icon {
-    transition: color 0.3s ease;
-  }
-
-  #brand-section:hover #brand-icon {
-    color: var(--color-flower-400);
-  }
-</style>
 
 <script>
   import { animate } from "animejs";

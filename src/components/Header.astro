@@ -3,7 +3,10 @@ import Brand from "./Brand.astro";
 import Navigation from "./Navigation.astro";
 ---
 
-<header class="fixed top-0 left-0 right-0 z-10 scroll-header" id="main-header">
+<header
+  class="fixed top-0 left-0 right-0 z-10 will-change-[transform,backdrop-filter,background-color]"
+  id="main-header"
+>
   <div
     class="flex justify-between items-center px-phi-4 py-phi-3 bg-paper/80 dark:bg-paper-dark/80 backdrop-blur-sm"
     id="header-container"
@@ -12,12 +15,6 @@ import Navigation from "./Navigation.astro";
     <Navigation />
   </div>
 </header>
-
-<style>
-  .scroll-header {
-    will-change: transform, backdrop-filter, background-color;
-  }
-</style>
 
 <script>
   import { animate } from "animejs";
