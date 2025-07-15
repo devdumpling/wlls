@@ -1,281 +1,28 @@
 ---
+import ProgressIndicator from "../components/ProgressIndicator.astro";
+import StorySection from "../components/StorySection.astro";
+import { storyData } from "../data/story.ts";
 import Layout from "../layouts/Layout.astro";
 ---
 
 <script>
-import { animate, onScroll, svg } from "animejs";
+  import { ScrollAnimationManager } from "../utils/scrollAnimations.ts";
 
-const sections = [
-  {
-    id: 'blue-ridge',
-    title: 'Blue Ridge Mountains',
-    subtitle: 'Southern Virginia, Early Days',
-    content: 'It began with floppy disks and RuneScape bots. A poor kid who discovered the magic of code.',
-    year: '1993-2011',
-    icon: 'M3 18L10 10L14 14L21 7'
-  },
-  {
-    id: 'oberlin',
-    title: 'Oberlin College',
-    subtitle: 'Liberal Arts & Computer Science',
-    content: 'Four years of deep learning disguised as mediocre grades. The foundation was stronger than it seemed.',
-    year: '2011-2015',
-    icon: 'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'
-  },
-  {
-    id: 'madison',
-    title: 'Madison, WI',
-    subtitle: 'Teaching & Bartending',
-    content: 'Found unexpected love for teaching kids to code. Nights behind the bar, days inspiring the next generation.',
-    year: '2015-2018',
-    icon: 'M5 12V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5M5 12l-2 7h8l-2-7'
-  },
-  {
-    id: 'columbus',
-    title: 'Columbus, OH',
-    subtitle: 'Enterprise & Growth',
-    content: 'Massive energy company. Learned what I didn\'t want. Met my future wife at a vegan pizza party.',
-    year: '2018-2021',
-    icon: 'M3 21h18M5 21V7l8-4v18'
-  },
-  {
-    id: 'current',
-    title: 'Present Day',
-    subtitle: 'GoodRx & Family Life',
-    content: 'Principal Engineer, two daughters, and the journey continues. Still learning at the edge of my abilities.',
-    year: '2021-Now',
-    icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'
-  }
-];
-
-document.addEventListener('DOMContentLoaded', () => {
-  // Progress character elements
-  const progressTrunk = document.querySelector('.progress-trunk');
-  const progressFlower = document.querySelector('.progress-flower');
-  
-  // Create scroll progress indicator
-  const storyContainer = document.querySelector('.story-container');
-  
-  // Manual scroll progress tracking for smooth bidirectional animation
-  function updateTreeProgress() {
-    const scrollTop = window.scrollY;
-    const docHeight = document.documentElement.scrollHeight;
-    const winHeight = window.innerHeight;
-    const scrollPercent = scrollTop / (docHeight - winHeight);
-    
-    // Grow trunk based on overall scroll progress
-    const trunkHeight = 15 + (scrollPercent * 80); // 15% to 95%
-    progressTrunk.style.height = `${trunkHeight}%`;
-    
-    // Flower blooms when we reach the end (80%+ for final sections)
-    if (scrollPercent > 0.8) {
-      if (progressFlower) {
-        progressFlower.style.opacity = '1';
-        progressFlower.style.transform = 'scale(1)';
-      }
-    } else {
-      if (progressFlower) {
-        progressFlower.style.opacity = '0';
-        progressFlower.style.transform = 'scale(0)';
-      }
-    }
-  }
-  
-  // Initialize smooth scroll-driven animations for each section
-  const sectionElements = sections.map(section => {
-    const sectionEl = document.querySelector(`#${section.id}`);
-    if (!sectionEl) return null;
-
-    const sectionContent = sectionEl.querySelector('.section-content');
-    const sectionIcon = sectionEl.querySelector('.section-icon');
-    const svgPaths = sectionIcon.querySelectorAll('path');
-    const textElements = sectionEl.querySelectorAll('.animate-text');
-
-    // Initialize SVG paths for drawing animation
-    svgPaths.forEach(path => {
-      const pathLength = path.getTotalLength();
-      path.style.strokeDasharray = pathLength;
-      path.style.strokeDashoffset = pathLength;
-      path.style.strokeWidth = '2';
-      path.style.fill = 'none';
-      path.style.strokeLinecap = 'round';
-      path.style.strokeLinejoin = 'round';
-    });
-
-    // Set initial states
-    if (sectionContent) {
-      sectionContent.style.opacity = '0';
-      sectionContent.style.transform = 'translateY(60px)';
-    }
-    if (sectionIcon) {
-      sectionIcon.style.opacity = '0';
-      sectionIcon.style.transform = 'scale(0)';
-    }
-    textElements.forEach(el => {
-      el.style.opacity = '0';
-      el.style.transform = 'translateY(20px)';
-    });
-
-    return {
-      section,
-      element: sectionEl,
-      content: sectionContent,
-      icon: sectionIcon,
-      svgPaths,
-      textElements,
-      animated: false
-    };
-  }).filter(Boolean);
-
-  // Smooth scroll handler
-  function handleSectionAnimations() {
-    const viewportHeight = window.innerHeight;
-    const scrollTop = window.scrollY;
-
-    sectionElements.forEach(({ element, content, icon, svgPaths, textElements, animated }, index) => {
-      if (!element) return;
-
-      const rect = element.getBoundingClientRect();
-      const elementTop = scrollTop + rect.top;
-      const elementBottom = elementTop + rect.height;
-      
-      // Calculate when element should start animating (when bottom 1/3 enters viewport)
-      const triggerPoint = elementTop - viewportHeight * 0.7;
-      const hasEntered = scrollTop > triggerPoint;
-      
-      // Only animate once when entering
-      if (hasEntered && !animated) {
-        sectionElements[index].animated = true;
-        
-        // Animate section content
-        if (content) {
-          animate(content, {
-            translateY: [60, 0],
-            opacity: [0, 1],
-            duration: 600,
-            easing: 'outExpo'
-          });
-        }
-
-        // Animate icon
-        if (icon) {
-          animate(icon, {
-            scale: [0, 1],
-            opacity: [0, 1],
-            duration: 500,
-            delay: 100,
-            easing: 'outBack'
-          });
-        }
-
-        // Animate SVG paths
-        if (svgPaths.length > 0) {
-          animate(svgPaths, {
-            strokeDashoffset: 0,
-            duration: 1000,
-            delay: 200,
-            easing: 'outExpo'
-          });
-        }
-
-        // Animate text elements with stagger
-        if (textElements.length > 0) {
-          animate(textElements, {
-            translateY: [20, 0],
-            opacity: [0, 1],
-            duration: 400,
-            delay: (el, i) => 300 + (i * 80),
-            easing: 'outExpo'
-          });
-        }
-      }
-    });
-  }
-
-  // Handle final navigation animation
-  const finalNav = document.querySelector('.final-nav');
-  let finalNavAnimated = false;
-  
-  function handleFinalNavAnimation() {
-    if (!finalNav || finalNavAnimated) return;
-    
-    const rect = finalNav.getBoundingClientRect();
-    const scrollTop = window.scrollY;
-    const elementTop = scrollTop + rect.top;
-    const viewportHeight = window.innerHeight;
-    
-    // Trigger when element is 50% visible
-    const triggerPoint = elementTop - viewportHeight * 0.5;
-    const hasEntered = scrollTop > triggerPoint;
-    
-    if (hasEntered) {
-      finalNavAnimated = true;
-      animate(finalNav, {
-        translateY: [30, 0],
-        opacity: [0, 1],
-        duration: 600,
-        easing: 'outExpo'
-      });
-    }
-  }
-
-  // Combined scroll handler for section animations
-  let scrollTicking = false;
-  function handleAllScrollAnimations() {
-    handleSectionAnimations();
-    handleFinalNavAnimation();
-    updateTreeProgress();
-    scrollTicking = false;
-  }
-
-  // Add scroll listener with requestAnimationFrame
-  window.addEventListener('scroll', () => {
-    if (!scrollTicking) {
-      requestAnimationFrame(handleAllScrollAnimations);
-      scrollTicking = true;
-    }
-  }, { passive: true });
-
-  // Initial check
-  handleAllScrollAnimations();
-  
-});
+  document.addEventListener("DOMContentLoaded", () => {
+    new ScrollAnimationManager();
+  });
 </script>
 
-<style>
-</style>
+<style></style>
 
 <Layout>
   <div class="story-container">
-    <!-- Progress indicator - evolving character -->
-    <div class="fixed right-6 bottom-8 z-10 opacity-60">
-      <div class="progress-character transition-all duration-500">
-        <!-- Simple growing tree/plant character -->
-        <div class="relative w-6 h-10">
-          <div class="progress-trunk absolute bottom-0 left-1/2 transform -translate-x-1/2 w-0.5 bg-bark-600 dark:bg-bark-400 rounded-full transition-all duration-300 ease-out" style="height: 15%"></div>
-          <div class="progress-flower absolute top-0 left-1/2 transform -translate-x-1/2 transition-all duration-500 ease-out" style="opacity: 0; transform: scale(0)">
-            <!-- Fuller flower with more petals -->
-            <div class="relative w-4 h-4">
-              <!-- Center -->
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-flower-600 dark:bg-flower-400 rounded-full"></div>
-              <!-- Main 4 petals -->
-              <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-flower-400 dark:bg-flower-300 rounded-full"></div>
-              <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-flower-400 dark:bg-flower-300 rounded-full"></div>
-              <div class="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-1 bg-flower-400 dark:bg-flower-300 rounded-full"></div>
-              <div class="absolute right-0 top-1/2 transform -translate-y-1/2 w-1 h-1 bg-flower-400 dark:bg-flower-300 rounded-full"></div>
-              <!-- Diagonal petals -->
-              <div class="absolute top-0.5 left-0.5 w-1 h-1 bg-flower-300 dark:bg-flower-200 rounded-full"></div>
-              <div class="absolute top-0.5 right-0.5 w-1 h-1 bg-flower-300 dark:bg-flower-200 rounded-full"></div>
-              <div class="absolute bottom-0.5 left-0.5 w-1 h-1 bg-flower-300 dark:bg-flower-200 rounded-full"></div>
-              <div class="absolute bottom-0.5 right-0.5 w-1 h-1 bg-flower-300 dark:bg-flower-200 rounded-full"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <ProgressIndicator />
 
     <!-- Initial intro -->
-    <section class="min-h-screen flex flex-col justify-center px-phi-4 py-phi-6 max-w-[65ch] mx-auto relative">
+    <section
+      class="min-h-screen flex flex-col justify-center px-phi-4 py-phi-6 max-w-[65ch] mx-auto relative"
+    >
       <header class="mb-phi-6">
         <h1 class="text-3xl font-light tracking-tight mb-phi-3">Dev Wells</h1>
         <p class="text-lg text-bark-600 dark:text-bark-400 leading-relaxed">
@@ -283,161 +30,33 @@ document.addEventListener('DOMContentLoaded', () => {
         </p>
       </header>
     </section>
-    
 
     <!-- Story sections -->
     <div class="relative">
       <!-- Timeline line with gradient -->
-      <div class="absolute left-1/2 -top-32 bottom-0 w-0.5 transform -translate-x-1/2">
-        <div class="w-full h-full bg-gradient-to-b from-transparent via-bark-400/60 to-flower-500/80 dark:from-transparent dark:via-bark-600/60 dark:to-flower-400/80"></div>
+      <div
+        class="absolute left-1/2 -top-32 bottom-0 w-0.5 transform -translate-x-1/2"
+      >
+        <div
+          class="w-full h-full bg-gradient-to-b from-transparent via-bark-400/60 to-flower-500/80 dark:from-transparent dark:via-bark-600/60 dark:to-flower-400/80"
+        >
+        </div>
       </div>
-      
-      <!-- Blue Ridge Mountains -->
-      <section id="blue-ridge" class="min-h-screen flex items-center px-phi-4 py-phi-6">
-        <div class="max-w-[65ch] mx-auto w-full">
-          <div class="relative">
-            <div class="section-icon absolute left-1/2 -top-4 transform -translate-x-1/2 opacity-0 z-10">
-              <div class="bg-paper dark:bg-paper-dark rounded-full p-2 border-2 border-bark-300/40 dark:border-bark-600/40">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="stroke-sage-600 dark:stroke-sage-400">
-                  <path d="M3 18L10 10L14 14L21 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M8 18L15 11L19 15L24 10" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            </div>
-            <div class="section-content ml-8 opacity-0">
-              <div class="bg-paper/95 dark:bg-paper-dark/95 backdrop-blur-sm rounded-lg p-phi-4 border-t-2 border-b-2 border-bark-300/40 dark:border-bark-600/40">
-                <div class="animate-text">
-                  <span class="text-sm text-bark-500 dark:text-bark-400">1993-2011</span>
-                </div>
-                <h2 class="animate-text text-2xl font-light text-ink dark:text-ink-dark mb-phi-2">Blue Ridge Mountains</h2>
-                <p class="animate-text text-bark-600 dark:text-bark-400 mb-phi-3">Southern Virginia, Early Days</p>
-                <p class="animate-text text-lg leading-relaxed text-ink dark:text-ink-dark">
-                  It began with floppy disks and RuneScape bots. A poor kid who discovered the magic of code.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- Oberlin College -->
-      <section id="oberlin" class="min-h-screen flex items-center px-phi-4 py-phi-6">
-        <div class="max-w-[65ch] mx-auto w-full">
-          <div class="relative">
-            <div class="section-icon absolute left-1/2 -top-4 transform -translate-x-1/2 opacity-0 z-10">
-              <div class="bg-paper dark:bg-paper-dark rounded-full p-2 border-2 border-bark-300/40 dark:border-bark-600/40">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="stroke-sage-600 dark:stroke-sage-400">
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            </div>
-            <div class="section-content mr-8 text-right opacity-0">
-              <div class="bg-paper/95 dark:bg-paper-dark/95 backdrop-blur-sm rounded-lg p-phi-4 border-t-2 border-b-2 border-bark-300/40 dark:border-bark-600/40">
-                <div class="animate-text">
-                  <span class="text-sm text-bark-500 dark:text-bark-400">2011-2015</span>
-                </div>
-                <h2 class="animate-text text-2xl font-light text-ink dark:text-ink-dark mb-phi-2">Oberlin College</h2>
-                <p class="animate-text text-bark-600 dark:text-bark-400 mb-phi-3">Liberal Arts & Computer Science</p>
-                <p class="animate-text text-lg leading-relaxed text-ink dark:text-ink-dark">
-                  Four years of deep learning disguised as mediocre grades. The foundation was stronger than it seemed.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Madison, WI -->
-      <section id="madison" class="min-h-screen flex items-center px-phi-4 py-phi-6">
-        <div class="max-w-[65ch] mx-auto w-full">
-          <div class="relative">
-            <div class="section-icon absolute left-1/2 -top-4 transform -translate-x-1/2 opacity-0 z-10">
-              <div class="bg-paper dark:bg-paper-dark rounded-full p-2 border-2 border-bark-300/40 dark:border-bark-600/40">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="stroke-sage-600 dark:stroke-sage-400">
-                  <path d="M5 12V7a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v5M5 12l-2 7h8l-2-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M11 12h2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            </div>
-            <div class="section-content ml-8 opacity-0">
-              <div class="bg-paper/95 dark:bg-paper-dark/95 backdrop-blur-sm rounded-lg p-phi-4 border-t-2 border-b-2 border-bark-300/40 dark:border-bark-600/40">
-                <div class="animate-text">
-                  <span class="text-sm text-bark-500 dark:text-bark-400">2015-2018</span>
-                </div>
-                <h2 class="animate-text text-2xl font-light text-ink dark:text-ink-dark mb-phi-2">Madison, WI</h2>
-                <p class="animate-text text-bark-600 dark:text-bark-400 mb-phi-3">Teaching & Bartending</p>
-                <p class="animate-text text-lg leading-relaxed text-ink dark:text-ink-dark">
-                  Found unexpected love for teaching kids to code. Nights behind the bar, days inspiring the next generation.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Columbus, OH -->
-      <section id="columbus" class="min-h-screen flex items-center px-phi-4 py-phi-6">
-        <div class="max-w-[65ch] mx-auto w-full">
-          <div class="relative">
-            <div class="section-icon absolute left-1/2 -top-4 transform -translate-x-1/2 opacity-0 z-10">
-              <div class="bg-paper dark:bg-paper-dark rounded-full p-2 border-2 border-bark-300/40 dark:border-bark-600/40">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="stroke-sage-600 dark:stroke-sage-400">
-                  <path d="M3 21h18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M5 21V7l8-4v18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M19 21V11l-6-4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M9 9v.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M9 12v.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M9 15v.01" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            </div>
-            <div class="section-content mr-8 text-right opacity-0">
-              <div class="bg-paper/95 dark:bg-paper-dark/95 backdrop-blur-sm rounded-lg p-phi-4 border-t-2 border-b-2 border-bark-300/40 dark:border-bark-600/40">
-                <div class="animate-text">
-                  <span class="text-sm text-bark-500 dark:text-bark-400">2018-2021</span>
-                </div>
-                <h2 class="animate-text text-2xl font-light text-ink dark:text-ink-dark mb-phi-2">Columbus, OH</h2>
-                <p class="animate-text text-bark-600 dark:text-bark-400 mb-phi-3">Enterprise & Growth</p>
-                <p class="animate-text text-lg leading-relaxed text-ink dark:text-ink-dark">
-                  Massive energy company. Learned what I didn't want. Met my future wife at a vegan pizza party.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Present Day -->
-      <section id="current" class="min-h-screen flex items-center px-phi-4 py-phi-6">
-        <div class="max-w-[65ch] mx-auto w-full">
-          <div class="relative">
-            <div class="section-icon absolute left-1/2 -top-4 transform -translate-x-1/2 opacity-0 z-10">
-              <div class="bg-paper dark:bg-paper-dark rounded-full p-2 border-2 border-flower-400 dark:border-flower-600">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="stroke-flower-500 dark:stroke-flower-400">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-            </div>
-            <div class="section-content ml-8 opacity-0">
-              <div class="bg-paper/95 dark:bg-paper-dark/95 backdrop-blur-sm rounded-lg p-phi-4 border-t-2 border-b-2 border-flower-400 dark:border-flower-600">
-                <div class="animate-text">
-                  <span class="text-sm text-bark-500 dark:text-bark-400">2021-Now</span>
-                </div>
-                <h2 class="animate-text text-2xl font-light text-ink dark:text-ink-dark mb-phi-2">Present Day</h2>
-                <p class="animate-text text-bark-600 dark:text-bark-400 mb-phi-3">GoodRx & Family Life</p>
-                <p class="animate-text text-lg leading-relaxed text-ink dark:text-ink-dark">
-                  Principal Engineer, two daughters, and the journey continues. Still learning at the edge of my abilities.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {
+        storyData.map((section, index) => (
+          <StorySection
+            section={section}
+            isCurrentSection={section.id === "current"}
+          />
+        ))
+      }
     </div>
 
     <!-- Final navigation -->
-    <section class="min-h-screen flex flex-col justify-center px-phi-4 py-phi-6 max-w-[65ch] mx-auto">
+    <section
+      class="min-h-screen flex flex-col justify-center px-phi-4 py-phi-6 max-w-[65ch] mx-auto"
+    >
       <div class="final-nav opacity-0">
         <div class="text-center mb-phi-6">
           <p class="text-lg text-bark-600 dark:text-bark-400 leading-relaxed">
@@ -445,33 +64,48 @@ document.addEventListener('DOMContentLoaded', () => {
           </p>
         </div>
 
-        <nav class="flex flex-col space-y-phi-2 text-lg" aria-label="Main navigation">
+        <nav
+          class="flex flex-col space-y-phi-2 text-lg"
+          aria-label="Main navigation"
+        >
           <a
             href="/fruits"
             class="group font-mono text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-all hover:translate-x-1"
           >
             <span class="text-bark-400 dark:text-bark-600 mr-1">1:</span>/fruits
-            <span class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors">→ cultivated thoughts</span>
+            <span
+              class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors"
+              >→ cultivated thoughts</span
+            >
           </a>
           <a
             href="/seeds"
             class="group font-mono text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-all hover:translate-x-1"
           >
             <span class="text-bark-400 dark:text-bark-600 mr-1">2:</span>/seeds
-            <span class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors">→ short musings</span>
+            <span
+              class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors"
+              >→ short musings</span
+            >
           </a>
           <a
             href="/roots"
             class="group font-mono text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-all hover:translate-x-1"
           >
             <span class="text-bark-400 dark:text-bark-600 mr-1">3:</span>/roots
-            <span class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors">→ backstory</span>
+            <span
+              class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors"
+              >→ backstory</span
+            >
           </a>
         </nav>
 
         <aside class="mt-phi-4 text-sm text-bark-500 dark:text-bark-400">
           <p>
-            <kbd class="px-1 py-0.5 bg-bark-100 dark:bg-bark-800 rounded text-xs">0-3</kbd>
+            <kbd
+              class="px-1 py-0.5 bg-bark-100 dark:bg-bark-800 rounded text-xs"
+              >0-3</kbd
+            >
             for quick nav
           </p>
         </aside>
