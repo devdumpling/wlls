@@ -24,16 +24,16 @@
     --color-paper-dark: oklch(0.18 0.01 90); /* Dark background */
     --color-ink: oklch(0.35 0.05 200); /* Light text #3c474d */
     --color-ink-dark: oklch(0.9 0.02 200); /* Dark text */
-    --color-sage-50: oklch(0.97 0.02 142);
-    --color-sage-100: oklch(0.95 0.04 142);
-    --color-sage-200: oklch(0.9 0.08 142);
-    --color-sage-300: oklch(0.85 0.12 142);
-    --color-sage-400: oklch(0.8 0.16 142);
-    --color-sage-500: oklch(0.75 0.2 142); /* Primary #a7c080 */
-    --color-sage-600: oklch(0.65 0.18 142);
-    --color-sage-700: oklch(0.55 0.16 142);
-    --color-sage-800: oklch(0.45 0.14 142);
-    --color-sage-900: oklch(0.35 0.12 142);
+    --color-sage-50: oklch(0.97 0.02 115);
+    --color-sage-100: oklch(0.95 0.04 115);
+    --color-sage-200: oklch(0.9 0.08 115);
+    --color-sage-300: oklch(0.85 0.12 115);
+    --color-sage-400: oklch(0.8 0.16 115);
+    --color-sage-500: oklch(0.72 0.12 115); /* Primary #a7c080 */
+    --color-sage-600: oklch(0.65 0.18 115);
+    --color-sage-700: oklch(0.55 0.16 115);
+    --color-sage-800: oklch(0.45 0.14 115);
+    --color-sage-900: oklch(0.35 0.12 115);
 
     --color-bark-50: oklch(0.95 0.02 85);
     --color-bark-100: oklch(0.9 0.04 85);
@@ -98,7 +98,7 @@
 }
 
 .prose h3 {
-    @apply text-sage-700 dark:text-sage-400 text-2xl font-light mb-phi-4 mt-phi-5;
+    @apply text-sage-800 dark:text-sage-500 text-2xl font-light mb-phi-4 mt-phi-5;
 }
 
 .prose ol,
