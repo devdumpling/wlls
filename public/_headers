@@ -1,0 +1,21 @@
+# Cache hashed assets for 1 year
+/_astro/*.css
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/_astro/*.js
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/_astro/*.woff
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/_astro/*.woff2
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+# Default caching for HTML and other files
+/*
+  ! Cache-Control
+  Cache-Control: public, max-age=0, must-revalidate
