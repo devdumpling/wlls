@@ -4,12 +4,12 @@
 
 <nav class="flex gap-phi-4" id="nav-container">
   <a
-    href="/garden"
+    href="/fruits"
     data-key="1"
-    data-page="garden"
+    data-page="fruits"
     class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors whitespace-nowrap"
   >
-    <span class="text-bark-400 dark:text-bark-600 mr-1">1:</span>garden
+    <span class="text-bark-400 dark:text-bark-600 mr-1">1:</span>fruits
   </a>
   <a
     href="/seeds"
@@ -20,12 +20,12 @@
     <span class="text-bark-400 dark:text-bark-600 mr-1">2:</span>seeds
   </a>
   <a
-    href="/lore"
+    href="/roots"
     data-key="3"
-    data-page="lore"
+    data-page="roots"
     class="nav-link text-sm font-mono text-bark-600 dark:text-bark-400 hover:text-sage-600 dark:hover:text-sage-400 transition-colors whitespace-nowrap"
   >
-    <span class="text-bark-400 dark:text-bark-600 mr-1">3:</span>lore
+    <span class="text-bark-400 dark:text-bark-600 mr-1">3:</span>roots
   </a>
 </nav>
 
@@ -52,9 +52,9 @@
   const NAV_CONFIG = {
     keys: {
       home: "0",
-      garden: "1",
+      fruits: "1",
       seeds: "2",
-      lore: "3",
+      roots: "3",
     },
     highlightDuration: 200,
   } as const;
@@ -87,7 +87,7 @@
     if (key === NAV_CONFIG.keys.home) {
       e.preventDefault();
       window.location.href = "/";
-    } else if (key >= NAV_CONFIG.keys.garden && key <= NAV_CONFIG.keys.lore) {
+    } else if (key >= NAV_CONFIG.keys.fruits && key <= NAV_CONFIG.keys.roots) {
       e.preventDefault();
       const link = document.querySelector(
         `[data-key="${key}"]`,
