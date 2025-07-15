@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+/* fonts */
+
+@font-face {
+    font-family: "Atkinson";
+    src: url("/fonts/atkinson-regular.woff2") format("woff2");
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Atkinson";
+    src: url("/fonts/atkinson-bold.woff2") format("woff2");
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
     /* Colors - organic palette */
     --color-paper: oklch(0.97 0.02 90); /* Light background #fdf6e3 */
@@ -60,8 +78,8 @@
 
     /* Font families */
     --font-sans:
-        system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-        sans-serif;
+        "Atkinson", system-ui, -apple-system, "Segoe UI", Roboto,
+        "Helvetica Neue", Arial, sans-serif;
     --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
     --font-mono:
         "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
