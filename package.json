@@ -9,9 +9,13 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^12.6.0",
     "@tailwindcss/vite": "^4.1.11",
     "animejs": "^4.0.2",
     "astro": "^5.11.0",
     "tailwindcss": "^4.1.11"
+  },
+  "devDependencies": {
+    "wrangler": "^4.24.3"
   }
 }
