@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-    /* Colors - Our organic palette */
+    /* Colors - organic palette */
     --color-paper: oklch(0.97 0.02 90); /* Light background #fdf6e3 */
     --color-paper-dark: oklch(0.18 0.01 90); /* Dark background */
     --color-ink: oklch(0.35 0.05 200); /* Light text #3c474d */
@@ -38,10 +38,6 @@
     --color-flower-700: oklch(0.5 0.14 30);
     --color-flower-800: oklch(0.4 0.12 30);
     --color-flower-900: oklch(0.3 0.1 30);
-
-    /* Legacy aliases for compatibility */
-    --color-forest: var(--color-ink);
-    --color-ivory: var(--color-paper);
 
     /* Typography scale - Golden ratio (1.618) */
     --font-size-xs: 0.618rem; /* ~10px */
