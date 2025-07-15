@@ -57,14 +57,14 @@
     --color-flower-800: oklch(0.4 0.12 30);
     --color-flower-900: oklch(0.3 0.1 30);
 
-    /* Typography scale - Golden ratio (1.618) */
-    --font-size-xs: 0.618rem; /* ~10px */
-    --font-size-sm: 0.765rem; /* ~12px */
-    --font-size-base: 1rem; /* 16px */
-    --font-size-lg: 1.618rem; /* ~26px */
-    --font-size-xl: 2.618rem; /* ~42px */
-    --font-size-2xl: 4.236rem; /* ~68px */
-    --font-size-3xl: 6.854rem; /* ~110px */
+    /* Typography scale - Perfect fifth (1.5) with 17px base */
+    --text-xs: 0.472rem; /* ~8px */
+    --text-sm: 0.708rem; /* ~11px */
+    --text-base: 1.062rem; /* 17px */
+    --text-lg: 1.594rem; /* ~26px */
+    --text-xl: 2.391rem; /* ~38px */
+    --text-2xl: 3.586rem; /* ~57px */
+    --text-3xl: 5.379rem; /* ~86px */
 
     /* Spacing scale - Golden ratio */
     --spacing-phi-1: 0.382rem; /* ~6px */
@@ -94,11 +94,15 @@
 
 /* Prose utility for article content */
 .prose p {
-    @apply mb-phi-4 leading-relaxed text-ink dark:text-ink-dark;
+    @apply mb-phi-4 text-base leading-relaxed text-ink dark:text-ink-dark;
+}
+
+.prose h2 {
+    @apply text-sage-800 dark:text-sage-500 text-2xl font-light mb-phi-4 mt-phi-5;
 }
 
 .prose h3 {
-    @apply text-sage-800 dark:text-sage-500 text-2xl font-light mb-phi-4 mt-phi-5;
+    @apply text-sage-800 dark:text-sage-500 text-xl font-light mb-phi-4 mt-phi-5;
 }
 
 .prose ol,
