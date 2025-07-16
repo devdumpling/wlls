@@ -1,0 +1,79 @@
+@reference "./global.css";
+
+/* Article-specific styles for blog posts */
+
+/* Link styles */
+.prose a {
+	@apply text-sage-600 dark:text-sage-400 transition-colors;
+}
+
+.prose a:hover {
+	@apply text-sage-700 dark:text-sage-300;
+}
+
+/* Internal links get dotted underline */
+.prose a:not([href^="http"]):not([href^="//"]) {
+	@apply underline decoration-dotted underline-offset-2 decoration-sage-400 dark:decoration-sage-600;
+}
+
+.prose a:not([href^="http"]):not([href^="//"]):hover {
+	@apply decoration-solid decoration-sage-600 dark:decoration-sage-400;
+}
+
+/* External links - no underline by default */
+.prose a[href^="http"],
+.prose a[href^="//"] {
+	@apply no-underline;
+}
+
+.prose a[href^="http"]:hover,
+.prose a[href^="//"]:hover {
+	@apply underline decoration-solid underline-offset-2;
+}
+
+/* Inline code styles (not in code blocks) */
+.prose :not(pre) > code {
+	@apply px-1 py-0.5 bg-sage-100 dark:bg-sage-900 text-sm rounded font-mono text-bark-700 dark:text-bark-300;
+}
+
+/* Code blocks handled by Shiki - just add spacing and padding */
+.prose pre {
+	@apply my-phi-4 p-phi-4 rounded-lg overflow-x-auto;
+}
+
+/* Blockquote styles */
+.prose blockquote {
+	@apply border-l-4 border-sage-300 dark:border-sage-700 pl-phi-4 my-phi-4 italic text-bark-600 dark:text-bark-400;
+}
+
+/* Strong text */
+.prose strong {
+	@apply font-bold text-bark-700 dark:text-bark-300;
+}
+
+/* Emphasis */
+.prose em {
+	@apply italic text-bark-600 dark:text-bark-400;
+}
+
+/* Horizontal rule */
+.prose hr {
+	@apply my-phi-6 border-sage-200 dark:border-sage-800;
+}
+
+/* Tables */
+.prose table {
+	@apply w-full my-phi-4 text-sm;
+}
+
+.prose th {
+	@apply text-left font-bold p-phi-2 border-b-2 border-sage-300 dark:border-sage-700 text-bark-700 dark:text-bark-300;
+}
+
+.prose td {
+	@apply p-phi-2 border-b border-sage-200 dark:border-sage-800;
+}
+
+.prose tbody tr:hover {
+	@apply bg-sage-50 dark:bg-sage-900/20;
+}

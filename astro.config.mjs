@@ -11,4 +11,10 @@ export default defineConfig({
 	},
 
 	integrations: [mdx()],
+
+	markdown: {
+		shikiConfig: {
+			theme: "everforest-dark",
+		},
+	},
 });
