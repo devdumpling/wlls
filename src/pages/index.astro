@@ -10,7 +10,7 @@ import Layout from "../layouts/Layout.astro";
 
   document.addEventListener("DOMContentLoaded", () => {
     new ScrollAnimationManager();
-    
+
     // Toast dismiss functionality
     const toast = document.getElementById("toast");
     if (toast) {
@@ -36,7 +36,7 @@ import Layout from "../layouts/Layout.astro";
       opacity: 1;
     }
   }
-  
+
   .animate-slide-up {
     animation: slide-up 0.5s ease-out 0.5s both;
   }
@@ -99,7 +99,7 @@ import Layout from "../layouts/Layout.astro";
         </div>
 
         <nav
-          class="flex flex-col space-y-phi-2 text-lg"
+          class="flex flex-col space-y-phi-2"
           aria-label="Main navigation"
         >
           <a
