@@ -94,15 +94,15 @@
 
 /* Prose utility for article content */
 .prose p {
-	@apply mb-phi-4 text-base leading-relaxed text-ink dark:text-ink-dark;
+	@apply mb-phi-4 text-base leading-relaxed text-ink dark:text-ink-dark text-pretty;
 }
 
 .prose h2 {
-	@apply text-sage-800 dark:text-sage-500 text-2xl font-light mb-phi-4 mt-phi-5;
+	@apply text-sage-800 dark:text-sage-500 text-xl sm:text-2xl font-light mb-phi-4 mt-phi-5;
 }
 
 .prose h3 {
-	@apply text-sage-800 dark:text-sage-500 text-xl font-light mb-phi-4 mt-phi-5;
+	@apply text-sage-800 dark:text-sage-500 text-lg sm:text-xl font-light mb-phi-4 mt-phi-5;
 }
 
 .prose ol,
