@@ -1,9 +1,13 @@
 ---
 import FruitsList from "../components/FruitsList.astro";
 import Layout from "../layouts/Layout.astro";
+import { validateBlogPosts } from "../utils/blogSchema";
 
 // Get all MDX posts from the fruits directory
-const posts = await Astro.glob("./fruits/*.mdx");
+const rawPosts = Object.values(
+	import.meta.glob("./fruits/*.mdx", { eager: true }),
+);
+const posts = validateBlogPosts(rawPosts);
 ---
 
 <Layout title="Fruits - Dev Wells">

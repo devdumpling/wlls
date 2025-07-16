@@ -1,15 +1,9 @@
 ---
+import type { BlogPost } from "../utils/blogSchema";
 import Article from "./Article.astro";
 
 export interface Props {
-	posts: Array<{
-		frontmatter: {
-			title: string;
-			date: string;
-			description: string;
-		};
-		url?: string;
-	}>;
+	posts: BlogPost[];
 }
 
 const { posts } = Astro.props;
