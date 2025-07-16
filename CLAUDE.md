@@ -59,8 +59,8 @@ The site uses a custom design system defined in global.css:
 ## Important Notes
 
 1. **No test suite** - The project currently has no testing framework configured
-2. **No linting/formatting** - No ESLint or Prettier configuration
-3. **Minimal CI/CD** - No CI currently. CD happens by git triggers connected to cloudflare.
+2. **Biome for linting/formatting** - Uses biome for linting/formatting
+3. **Minimal CI/CD** - No CI currently. CD happens by git triggers connected to cloudflare
 4. **Content Management** - Blog posts are MDX files in `/src/pages/fruits/`
 5. **Styling Approach** - Uses Tailwind CSS v4 with extensive custom utility classes defined in global.css
 
@@ -68,6 +68,7 @@ When making changes:
 
 - Maintain the organic/garden theme in naming and design
 - Write clean, modular code (subcomponents, lib folders, utilities, helpers, constants)
+- Use anime.js and/or tailwind for animations
 - Follow the existing golden ratio spacing system
 - Use OKLCH colors from the defined palettes
 - Ensure keyboard navigation remains functional

@@ -1,22 +1,25 @@
 {
-  "name": "wlls",
-  "type": "module",
-  "version": "0.0.1",
-  "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "deploy": "wrangler deploy",
-    "preview": "astro preview",
-    "astro": "astro"
-  },
-  "dependencies": {
-    "@astrojs/mdx": "^4.3.0",
-    "@tailwindcss/vite": "^4.1.11",
-    "animejs": "^4.0.2",
-    "astro": "^5.11.0",
-    "tailwindcss": "^4.1.11"
-  },
-  "devDependencies": {
-    "wrangler": "^4.24.3"
-  }
+	"name": "wlls",
+	"type": "module",
+	"version": "0.0.1",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"deploy": "wrangler deploy",
+		"format": "biome check --write .",
+		"lint": "biome check",
+		"preview": "astro preview",
+		"astro": "astro"
+	},
+	"dependencies": {
+		"@astrojs/mdx": "^4.3.0",
+		"@tailwindcss/vite": "^4.1.11",
+		"animejs": "^4.0.2",
+		"astro": "^5.11.0",
+		"tailwindcss": "^4.1.11"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.1.1",
+		"wrangler": "^4.24.3"
+	}
 }

@@ -3,113 +3,113 @@
 /* fonts */
 
 @font-face {
-    font-family: "Atkinson";
-    src: url("/fonts/atkinson-regular.woff2") format("woff2");
-    font-weight: normal;
-    font-style: normal;
-    font-display: swap;
+	font-family: "Atkinson";
+	src: url("/fonts/atkinson-regular.woff2") format("woff2");
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
 }
 
 @font-face {
-    font-family: "Atkinson";
-    src: url("/fonts/atkinson-bold.woff2") format("woff2");
-    font-weight: bold;
-    font-style: normal;
-    font-display: swap;
+	font-family: "Atkinson";
+	src: url("/fonts/atkinson-bold.woff2") format("woff2");
+	font-weight: bold;
+	font-style: normal;
+	font-display: swap;
 }
 
 @theme {
-    /* Colors - organic palette */
-    --color-paper: oklch(0.97 0.02 90); /* Light background #fdf6e3 */
-    --color-paper-dark: oklch(0.18 0.01 90); /* Dark background */
-    --color-ink: oklch(0.35 0.05 200); /* Light text #3c474d */
-    --color-ink-dark: oklch(0.9 0.02 200); /* Dark text */
-    --color-sage-50: oklch(0.97 0.02 115);
-    --color-sage-100: oklch(0.95 0.04 115);
-    --color-sage-200: oklch(0.9 0.08 115);
-    --color-sage-300: oklch(0.85 0.12 115);
-    --color-sage-400: oklch(0.8 0.16 115);
-    --color-sage-500: oklch(0.72 0.12 115); /* Primary #a7c080 */
-    --color-sage-600: oklch(0.65 0.18 115);
-    --color-sage-700: oklch(0.55 0.16 115);
-    --color-sage-800: oklch(0.45 0.14 115);
-    --color-sage-900: oklch(0.35 0.12 115);
+	/* Colors - organic palette */
+	--color-paper: oklch(0.97 0.02 90); /* Light background #fdf6e3 */
+	--color-paper-dark: oklch(0.18 0.01 90); /* Dark background */
+	--color-ink: oklch(0.35 0.05 200); /* Light text #3c474d */
+	--color-ink-dark: oklch(0.9 0.02 200); /* Dark text */
+	--color-sage-50: oklch(0.97 0.02 115);
+	--color-sage-100: oklch(0.95 0.04 115);
+	--color-sage-200: oklch(0.9 0.08 115);
+	--color-sage-300: oklch(0.85 0.12 115);
+	--color-sage-400: oklch(0.8 0.16 115);
+	--color-sage-500: oklch(0.72 0.12 115); /* Primary #a7c080 */
+	--color-sage-600: oklch(0.65 0.18 115);
+	--color-sage-700: oklch(0.55 0.16 115);
+	--color-sage-800: oklch(0.45 0.14 115);
+	--color-sage-900: oklch(0.35 0.12 115);
 
-    --color-bark-50: oklch(0.95 0.02 85);
-    --color-bark-100: oklch(0.9 0.04 85);
-    --color-bark-200: oklch(0.85 0.06 85);
-    --color-bark-300: oklch(0.75 0.08 85);
-    --color-bark-400: oklch(0.65 0.1 85);
-    --color-bark-500: oklch(0.55 0.12 85); /* Secondary #7f6f5a */
-    --color-bark-600: oklch(0.45 0.1 85);
-    --color-bark-700: oklch(0.35 0.08 85);
-    --color-bark-800: oklch(0.25 0.06 85);
-    --color-bark-900: oklch(0.15 0.04 85);
+	--color-bark-50: oklch(0.95 0.02 85);
+	--color-bark-100: oklch(0.9 0.04 85);
+	--color-bark-200: oklch(0.85 0.06 85);
+	--color-bark-300: oklch(0.75 0.08 85);
+	--color-bark-400: oklch(0.65 0.1 85);
+	--color-bark-500: oklch(0.55 0.12 85); /* Secondary #7f6f5a */
+	--color-bark-600: oklch(0.45 0.1 85);
+	--color-bark-700: oklch(0.35 0.08 85);
+	--color-bark-800: oklch(0.25 0.06 85);
+	--color-bark-900: oklch(0.15 0.04 85);
 
-    --color-flower-50: oklch(0.95 0.03 30);
-    --color-flower-100: oklch(0.9 0.06 30);
-    --color-flower-200: oklch(0.85 0.09 30);
-    --color-flower-300: oklch(0.8 0.12 30);
-    --color-flower-400: oklch(0.75 0.15 30);
-    --color-flower-500: oklch(0.7 0.18 30); /* Accent #e69875 */
-    --color-flower-600: oklch(0.6 0.16 30);
-    --color-flower-700: oklch(0.5 0.14 30);
-    --color-flower-800: oklch(0.4 0.12 30);
-    --color-flower-900: oklch(0.3 0.1 30);
+	--color-flower-50: oklch(0.95 0.03 30);
+	--color-flower-100: oklch(0.9 0.06 30);
+	--color-flower-200: oklch(0.85 0.09 30);
+	--color-flower-300: oklch(0.8 0.12 30);
+	--color-flower-400: oklch(0.75 0.15 30);
+	--color-flower-500: oklch(0.7 0.18 30); /* Accent #e69875 */
+	--color-flower-600: oklch(0.6 0.16 30);
+	--color-flower-700: oklch(0.5 0.14 30);
+	--color-flower-800: oklch(0.4 0.12 30);
+	--color-flower-900: oklch(0.3 0.1 30);
 
-    /* Typography scale - Perfect fifth (1.5) with 17px base */
-    --text-xs: 0.472rem; /* ~8px */
-    --text-sm: 0.708rem; /* ~11px */
-    --text-base: 1.062rem; /* 17px */
-    --text-lg: 1.594rem; /* ~26px */
-    --text-xl: 2.391rem; /* ~38px */
-    --text-2xl: 3.586rem; /* ~57px */
-    --text-3xl: 5.379rem; /* ~86px */
+	/* Typography scale - Perfect fifth (1.5) with 17px base */
+	--text-xs: 0.472rem; /* ~8px */
+	--text-sm: 0.708rem; /* ~11px */
+	--text-base: 1.062rem; /* 17px */
+	--text-lg: 1.594rem; /* ~26px */
+	--text-xl: 2.391rem; /* ~38px */
+	--text-2xl: 3.586rem; /* ~57px */
+	--text-3xl: 5.379rem; /* ~86px */
 
-    /* Spacing scale - Golden ratio */
-    --spacing-phi-1: 0.382rem; /* ~6px */
-    --spacing-phi-2: 0.618rem; /* ~10px */
-    --spacing-phi-3: 1rem; /* 16px */
-    --spacing-phi-4: 1.618rem; /* ~26px */
-    --spacing-phi-5: 2.618rem; /* ~42px */
-    --spacing-phi-6: 4.236rem; /* ~68px */
-    --spacing-phi-7: 6.854rem; /* ~110px */
-    --spacing-phi-8: 11.09rem; /* ~177px */
+	/* Spacing scale - Golden ratio */
+	--spacing-phi-1: 0.382rem; /* ~6px */
+	--spacing-phi-2: 0.618rem; /* ~10px */
+	--spacing-phi-3: 1rem; /* 16px */
+	--spacing-phi-4: 1.618rem; /* ~26px */
+	--spacing-phi-5: 2.618rem; /* ~42px */
+	--spacing-phi-6: 4.236rem; /* ~68px */
+	--spacing-phi-7: 6.854rem; /* ~110px */
+	--spacing-phi-8: 11.09rem; /* ~177px */
 
-    /* Font families */
-    --font-sans:
-        "Atkinson", system-ui, -apple-system, "Segoe UI", Roboto,
-        "Helvetica Neue", Arial, sans-serif;
-    --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
-    --font-mono:
-        "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
+	/* Font families */
+	--font-sans:
+		"Atkinson", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+		Arial, sans-serif;
+	--font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+	--font-mono:
+		"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
 
-    /* Breakpoints with golden ratio */
-    --breakpoint-xs: 23.607rem; /* ~378px */
-    --breakpoint-sm: 38.196rem; /* ~611px */
-    --breakpoint-md: 61.803rem; /* ~989px */
-    --breakpoint-lg: 100rem; /* 1600px */
-    --breakpoint-xl: 161.803rem; /* ~2589px */
+	/* Breakpoints with golden ratio */
+	--breakpoint-xs: 23.607rem; /* ~378px */
+	--breakpoint-sm: 38.196rem; /* ~611px */
+	--breakpoint-md: 61.803rem; /* ~989px */
+	--breakpoint-lg: 100rem; /* 1600px */
+	--breakpoint-xl: 161.803rem; /* ~2589px */
 }
 
 /* Prose utility for article content */
 .prose p {
-    @apply mb-phi-4 text-base leading-relaxed text-ink dark:text-ink-dark;
+	@apply mb-phi-4 text-base leading-relaxed text-ink dark:text-ink-dark;
 }
 
 .prose h2 {
-    @apply text-sage-800 dark:text-sage-500 text-2xl font-light mb-phi-4 mt-phi-5;
+	@apply text-sage-800 dark:text-sage-500 text-2xl font-light mb-phi-4 mt-phi-5;
 }
 
 .prose h3 {
-    @apply text-sage-800 dark:text-sage-500 text-xl font-light mb-phi-4 mt-phi-5;
+	@apply text-sage-800 dark:text-sage-500 text-xl font-light mb-phi-4 mt-phi-5;
 }
 
 .prose ol,
 .prose ul {
-    @apply my-phi-4 pl-phi-4 text-ink dark:text-ink-dark;
+	@apply my-phi-4 pl-phi-4 text-ink dark:text-ink-dark;
 }
 
 .prose li {
-    @apply mb-phi-2 leading-relaxed;
+	@apply mb-phi-2 leading-relaxed;
 }
