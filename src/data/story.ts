@@ -43,7 +43,7 @@ export const storyData: StorySection[] = [
 		title: "Columbus, OH",
 		subtitle: "Enterprise & Growth",
 		content:
-			"Massive energy company. Learned what I didn't want. On the flip side, became a dad.",
+			"Big moves. Learned what I didn't want. On the flip side, became a dad.",
 		year: "2018-2021",
 		icon: "M3 21h18M5 21V7l8-4v18",
 		extraPaths: ["M19 21V11l-6-4", "M9 9v.01", "M9 12v.01", "M9 15v.01"],
