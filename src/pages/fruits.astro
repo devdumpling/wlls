@@ -1,65 +1,30 @@
 ---
+import FruitsList from "../components/FruitsList.astro";
 import Layout from "../layouts/Layout.astro";
+import { validateBlogPosts } from "../utils/blogSchema";
+
+// Get all MDX posts from the fruits directory
+const rawPosts = Object.values(
+	import.meta.glob("./fruits/*.mdx", { eager: true }),
+);
+const posts = validateBlogPosts(rawPosts);
 ---
 
 <Layout title="Fruits - Dev Wells">
   <div class="min-h-screen px-phi-4 py-phi-6 max-w-[65ch] mx-auto">
     <main>
       <h1 class="text-3xl font-light tracking-tight mb-phi-4">Fruits</h1>
-      <div class="space-y-phi-6">
-        <article
-          class="border-l-4 border-sage-200 dark:border-sage-800 pl-phi-4 py-phi-3"
-        >
-          <h2
-            class="text-xl font-light text-sage-700 dark:text-sage-400 mb-phi-2"
-          >
-            Coming Soon
-          </h2>
-          <p class="text-bark-600 dark:text-bark-400 mb-phi-2 text-sm">
-            <time>Soon™</time>
-          </p>
+      {posts.length > 0 ? (
+        <FruitsList posts={posts} />
+      ) : (
+        <div class="border-l-4 border-sage-200 dark:border-sage-800 pl-phi-4 py-phi-3">
           <p class="text-ink dark:text-ink-dark leading-relaxed">
             This space will grow with thoughts, technical posts, and
             reflections. For now, it's just soil waiting for the first seeds to
             sprout.
           </p>
-        </article>
-
-        <article
-          class="border-l-4 border-sage-200 dark:border-sage-800 pl-phi-4 py-phi-3 opacity-60"
-        >
-          <h2
-            class="text-xl font-light text-sage-700 dark:text-sage-400 mb-phi-2"
-          >
-            On Building Digital Gardens
-          </h2>
-          <p class="text-bark-600 dark:text-bark-400 mb-phi-2 text-sm">
-            <time>Draft</time>
-          </p>
-          <p class="text-ink dark:text-ink-dark leading-relaxed">
-            Why the web needs more gardens and fewer factories. A meditation on
-            slow growth, organic discovery, and the joy of tending to ideas over
-            time...
-          </p>
-        </article>
-
-        <article
-          class="border-l-4 border-sage-200 dark:border-sage-800 pl-phi-4 py-phi-3 opacity-60"
-        >
-          <h2
-            class="text-xl font-light text-sage-700 dark:text-sage-400 mb-phi-2"
-          >
-            Frontend Platform Engineering
-          </h2>
-          <p class="text-bark-600 dark:text-bark-400 mb-phi-2 text-sm">
-            <time>Draft</time>
-          </p>
-          <p class="text-ink dark:text-ink-dark leading-relaxed">
-            Lessons learned from building tools and systems that help teams ship
-            better software faster. The art of developer experience...
-          </p>
-        </article>
-      </div>
+        </div>
+      )}
 
       <footer
         class="mt-phi-8 pt-phi-6 border-t border-sage-200 dark:border-sage-800"

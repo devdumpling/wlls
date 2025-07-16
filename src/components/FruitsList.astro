@@ -1,0 +1,29 @@
+---
+import type { BlogPost } from "../utils/blogSchema";
+import Article from "./Article.astro";
+
+export interface Props {
+	posts: BlogPost[];
+}
+
+const { posts } = Astro.props;
+
+// Sort by most recent
+const sortedPosts = posts.sort((a, b) => {
+	const dateA = new Date(a.frontmatter.date);
+	const dateB = new Date(b.frontmatter.date);
+	return dateB.getTime() - dateA.getTime();
+});
+---
+
+<div class="space-y-phi-6">
+  {sortedPosts.map((post, index) => (
+    <Article
+      title={post.frontmatter.title}
+      date={post.frontmatter.date}
+      description={post.frontmatter.description}
+      url={post.url}
+      isLatest={index === 0}
+    />
+  ))}
+</div>

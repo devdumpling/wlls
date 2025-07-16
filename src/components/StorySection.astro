@@ -2,17 +2,17 @@
 import type { StorySection } from "../data/story.ts";
 
 export interface Props {
-  section: StorySection;
-  isCurrentSection?: boolean;
+	section: StorySection;
+	isCurrentSection?: boolean;
 }
 
 const { section, isCurrentSection = false } = Astro.props;
 const iconStroke = isCurrentSection
-  ? "stroke-flower-500 dark:stroke-flower-400"
-  : "stroke-sage-600 dark:stroke-sage-400";
+	? "stroke-flower-500 dark:stroke-flower-400"
+	: "stroke-sage-600 dark:stroke-sage-400";
 const borderColor = isCurrentSection
-  ? "border-flower-400 dark:border-flower-600"
-  : "border-bark-300/40 dark:border-bark-600/40";
+	? "border-flower-400 dark:border-flower-600"
+	: "border-bark-300/40 dark:border-bark-600/40";
 
 // Alternate layout for some sections
 const isRightAligned = section.id === "oberlin" || section.id === "columbus";
@@ -20,9 +20,9 @@ const contentAlignment = isRightAligned ? "mr-8 text-right" : "ml-8";
 
 // Handle extra paths for sections that need them
 const extraPaths =
-  section.id === "blue-ridge"
-    ? ["M8 18L15 11L19 15L24 10"]
-    : section.extraPaths || [];
+	section.id === "blue-ridge"
+		? ["M8 18L15 11L19 15L24 10"]
+		: section.extraPaths || [];
 const allPaths = [section.icon, ...extraPaths];
 ---
 
