@@ -3,6 +3,9 @@ import ProgressIndicator from "../components/ProgressIndicator.astro";
 import StorySection from "../components/StorySection.astro";
 import { storyData } from "../data/story.ts";
 import Layout from "../layouts/Layout.astro";
+import { getLatestPost } from "../utils/posts";
+
+const latestPost = getLatestPost();
 ---
 
 <script>
@@ -43,6 +46,18 @@ import Layout from "../layouts/Layout.astro";
         <p class="text-lg text-bark-600 dark:text-bark-400 leading-relaxed">
           min/maxing midwestern dad energy
         </p>
+        {latestPost && (
+          <a
+            href={latestPost.url}
+            class="inline-flex items-center mt-phi-3 text-sm text-flower-600 dark:text-flower-400 hover:text-flower-700 dark:hover:flower-sage-300 transition-colors group"
+          >
+            <span class="mr-2">Latest fruit:</span>
+            <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">
+              {latestPost.frontmatter.title}
+            </span>
+            <span class="ml-1 transition-transform group-hover:translate-x-0.5">→</span>
+          </a>
+        )}
       </header>
     </section>
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a personal website/portfolio built with Astro, featuring a unique organic/garden theme. The site uses MDX for content, Tailwind CSS v4 for styling, and is deployed to Cloudflare Workers.
+This is a personal website/portfolio built with Astro, featuring a unique organic/garden/minimalist/programming theme. The site uses MDX for content, Tailwind CSS v4 for styling, and is deployed to Cloudflare Workers.
 
 ## Development Commands
 
