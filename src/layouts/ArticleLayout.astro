@@ -1,0 +1,21 @@
+---
+import Layout from "./Layout.astro";
+
+const { frontmatter } = Astro.props;
+---
+
+<Layout title={frontmatter.title} description={frontmatter.description}>
+  <div class="min-h-screen px-phi-4 py-phi-6 max-w-[65ch] mx-auto">
+    <main>
+      <h1 class="text-3xl font-light tracking-tight mb-phi-4">
+        {frontmatter.title}
+      </h1>
+      <date class="text-sm text-bark-500">
+        {frontmatter.date}
+      </date>
+      <article class="prose">
+        <slot />
+      </article>
+    </main>
+  </div>
+</Layout>
