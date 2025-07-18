@@ -1,0 +1,33 @@
+---
+export interface Props {
+  timestamp: string;
+  content?: string;
+  quote?: string;
+  author?: string;
+}
+
+const { timestamp, content, quote, author } = Astro.props;
+---
+
+<div class="border-l-4 border-l-ink/30 dark:border-l-ink-dark/30 pl-phi-3 py-phi-2">
+  {quote ? (
+    <div>
+      <blockquote class="text-ink dark:text-ink-dark leading-relaxed italic mb-phi-1 font-mono">
+        {quote}
+      </blockquote>
+      {author && (
+        <cite class="text-xs text-bark-500 dark:text-bark-400 block mb-phi-1">
+          — {author}
+        </cite>
+      )}
+    </div>
+  ) : (
+    <p class="text-ink dark:text-ink-dark leading-relaxed mb-phi-1 font-mono">
+      {content}
+    </p>
+  )}
+  
+  <time class="text-xs text-bark-500 dark:text-bark-400 block">
+    {timestamp}
+  </time>
+</div>
