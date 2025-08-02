@@ -1,149 +1,200 @@
 ---
-import ProgressIndicator from "../components/ProgressIndicator.astro";
-import StorySection from "../components/StorySection.astro";
-import { storyData } from "../data/story.ts";
 import Layout from "../layouts/Layout.astro";
 import { getLatestPost } from "../utils/posts";
 
 const latestPost = getLatestPost();
 ---
 
-<script>
-  import { ScrollAnimationManager } from "../utils/scrollAnimations.ts";
-
-  document.addEventListener("DOMContentLoaded", () => {
-    new ScrollAnimationManager();
-  });
-</script>
-
-<style>
-  @keyframes slide-up {
-    from {
-      transform: translateY(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  .animate-slide-up {
-    animation: slide-up 0.5s ease-out 0.5s both;
-  }
-</style>
-
 <Layout>
-  <div class="story-container">
-    <ProgressIndicator />
+  <div class="min-h-screen px-phi-4 py-phi-6 max-w-6xl mx-auto">
+    <!-- Hero Section -->
+    <header class="mb-phi-6 mt-phi-6">
+      <div class="max-w-4xl">
+        <h1 class="text-4xl sm:text-5xl font-light tracking-tight mb-phi-4 text-ink dark:text-ink-dark">
+          Dev Wells
+        </h1>
 
-    <!-- Initial intro -->
-    <section
-      class="min-h-screen flex flex-col justify-center px-phi-4 py-phi-6 max-w-[65ch] mx-auto relative"
-    >
-      <header class="mb-phi-6">
-        <h1 class="text-3xl font-light tracking-tight mb-phi-3">Dev Wells</h1>
-        <p class="text-lg text-bark-600 dark:text-bark-400 leading-relaxed">
-          min/maxing midwestern dad energy
-        </p>
-        {latestPost && (
-          <a
-            href={latestPost.url}
-            class="inline-flex items-center mt-phi-3 text-sm text-flower-600 dark:text-flower-400 hover:text-flower-700 dark:hover:flower-sage-300 transition-colors group"
-          >
-            <span class="mr-2">Latest fruit:</span>
-            <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">
-              {latestPost.frontmatter.title}
-            </span>
-            <span class="ml-1 transition-transform group-hover:translate-x-0.5">→</span>
-          </a>
-        )}
-      </header>
-    </section>
+        <!-- Role and Company -->
+        <div class="flex flex-wrap items-center gap-x-phi-3 gap-y-phi-2 text-lg mb-phi-4">
+          <span class="text-ink dark:text-ink-dark font-medium">Principal Engineer</span>
+          <span class="text-muted dark:text-muted-dark">@</span>
+          <span class="text-iris dark:text-iris-dark">CapitalRx</span>
+        </div>
 
-    <!-- Story sections -->
-    <div class="relative">
-      <!-- Timeline line with gradient -->
-      <div
-        class="absolute left-1/2 -top-32 bottom-0 w-0.5 transform -translate-x-1/2"
-      >
-        <div
-          class="w-full h-full bg-gradient-to-b from-transparent via-bark-400/60 to-flower-500/80 dark:from-transparent dark:via-bark-600/60 dark:to-flower-400/80"
-        >
+        <!-- Quick Facts -->
+        <div class="flex flex-wrap gap-x-phi-3 gap-y-phi-2 text-sm font-mono text-subtle dark:text-subtle-dark">
+          <span class="flex items-center gap-1">
+            <span class="text-rose dark:text-rose-dark">◆</span> dad
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="text-foam dark:text-foam-dark">◆</span> climber
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="text-iris dark:text-iris-dark">◆</span> reader
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="text-gold dark:text-gold-dark">◆</span> writer
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="text-love dark:text-love-dark">◆</span> gamer
+          </span>
         </div>
       </div>
+    </header>
 
-      {
-        storyData.map((section, index) => (
-          <StorySection
-            section={section}
-            isCurrentSection={section.id === "current"}
-          />
-        ))
-      }
+    <div class="grid lg:grid-cols-3 gap-x-phi-6 gap-y-phi-6 mb-phi-8">
+      <!-- Main Content Column -->
+      <div class="lg:col-span-2 space-y-phi-6">
+        <!-- Latest Post (moved to top) -->
+        {latestPost && (
+          <section class="border-l-4 border-rose dark:border-rose-dark pl-phi-4 py-phi-3">
+            <article>
+              <a
+                href={latestPost.url}
+                class="group block"
+              >
+                <h3 class="text-xl font-light text-ink dark:text-ink-dark mb-phi-2 group-hover:text-rose dark:group-hover:text-rose-dark transition-colors">
+                  {latestPost.frontmatter.title}
+                </h3>
+                <p class="text-sm text-muted dark:text-muted-dark mb-phi-2">
+                  {latestPost.frontmatter.date}
+                </p>
+                <p class="text-base text-ink dark:text-ink-dark leading-relaxed line-clamp-3">
+                  {latestPost.frontmatter.description}
+                </p>
+                <span class="inline-block mt-phi-3 text-sm text-rose dark:text-rose-dark group-hover:translate-x-1 transition-transform">
+                  Read more →
+                </span>
+              </a>
+            </article>
+          </section>
+        )}
+
+        <!-- About (now whoami) -->
+        <section class="relative">
+          <h2 class="text-sm font-mono text-muted dark:text-muted-dark mb-phi-3">
+            <span class="text-gold dark:text-gold-dark">$</span> whoami
+          </h2>
+          <div class="pl-phi-3 border-l-2 border-subtle/20 dark:border-subtle-dark/20">
+            <p class="text-base leading-relaxed text-ink dark:text-ink-dark mb-phi-3">
+              I'm passionate about building tools that empower developers and creating elegant
+              solutions to complex problems. My work focuses on developer experience,
+              infrastructure, and performance-conscious web development.
+            </p>
+            <p class="text-base leading-relaxed text-muted dark:text-muted-dark">
+              This digital garden is where I cultivate thoughts on software, share technical
+              explorations, and occasionally reflect on the intersection of technology and life.
+            </p>
+          </div>
+        </section>
+
+        <!-- Tech Stack -->
+        <section>
+          <h2 class="text-sm font-mono text-muted dark:text-muted-dark mb-phi-3">
+            tech i enjoy
+          </h2>
+          <div class="flex flex-wrap gap-2">
+            {["typescript", "rust", "go", "astro", "vite", "deno"].map(tech => (
+              <span class="px-phi-2 py-1 border border-overlay dark:border-overlay-dark rounded text-sm font-mono text-ink dark:text-ink-dark hover:border-iris dark:hover:border-iris-dark transition-colors">
+                {tech}
+              </span>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="space-y-phi-6">
+        <!-- Garden Navigation (now ls) -->
+        <section>
+          <h2 class="text-sm font-mono text-muted dark:text-muted-dark mb-phi-3">
+            <span class="text-gold dark:text-gold-dark">$</span> ls
+          </h2>
+          <nav class="space-y-phi-2 pl-phi-3">
+            <a
+              href="/fruits"
+              class="flex items-center gap-phi-2 font-mono text-ink dark:text-ink-dark hover:text-iris dark:hover:text-iris-dark transition-colors group"
+            >
+              <span class="text-muted dark:text-muted-dark">1:</span>
+              <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">fruits</span>
+              <span class="text-subtle dark:text-subtle-dark text-sm ml-auto">thoughts</span>
+            </a>
+            <a
+              href="/seeds"
+              class="flex items-center gap-phi-2 font-mono text-ink dark:text-ink-dark hover:text-iris dark:hover:text-iris-dark transition-colors group"
+            >
+              <span class="text-muted dark:text-muted-dark">2:</span>
+              <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">seeds</span>
+              <span class="text-subtle dark:text-subtle-dark text-sm ml-auto">musings</span>
+            </a>
+            <a
+              href="/roots"
+              class="flex items-center gap-phi-2 font-mono text-ink dark:text-ink-dark hover:text-iris dark:hover:text-iris-dark transition-colors group"
+            >
+              <span class="text-muted dark:text-muted-dark">3:</span>
+              <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">roots</span>
+              <span class="text-subtle dark:text-subtle-dark text-sm ml-auto">story</span>
+            </a>
+          </nav>
+
+          <div class="mt-phi-4 pl-phi-3">
+            <p class="text-xs text-subtle dark:text-subtle-dark font-mono">
+              Press
+              <kbd class="px-1 py-0.5 border border-overlay dark:border-overlay-dark rounded text-xs mx-1">0-3</kbd>
+              for quick nav
+            </p>
+          </div>
+        </section>
+
+        <!-- Quote -->
+        <section class="border-t-2 border-b-2 border-overlay dark:border-overlay-dark py-phi-4 -mx-2 px-2">
+          <blockquote class="text-sm text-ink dark:text-ink-dark italic leading-relaxed">
+            "The most important step a man can take. It's not the first one, is it?
+            It's the next one."
+          </blockquote>
+          <cite class="text-xs text-muted dark:text-muted-dark mt-phi-2 block not-italic">
+            — Dalinar, Oathbringer
+          </cite>
+        </section>
+      </aside>
     </div>
 
-    <!-- Final navigation -->
-    <section
-      class="min-h-screen flex flex-col justify-center px-phi-4 py-phi-6 max-w-[65ch] mx-auto"
-    >
-      <div class="final-nav opacity-0">
-        <div class="text-center mb-phi-6">
-          <p class="text-lg text-bark-600 dark:text-bark-400 leading-relaxed">
-            Explore my garden
-          </p>
-        </div>
-
-        <nav
-          class="flex flex-col space-y-phi-2"
-          aria-label="Main navigation"
+    <!-- Connect links (moved to bottom, no frame) -->
+    <section class="mb-phi-8">
+      <nav class="flex flex-wrap gap-x-phi-4 gap-y-phi-2 text-sm">
+        <a
+          href="https://github.com/devdumpling"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-1 text-ink dark:text-ink-dark hover:text-foam dark:hover:text-foam-dark transition-colors group"
         >
-          <a
-            href="/fruits"
-            class="group font-mono text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-all hover:translate-x-1"
-          >
-            <span class="text-bark-400 dark:text-bark-600 mr-1">1:</span>/fruits
-            <span
-              class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors"
-              >→ cultivated thoughts</span
-            >
-          </a>
-          <a
-            href="/seeds"
-            class="group font-mono text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-all hover:translate-x-1"
-          >
-            <span class="text-bark-400 dark:text-bark-600 mr-1">2:</span>/seeds
-            <span
-              class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors"
-              >→ short musings</span
-            >
-          </a>
-          <a
-            href="/roots"
-            class="group font-mono text-ink dark:text-ink-dark hover:text-sage-600 dark:hover:text-sage-400 transition-all hover:translate-x-1"
-          >
-            <span class="text-bark-400 dark:text-bark-600 mr-1">3:</span>/roots
-            <span
-              class="text-bark-400 dark:text-bark-500 ml-2 group-hover:text-sage-500 transition-colors"
-              >→ backstory</span
-            >
-          </a>
-        </nav>
-
-        <aside class="mt-phi-4 text-sm text-bark-500 dark:text-bark-400">
-          <p>
-            <kbd
-              class="px-1 py-0.5 bg-bark-100 dark:bg-bark-800 rounded text-xs"
-              >0-3</kbd
-            >
-            for quick nav
-          </p>
-        </aside>
-
-        <footer class="mt-phi-8 text-sm text-bark-500 dark:text-bark-400">
-          <p>Since <time datetime="1993">1993</time></p>
-        </footer>
-      </div>
+          <span class="text-muted dark:text-muted-dark">↗</span>
+          <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">github</span>
+        </a>
+        <a
+          href="https://www.linkedin.com/in/devon-a-wells/"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-1 text-ink dark:text-ink-dark hover:text-foam dark:hover:text-foam-dark transition-colors group"
+        >
+          <span class="text-muted dark:text-muted-dark">↗</span>
+          <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">linkedin</span>
+        </a>
+        <a
+          href="https://bsky.app/profile/wlls.dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-1 text-ink dark:text-ink-dark hover:text-foam dark:hover:text-foam-dark transition-colors group"
+        >
+          <span class="text-muted dark:text-muted-dark">↗</span>
+          <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">bluesky</span>
+        </a>
+      </nav>
     </section>
+
+    <!-- Footer -->
+    <footer class="text-sm text-muted dark:text-muted-dark text-center pb-phi-6">
+      <p>cultivating since <time datetime="1993">1993</time></p>
+    </footer>
   </div>
 </Layout>
