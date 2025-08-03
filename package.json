@@ -13,6 +13,7 @@
 	},
 	"dependencies": {
 		"@astrojs/mdx": "^4.3.3",
+		"@astrojs/rss": "^4.0.12",
 		"@tailwindcss/vite": "^4.1.11",
 		"animejs": "^4.0.2",
 		"astro": "^5.12.8",

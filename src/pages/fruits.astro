@@ -13,7 +13,12 @@ const posts = validateBlogPosts(rawPosts);
 <Layout title="Fruits - Dev Wells">
   <div class="min-h-screen px-phi-4 py-phi-6 max-w-[65ch] mx-auto">
     <main>
-      <h1 class="text-3xl font-light tracking-tight mb-phi-4">Fruits</h1>
+      <div class="flex items-center justify-between mb-phi-4">
+        <h1 class="text-3xl font-light tracking-tight">Fruits</h1>
+        <a href="/rss.xml" class="underline text-sm text-bark-500 dark:text-bark-400 hover:text-bark-600 dark:hover:text-bark-300 transition-colors">
+          RSS
+        </a>
+      </div>
       {posts.length > 0 ? (
         <FruitsList posts={posts} />
       ) : (
