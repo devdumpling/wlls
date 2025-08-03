@@ -15,11 +15,6 @@ const latestPost = getLatestPost();
         </h1>
 
         <!-- Role and Company -->
-        <div class="flex flex-wrap items-center gap-x-phi-3 gap-y-phi-2 text-lg mb-phi-4">
-          <span class="text-ink dark:text-ink-dark font-medium">Principal Engineer</span>
-          <span class="text-muted dark:text-muted-dark">@</span>
-          <span class="text-iris dark:text-iris-dark">CapitalRx</span>
-        </div>
 
         <!-- Quick Facts -->
         <div class="flex flex-wrap gap-x-phi-3 gap-y-phi-2 text-sm font-mono text-subtle dark:text-subtle-dark">
@@ -42,10 +37,10 @@ const latestPost = getLatestPost();
       </div>
     </header>
 
-    <div class="grid lg:grid-cols-3 gap-x-phi-6 gap-y-phi-6 mb-phi-8">
+    <div class="grid lg:grid-cols-3 gap-x-phi-6 gap-y-phi-6 mb-phi-6">
       <!-- Main Content Column -->
       <div class="lg:col-span-2 space-y-phi-6">
-        <!-- Latest Post (moved to top) -->
+        <!-- Latest Post -->
         {latestPost && (
           <section class="border-l-4 border-rose dark:border-rose-dark pl-phi-4 py-phi-3">
             <article>
@@ -70,31 +65,29 @@ const latestPost = getLatestPost();
           </section>
         )}
 
-        <!-- About (now whoami) -->
+        <!-- (whoami) -->
         <section class="relative">
           <h2 class="text-sm font-mono text-muted dark:text-muted-dark mb-phi-3">
             <span class="text-gold dark:text-gold-dark">$</span> whoami
           </h2>
           <div class="pl-phi-3 border-l-2 border-subtle/20 dark:border-subtle-dark/20">
             <p class="text-base leading-relaxed text-ink dark:text-ink-dark mb-phi-3">
-              I'm passionate about building tools that empower developers and creating elegant
-              solutions to complex problems. My work focuses on developer experience,
-              infrastructure, and performance-conscious web development.
+              I build stuff, pretend to like the cold in the midwest, and play with my fam. My work focuses on developer experience,
+              frontend tooling, and performance-conscious web development.
             </p>
             <p class="text-base leading-relaxed text-muted dark:text-muted-dark">
-              This digital garden is where I cultivate thoughts on software, share technical
-              explorations, and occasionally reflect on the intersection of technology and life.
+              This is my digital garden.
             </p>
           </div>
         </section>
 
-        <!-- Tech Stack -->
+        <!-- Tech -->
         <section>
           <h2 class="text-sm font-mono text-muted dark:text-muted-dark mb-phi-3">
             tech i enjoy
           </h2>
           <div class="flex flex-wrap gap-2">
-            {["typescript", "rust", "go", "astro", "vite", "deno"].map(tech => (
+            {["typescript", "rust", "go", "astro", "vite", "deno", "solid"].map(tech => (
               <span class="px-phi-2 py-1 border border-overlay dark:border-overlay-dark rounded text-sm font-mono text-ink dark:text-ink-dark hover:border-iris dark:hover:border-iris-dark transition-colors">
                 {tech}
               </span>
@@ -105,7 +98,7 @@ const latestPost = getLatestPost();
 
       <!-- Sidebar -->
       <aside class="space-y-phi-6">
-        <!-- Garden Navigation (now ls) -->
+        <!-- (ls) -->
         <section>
           <h2 class="text-sm font-mono text-muted dark:text-muted-dark mb-phi-3">
             <span class="text-gold dark:text-gold-dark">$</span> ls
@@ -159,7 +152,7 @@ const latestPost = getLatestPost();
       </aside>
     </div>
 
-    <!-- Connect links (moved to bottom, no frame) -->
+    <!-- Connect links  -->
     <section class="mb-phi-8">
       <nav class="flex flex-wrap gap-x-phi-4 gap-y-phi-2 text-sm">
         <a
@@ -169,7 +162,7 @@ const latestPost = getLatestPost();
           class="flex items-center gap-1 text-ink dark:text-ink-dark hover:text-foam dark:hover:text-foam-dark transition-colors group"
         >
           <span class="text-muted dark:text-muted-dark">↗</span>
-          <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">github</span>
+          <span class="underline decoration-solid underline-offset-2 group-hover:decoration-solid">gh</span>
         </a>
         <a
           href="https://www.linkedin.com/in/devon-a-wells/"
@@ -178,7 +171,7 @@ const latestPost = getLatestPost();
           class="flex items-center gap-1 text-ink dark:text-ink-dark hover:text-foam dark:hover:text-foam-dark transition-colors group"
         >
           <span class="text-muted dark:text-muted-dark">↗</span>
-          <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">linkedin</span>
+          <span class="underline decoration-solid underline-offset-2 group-hover:decoration-solid">in</span>
         </a>
         <a
           href="https://bsky.app/profile/wlls.dev"
@@ -187,7 +180,7 @@ const latestPost = getLatestPost();
           class="flex items-center gap-1 text-ink dark:text-ink-dark hover:text-foam dark:hover:text-foam-dark transition-colors group"
         >
           <span class="text-muted dark:text-muted-dark">↗</span>
-          <span class="underline decoration-dotted underline-offset-2 group-hover:decoration-solid">bluesky</span>
+          <span class="underline decoration-solid underline-offset-2 group-hover:decoration-solid">bs</span>
         </a>
       </nav>
     </section>
