@@ -195,4 +195,256 @@ describe("blogSchema", () => {
 			expect(post.url).toBe("/test");
 		});
 	});
+
+	// Edge cases
+	describe("frontmatter validation edge cases", () => {
+		it("should handle very long strings", () => {
+			const longString = "a".repeat(10000);
+			const frontmatter = {
+				title: longString,
+				date: "2024-01-01",
+				description: longString,
+			};
+
+			const result = blogPostFrontmatterSchema.safeParse(frontmatter);
+			expect(result.success).toBe(true);
+		});
+
+		it("should handle special characters in strings", () => {
+			const frontmatter = {
+				title: "Test 😀 Post with émojis & spëcial chârs!",
+				date: "2024-01-01",
+				description: "Description with\nnewlines\tand\ttabs",
+			};
+
+			const result = blogPostFrontmatterSchema.safeParse(frontmatter);
+			expect(result.success).toBe(true);
+		});
+
+		it("should handle whitespace-only strings", () => {
+			const frontmatter = {
+				title: "   ",
+				date: "2024-01-01",
+				description: "Valid",
+			};
+
+			const result = blogPostFrontmatterSchema.safeParse(frontmatter);
+			expect(result.success).toBe(true);
+		});
+
+		it("should handle null and undefined values", () => {
+			const frontmatter = {
+				title: null as any,
+				date: undefined as any,
+				description: "Valid",
+			};
+
+			const result = blogPostFrontmatterSchema.safeParse(frontmatter);
+			expect(result.success).toBe(false);
+			if (!result.success) {
+				expect(result.error.issues).toHaveLength(2);
+			}
+		});
+
+		it("should handle numeric values incorrectly passed", () => {
+			const frontmatter = {
+				title: 123 as any,
+				date: new Date() as any,
+				description: true as any,
+			};
+
+			const result = blogPostFrontmatterSchema.safeParse(frontmatter);
+			expect(result.success).toBe(false);
+		});
+	});
+
+	describe("blog post schema edge cases", () => {
+		it("should handle post with all optional fields", () => {
+			const post = {
+				frontmatter: {
+					title: "Full Post",
+					date: "2024-01-01",
+					description: "Complete post",
+					layout: "custom",
+				},
+				url: "/test",
+				file: "/test.mdx",
+				default: () => console.log("default export"),
+			};
+
+			const result = blogPostSchema.safeParse(post);
+			expect(result.success).toBe(true);
+		});
+
+		it("should handle post with extra unexpected fields", () => {
+			const post = {
+				frontmatter: {
+					title: "Extra Fields",
+					date: "2024-01-01",
+					description: "Has extra fields",
+					unexpectedField: "should be ignored",
+				},
+				url: "/test",
+				extraField: "ignored",
+			};
+
+			const result = blogPostSchema.safeParse(post);
+			expect(result.success).toBe(true);
+		});
+
+		it("should handle deeply nested default export", () => {
+			const complexDefault = {
+				Component: () => null,
+				metadata: { tags: ["test"] },
+				render: () => ({ html: "" }),
+			};
+
+			const post = {
+				frontmatter: {
+					title: "Complex Default",
+					date: "2024-01-01",
+					description: "Complex default export",
+				},
+				default: complexDefault,
+			};
+
+			const result = blogPostSchema.safeParse(post);
+			expect(result.success).toBe(true);
+		});
+	});
+
+	describe("validateBlogPosts edge cases", () => {
+		it("should handle very large arrays efficiently", () => {
+			const largePosts = Array.from({ length: 1000 }, (_, i) => ({
+				frontmatter: {
+					title: `Post ${i}`,
+					date: `2024-01-${String(i % 28 + 1).padStart(2, "0")}`,
+					description: `Description ${i}`,
+				},
+			}));
+
+			const startTime = performance.now();
+			const result = validateBlogPosts(largePosts);
+			const endTime = performance.now();
+
+			expect(result).toHaveLength(1000);
+			expect(endTime - startTime).toBeLessThan(100); // Should be fast
+		});
+
+		it("should provide helpful error for partially valid data", () => {
+			const mixedPosts = [
+				{
+					frontmatter: {
+						title: "Valid",
+						date: "2024-01-01",
+						description: "Valid",
+					},
+				},
+				{
+					frontmatter: {
+						title: "Missing Description",
+						date: "2024-01-01",
+						// Missing description
+					},
+				},
+			];
+
+			expect(() => validateBlogPosts(mixedPosts)).toThrow(/index 1/);
+		});
+
+		it("should handle posts with circular references", () => {
+			const circular: any = {
+				frontmatter: {
+					title: "Circular",
+					date: "2024-01-01",
+					description: "Has circular ref",
+				},
+			};
+			circular.self = circular; // Create circular reference
+
+			// Should handle without infinite loop
+			const result = blogPostSchema.safeParse(circular);
+			expect(result.success).toBe(true);
+		});
+
+		it("should validate dates in various formats", () => {
+			const posts = [
+				{
+					frontmatter: {
+						title: "ISO Date",
+						date: "2024-01-15T10:30:00Z",
+						description: "ISO format",
+					},
+				},
+				{
+					frontmatter: {
+						title: "Coming Soon",
+						date: "Coming Soon",
+						description: "Special string",
+					},
+				},
+				{
+					frontmatter: {
+						title: "US Format",
+						date: "01/15/2024",
+						description: "US date",
+					},
+				},
+			];
+
+			const result = validateBlogPosts(posts);
+			expect(result).toHaveLength(3);
+			// All date formats should be accepted as strings
+			result.forEach((post) => {
+				expect(typeof post.frontmatter.date).toBe("string");
+			});
+		});
+
+		it("should handle malformed input gracefully", () => {
+			const malformed = [
+				null,
+				undefined,
+				"not an object",
+				123,
+				[],
+				{ notFrontmatter: {} },
+			];
+
+			for (const input of malformed) {
+				expect(() => validateBlogPosts([input as any])).toThrow();
+			}
+		});
+	});
+
+	describe("error message quality", () => {
+		it("should provide clear error for missing frontmatter", () => {
+			const post = {
+				url: "/test",
+				file: "/test.mdx",
+				// Missing frontmatter entirely
+			};
+
+			try {
+				validateBlogPosts([post as any]);
+				expect.fail("Should have thrown");
+			} catch (error: any) {
+				expect(error.message).toContain("Invalid");
+				expect(error.message).toContain("index 0");
+			}
+		});
+
+		it("should provide clear error for wrong type", () => {
+			const post = {
+				frontmatter: "not an object" as any,
+			};
+
+			try {
+				validateBlogPosts([post]);
+				expect.fail("Should have thrown");
+			} catch (error: any) {
+				expect(error.message).toContain("Invalid");
+				expect(error.message).toContain("index 0");
+			}
+		});
+	});
 });
