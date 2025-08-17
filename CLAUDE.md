@@ -13,6 +13,9 @@ bun run dev      # Start development server on http://localhost:4321
 bun run build    # Build for production (outputs to ./dist)
 bun run preview  # Preview production build locally
 bun run deploy   # Deploy to Cloudflare Workers
+bun run test     # Run tests with Vitest
+bun run test:ui  # Run tests with UI
+bun run test:coverage # Run tests with coverage report
 ```
 
 ## Architecture
