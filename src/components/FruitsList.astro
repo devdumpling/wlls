@@ -1,5 +1,6 @@
 ---
 import type { BlogPost } from "../utils/blogSchema";
+import { sortPostsByDate } from "../utils/posts";
 import Article from "./Article.astro";
 
 export interface Props {
@@ -9,11 +10,7 @@ export interface Props {
 const { posts } = Astro.props;
 
 // Sort by most recent
-const sortedPosts = posts.sort((a, b) => {
-	const dateA = new Date(a.frontmatter.date);
-	const dateB = new Date(b.frontmatter.date);
-	return dateB.getTime() - dateA.getTime();
-});
+const sortedPosts = sortPostsByDate(posts);
 ---
 
 <div class="space-y-phi-6">

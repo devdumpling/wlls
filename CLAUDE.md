@@ -9,10 +9,10 @@ This is a personal website/portfolio built with Astro, featuring a unique organi
 ## Development Commands
 
 ```bash
-bun dev      # Start development server on http://localhost:4321
-bun build    # Build for production (outputs to ./dist)
-bun preview  # Preview production build locally
-bun deploy   # Deploy to Cloudflare Workers
+bun run dev      # Start development server on http://localhost:4321
+bun run build    # Build for production (outputs to ./dist)
+bun run preview  # Preview production build locally
+bun run deploy   # Deploy to Cloudflare Workers
 ```
 
 ## Architecture
