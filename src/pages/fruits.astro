@@ -11,15 +11,15 @@ const posts = getAllBlogPosts();
     <main>
       <div class="flex items-center justify-between mb-phi-4">
         <h1 class="text-3xl font-light tracking-tight">Fruits</h1>
-        <a href="/rss.xml" class="underline text-sm text-bark-500 dark:text-bark-400 hover:text-bark-600 dark:hover:text-bark-300 transition-colors">
+        <a href="/rss.xml" class="underline text-sm text-accent hover:text-bark-600 dark:hover:text-bark-300 transition-colors">
           RSS
         </a>
       </div>
       {posts.length > 0 ? (
         <FruitsList posts={posts} />
       ) : (
-        <div class="border-l-4 border-sage-200 dark:border-sage-800 pl-phi-4 py-phi-3">
-          <p class="text-ink dark:text-ink-dark leading-relaxed">
+        <div class="section-highlight">
+          <p class="text-primary leading-relaxed">
             This space will grow with thoughts, technical posts, and
             reflections. For now, it's just soil waiting for the first seeds to
             sprout.
@@ -27,10 +27,8 @@ const posts = getAllBlogPosts();
         </div>
       )}
 
-      <footer
-        class="mt-phi-8 pt-phi-6 border-t border-sage-200 dark:border-sage-800"
-      >
-        <p class="text-sm text-bark-500 dark:text-bark-400 text-center italic">
+      <footer class="footer-section">
+        <p class="text-sm text-accent text-center italic">
           "The best time to plant a tree was 20 years ago. The second best time
           is now."
         </p>

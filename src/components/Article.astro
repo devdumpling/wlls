@@ -9,9 +9,7 @@ export interface Props {
 
 const { title, date, description, url, isLatest = false } = Astro.props;
 
-const articleClasses = isLatest
-	? "border-l-4 border-flower-500 dark:border-flower-600 pl-phi-4 py-phi-3"
-	: "border-l-4 border-sage-200 dark:border-sage-800 pl-phi-4 py-phi-3";
+const articleClasses = isLatest ? "section-accent" : "section-highlight";
 
 const headingClasses = isLatest
 	? "text-xl font-light text-flower-700 dark:text-flower-400 mb-phi-2"
@@ -22,18 +20,18 @@ const headingClasses = isLatest
   {url ? (
     <a href={url} class="block hover:opacity-80 transition-opacity">
       <h2 class={headingClasses}>{title}</h2>
-      <p class="text-bark-600 dark:text-bark-400 mb-phi-2 text-sm">
+      <p class="text-accent mb-phi-2 text-sm">
         <time>{date}</time>
       </p>
-      <p class="text-ink dark:text-ink-dark leading-relaxed">{description}</p>
+      <p class="text-primary leading-relaxed">{description}</p>
     </a>
   ) : (
     <>
       <h2 class={headingClasses}>{title}</h2>
-      <p class="text-bark-600 dark:text-bark-400 mb-phi-2 text-sm">
+      <p class="text-accent mb-phi-2 text-sm">
         <time>{date}</time>
       </p>
-      <p class="text-ink dark:text-ink-dark leading-relaxed">{description}</p>
+      <p class="text-primary leading-relaxed">{description}</p>
     </>
   )}
 </article>

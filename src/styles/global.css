@@ -116,6 +116,70 @@
 	--breakpoint-xl: 161.803rem; /* ~2589px */
 }
 
+/* Common Border Styles */
+.border-section {
+	@apply border-sage-200 dark:border-sage-800;
+}
+
+.border-section-t {
+	@apply border-t border-sage-200 dark:border-sage-800;
+}
+
+.border-section-l {
+	@apply border-l-4 border-sage-200 dark:border-sage-800;
+}
+
+.border-accent {
+	@apply border-rose dark:border-rose-dark;
+}
+
+.border-accent-l {
+	@apply border-l-4 border-rose dark:border-rose-dark;
+}
+
+.border-interactive {
+	@apply border-overlay dark:border-overlay-dark;
+}
+
+/* Common Text Styles */
+.text-primary {
+	@apply text-ink dark:text-ink-dark;
+}
+
+.text-secondary {
+	@apply text-muted dark:text-muted-dark;
+}
+
+.text-tertiary {
+	@apply text-subtle dark:text-subtle-dark;
+}
+
+.text-accent {
+	@apply text-bark-500 dark:text-bark-400;
+}
+
+/* Common Section Styles */
+.section-highlight {
+	@apply border-l-4 border-sage-200 dark:border-sage-800 pl-phi-4 py-phi-3;
+}
+
+.section-accent {
+	@apply border-l-4 border-rose dark:border-rose-dark pl-phi-4 py-phi-3;
+}
+
+.footer-section {
+	@apply mt-phi-8 pt-phi-6 border-t border-sage-200 dark:border-sage-800;
+}
+
+/* Link Styles */
+.link-hover {
+	@apply hover:text-iris dark:hover:text-iris-dark transition-colors;
+}
+
+.link-external {
+	@apply hover:text-foam dark:hover:text-foam-dark transition-colors;
+}
+
 /* Prose utility for article content */
 .prose p {
 	@apply mb-phi-4 text-base leading-relaxed text-ink dark:text-ink-dark text-pretty;
