@@ -36,23 +36,20 @@ pnpm deploy   # Deploy to Cloudflare Workers
 - `/src/components/` - Reusable Astro components
 - `/src/layouts/` - Page layouts (Layout.astro, ArticleLayout.astro)
 - `/src/styles/global.css` - Tailwind imports and custom CSS
-- `/src/utils/` - Utility functions (e.g., scrollAnimations.ts)
-- `/src/data/` - Data files (story.ts contains timeline data)
+- `/src/utils/` - Utility functions
 
 ### Design System
 
 The site uses a custom design system defined in global.css:
 
-- **Colors**: OKLCH color space with organic theme (sage, bark, flower palettes)
+- **Colors**: OKLCH color space with rose pine moon theme
 - **Spacing**: Golden ratio based (`phi-*` classes: phi-1 through phi-9)
 - **Typography**: Perfect fifth scale, Atkinson font family
 - **Dark mode**: Supported via CSS custom properties
 
 ### Key Features
 
-- Scroll-based animations on homepage timeline
 - Keyboard navigation shortcuts (0-3 for quick nav)
-- Progress indicator showing scroll position
 - Responsive design with custom breakpoints
 - MDX support for rich blog content
 
