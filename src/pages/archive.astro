@@ -1,0 +1,26 @@
+---
+import Layout from "../layouts/Layout.astro";
+import PostList from "../components/PostList.astro";
+import { getAllPosts } from "../utils/posts";
+
+const allPosts = getAllPosts();
+---
+
+<Layout title="Archive - Devon Wells">
+  <div class="min-h-screen px-6 py-12 max-w-3xl mx-auto">
+    <header class="mb-12">
+      <h1 class="text-3xl font-bold mb-4">Archive</h1>
+      <p class="text-secondary dark:text-secondary-dark">
+        All posts, ever.
+      </p>
+    </header>
+    
+    <PostList posts={allPosts} title="All Posts" />
+    
+    <footer class="mt-16 pt-8 border-t border-secondary/10 dark:border-secondary-dark/10">
+      <a href="/" class="text-secondary dark:text-secondary-dark hover:text-accent dark:hover:text-accent-dark transition-colors">
+        ← Back home
+      </a>
+    </footer>
+  </div>
+</Layout>

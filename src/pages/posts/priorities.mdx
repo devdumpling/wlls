@@ -1,0 +1,49 @@
+---
+layout: "../../layouts/ArticleLayout.astro"
+title: "Priorities"
+date: "2024-09-08"
+description: "On the surprising impact of low priority tasks"
+draft: true
+---
+
+# Priorities Draft
+
+I've noticed an interesting phenomenon where often the tasks labelled as "low priority" end up being among the most impactful. Often, it's not even that they are directly impactful, but rather the act of doing them unlocks some unforeseen benefit or pathway.
+
+Let me give an example.
+
+One morning while frustrated for the nth time that I did not have enough counter space in my kitchen, I suggested to my wife that we should add a small butcher-block-topped baker's rack to an empty space at the end of one of our kitchen counters. My thought was with even a few extra cubic feet of countertop for prep and some shelves for storage, our small kitchen will feel less cramped to work in.
+
+My wife, understandably, responded the way she has the last `n` times I've suggested this.
+
+"Yes, that would be great. But it's low priority. We have too much else to focus on right now."
+
+And she's right. We have two kids under 4 and demanding workloads. Our kitchen setup "works" for the most part, so spending time and money researching, installing, and calibrating to some solution for our less-than-optimal kitchen is hard to prioritize above the more tangible needs of keeping the kitchen clean or sleep.
+
+I agreed and moved on about my day, but I kept coming back to it.
+
+Some time later my mom was in town and we had a few extra hours. My frustration with our kitchen returned while trying to prepare food for my kids' upcoming 1-year-old birthday party. After finishing the prep, I had a moment of downtime and decided to act on my feelings. I spent an hour measuring, researching, and purchasing a baker's rack that fit nicely in the few feet at the end of my existing countertop.
+
+> There are a myriad of other solutions I could have opted for here, like adding new actual cabinets or what have you. This might've been more optimal, but would have also taken significantly more effort for this "low priority" task.
+
+The rack arrived a few days later. It took me a couple hours to install, childproof (affix to walls), and do some basic organization. My wife's immediate response was "wow, the kitchen looks so clean!"
+
+I wont' pretend there aren't a million other (potentially better) things I could have done those few, precious hours, but for some reason this called to me. That in itself, felt important.
+
+The interesting part is what happened after. I'll try to spare you the grandstanding anecdote. Despite this being a low priority task, over the course of the next few weeks I've noticed an outsized ROI. Preschool lunches are easier to prep with the extra counter space. Odds and ends are more visible (and get put away) because they don't share clutter with critical kitchenware. Dishes are easier at night because there's more space for them to the other side of the sink, rather than strewn about.
+
+Selfishly, I'm also less anxious in my own kitchen because it both feels better to in, _and_ I don't have this lingering task floating in my head every time I don't have enough space anymore.
+
+I can practically hear the scrum masters in my circle thinking, "okay, so what? all that means is this task wasn't prioritized properly. we can talk about it in retro and adjust for next time!"
+
+Yes, sure, that's all fine and dandy.
+
+The problem is that, the more I grow in my career (and life), the more I feel like we're simply _really bad_ at figuring out what the priority of a task should be. There's impact and effort to be taken into account here, and often they are wildly out of proportion. I see this all the time in actual engineering tasks. Too often I have an itch to clean up one part of a codebase, and despite it not being an immediate part of the ticket I'm working on (or maybe I don't have a ticket for it, period), I'll end up doing it.
+
+Sometimes this doesn't work out, and I end up having to explain that I'm running behind on something because of my own tendency to fix things that "don't need fixing." I've grown better at noticing early when I'm headed down this path, though, and pulling myself out or time-boxing an effort and simply backlogging it.
+
+But more often than not, much of the best work I've done (the work that has routinely also gotten me favor with colleagues and even promoted) has come out of this kind of work.
+
+Often it isn't even the actual side quest that has the outsized impact, but a learning from it. For example, once while annoyed with some noisy logs by an innocuous part of our monorepo during CI, I set out to go clean them up. I discovered that they were being caused by a deprecated library that went unnoticed, and it turned out that that deprecated feature was costing us _hundreds of hours_ of CI time doing basically nothing. Upgrading to the new version meant we could skip that part of our CI entirely.
+
+I would have never thought to look for this just going about my normal work. It wasn't part of the main ticket I was working on, nor was it part of cleaning up the logs. It was purely through the side quest of low priority "feelings" that it happened. A year later, when an engineer noticed a similar warning, we hopped on it immediately instead. Outsized impact from low-priority work.

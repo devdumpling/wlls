@@ -1,0 +1,33 @@
+---
+import type { Post } from '../types/post';
+
+export interface Props {
+  post: Post | null;
+}
+
+const { post } = Astro.props;
+---
+
+{post && (
+  <section class="mb-16">
+    <h2 class="text-sm uppercase tracking-wide text-secondary dark:text-secondary-dark mb-6">
+      Latest
+    </h2>
+    <article class="p-8 bg-surface dark:bg-surface-dark rounded-lg">
+      <a href={post.url} class="block group">
+        <h3 class="text-2xl font-bold mb-3 group-hover:text-accent dark:group-hover:text-accent-dark transition-colors">
+          {post.frontmatter.title}
+        </h3>
+        <time class="text-sm text-secondary dark:text-secondary-dark">
+          {post.frontmatter.date}
+        </time>
+        <p class="mt-4 text-base leading-relaxed line-clamp-3">
+          {post.frontmatter.description}
+        </p>
+        <span class="inline-block mt-4 text-accent dark:text-accent-dark font-medium">
+          Read →
+        </span>
+      </a>
+    </article>
+  </section>
+)}

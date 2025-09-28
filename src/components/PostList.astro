@@ -1,0 +1,30 @@
+---
+import type { Post } from '../types/post';
+
+export interface Props {
+  posts: Post[];
+  title?: string;
+}
+
+const { posts, title = "All Posts" } = Astro.props;
+---
+
+<section class="mb-16">
+  <h2 class="text-sm uppercase tracking-wide text-secondary dark:text-secondary-dark mb-6">
+    {title}
+  </h2>
+  <div class="space-y-6">
+    {posts.map((post) => (
+      <article class="pb-6 border-b border-secondary/10 dark:border-secondary-dark/10 last:border-0">
+        <a href={post.url} class="block group">
+          <h3 class="text-lg font-bold mb-1 group-hover:text-accent dark:group-hover:text-accent-dark transition-colors">
+            {post.frontmatter.title}
+          </h3>
+          <time class="text-sm text-secondary dark:text-secondary-dark">
+            {post.frontmatter.date}
+          </time>
+        </a>
+      </article>
+    ))}
+  </div>
+</section>

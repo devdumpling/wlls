@@ -1,0 +1,28 @@
+---
+const currentYear = new Date().getFullYear();
+---
+
+<footer class="mt-20 pt-8 border-t border-secondary/10 dark:border-secondary-dark/10">
+  <nav class="flex gap-6 mb-8">
+    <a href="/about" class="text-secondary dark:text-secondary-dark hover:text-accent dark:hover:text-accent-dark transition-colors">
+      About
+    </a>
+    <a href="/archive" class="text-secondary dark:text-secondary-dark hover:text-accent dark:hover:text-accent-dark transition-colors">
+      Archive
+    </a>
+    <a href="/rss.xml" class="text-secondary dark:text-secondary-dark hover:text-accent dark:hover:text-accent-dark transition-colors">
+      RSS
+    </a>
+    <a href="https://github.com/devdumpling" target="_blank" rel="noopener noreferrer" 
+       class="text-secondary dark:text-secondary-dark hover:text-accent dark:hover:text-accent-dark transition-colors">
+      GitHub
+    </a>
+    <a href="https://bsky.app/profile/wlls.dev" target="_blank" rel="noopener noreferrer"
+       class="text-secondary dark:text-secondary-dark hover:text-accent dark:hover:text-accent-dark transition-colors">
+      Bluesky
+    </a>
+  </nav>
+  <p class="text-sm text-secondary dark:text-secondary-dark">
+    © {currentYear}
+  </p>
+</footer>

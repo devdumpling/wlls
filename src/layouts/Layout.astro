@@ -1,6 +1,6 @@
 ---
 import "../styles/global.css";
-import Header from "../components/Header.astro";
+import KeyboardNav from "../components/KeyboardNav.astro";
 
 export interface Props {
 	title?: string;
@@ -8,8 +8,8 @@ export interface Props {
 }
 
 const {
-	title = "Dev Wells",
-	description = "Sometimes I just want to be weird, y'know?",
+	title = "Devon Wells",
+	description = "Principal engineer, writer, dad.",
 } = Astro.props;
 ---
 
@@ -21,16 +21,12 @@ const {
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
-    <link rel="alternate" type="application/rss+xml" title="Dev Wells - RSS Feed" href="/rss.xml" />
+    <link rel="alternate" type="application/rss+xml" title="Devon Wells - RSS Feed" href="/rss.xml" />
     <title>{title}</title>
   </head>
-  <body
-    class="bg-paper dark:bg-paper-dark text-ink dark:text-ink-dark transition-colors"
-  >
-    <Header />
-    <div>
-      <slot />
-    </div>
+  <body>
+    <slot />
+    <KeyboardNav />
   </body>
 </html>
 
@@ -39,24 +35,13 @@ const {
     font-family: var(--font-sans);
   }
 
-  body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
   * {
     box-sizing: border-box;
   }
 
   ::selection {
-    background-color: var(--color-sage-200);
-    color: var(--color-ink);
-  }
-
-  .dark ::selection {
-    background-color: var(--color-sage-700);
-    color: var(--color-ink);
+    background-color: var(--color-accent);
+    color: var(--color-bg);
+    opacity: 0.3;
   }
 </style>

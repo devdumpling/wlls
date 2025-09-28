@@ -1,0 +1,18 @@
+---
+export interface Props {
+  name?: string;
+  tagline?: string;
+}
+
+const { 
+  name = "Devon Wells",
+  tagline = "Principal engineer, writer, dad."
+} = Astro.props;
+---
+
+<header class="mb-16">
+  <h1 class="text-4xl font-bold mb-4">{name}</h1>
+  <p class="text-lg text-secondary dark:text-secondary-dark">
+    {tagline}
+  </p>
+</header>

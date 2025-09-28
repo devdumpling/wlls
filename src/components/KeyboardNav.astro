@@ -1,0 +1,23 @@
+---
+// Keyboard navigation component
+---
+
+<script>
+  document.addEventListener('keydown', (e) => {
+    // Ignore if user is typing
+    if (e.target instanceof HTMLInputElement || 
+        e.target instanceof HTMLTextAreaElement) return;
+    
+    switch(e.key) {
+      case '0':
+        window.location.href = '/';
+        break;
+      case '1':
+        window.location.href = '/about';
+        break;
+      case '2':
+        window.location.href = '/archive';
+        break;
+    }
+  });
+</script>
