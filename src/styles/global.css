@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
-/* fonts */
-
+/* Fonts */
 @font-face {
 	font-family: "Atkinson";
 	src: url("/fonts/atkinson-regular.woff2") format("woff2");
@@ -19,220 +18,119 @@
 }
 
 @theme {
-	/* Colors - Rosé Pine palette */
-	--color-paper: oklch(0.97 0.02 50); /* Light background - Rosé Pine Dawn base #faf4ed */
-	--color-paper-dark: oklch(0.23 0.04 290); /* Dark background - Rosé Pine Moon base #232136 */
-	--color-ink: oklch(0.45 0.08 295); /* Light text - Rosé Pine Dawn text #575279 */
-	--color-ink-dark: oklch(0.9 0.03 295); /* Dark text - Rosé Pine Moon text #e0def4 */
-	--color-sage-50: oklch(0.97 0.02 190);
-	--color-sage-100: oklch(0.95 0.04 190);
-	--color-sage-200: oklch(0.9 0.06 190);
-	--color-sage-300: oklch(0.85 0.08 190);
-	--color-sage-400: oklch(0.75 0.1 190);
-	--color-sage-500: oklch(0.65 0.12 190); /* Primary - Pine inspired */
-	--color-sage-600: oklch(0.55 0.14 190);
-	--color-sage-700: oklch(0.45 0.12 190);
-	--color-sage-800: oklch(0.35 0.1 190);
-	--color-sage-900: oklch(0.25 0.08 190);
-
-	--color-bark-50: oklch(0.95 0.02 295);
-	--color-bark-100: oklch(0.9 0.03 295);
-	--color-bark-200: oklch(0.85 0.04 295);
-	--color-bark-300: oklch(0.75 0.05 295);
-	--color-bark-400: oklch(0.65 0.06 295);
-	--color-bark-500: oklch(0.55 0.07 295); /* Secondary - Subtle inspired */
-	--color-bark-600: oklch(0.45 0.06 295);
-	--color-bark-700: oklch(0.35 0.05 295);
-	--color-bark-800: oklch(0.25 0.04 295);
-	--color-bark-900: oklch(0.15 0.03 295);
-
-	--color-flower-50: oklch(0.95 0.03 10);
-	--color-flower-100: oklch(0.9 0.06 10);
-	--color-flower-200: oklch(0.85 0.09 10);
-	--color-flower-300: oklch(0.8 0.12 10);
-	--color-flower-400: oklch(0.75 0.15 10);
-	--color-flower-500: oklch(0.7 0.18 10); /* Accent - Rose inspired */
-	--color-flower-600: oklch(0.6 0.16 10);
-	--color-flower-700: oklch(0.5 0.14 10);
-	--color-flower-800: oklch(0.4 0.12 10);
-	--color-flower-900: oklch(0.3 0.1 10);
-
-	/* Rosé Pine specific colors */
-	--color-surface: oklch(0.98 0.01 50); /* Dawn surface #fffaf3 */
-	--color-surface-dark: oklch(0.26 0.04 290); /* Moon surface #2a273f */
-	--color-overlay: oklch(0.93 0.02 50); /* Dawn overlay #f2e9e1 */
-	--color-overlay-dark: oklch(0.31 0.04 290); /* Moon overlay #393552 */
-	--color-muted: oklch(0.68 0.04 295); /* Dawn muted #9893a5 */
-	--color-muted-dark: oklch(0.52 0.05 295); /* Moon muted #6e6a86 */
-	--color-subtle: oklch(0.58 0.06 295); /* Dawn subtle #797593 */
-	--color-subtle-dark: oklch(0.65 0.05 295); /* Moon subtle #908caa */
-
-	/* Rosé Pine accent colors */
-	--color-love: oklch(0.57 0.12 10); /* Dawn love #b4637a */
-	--color-love-dark: oklch(0.65 0.22 10); /* Moon love #eb6f92 */
-	--color-gold: oklch(0.72 0.14 70); /* Dawn gold #ea9d34 */
-	--color-gold-dark: oklch(0.8 0.12 70); /* Moon gold #f6c177 */
-	--color-rose: oklch(0.7 0.12 20); /* Dawn rose #d7827e */
-	--color-rose-dark: oklch(0.72 0.14 20); /* Moon rose #ea9a97 */
-	--color-pine: oklch(0.45 0.12 220); /* Dawn pine #286983 */
-	--color-pine-dark: oklch(0.62 0.14 220); /* Moon pine #3e8fb0 */
-	--color-foam: oklch(0.65 0.08 200); /* Dawn foam #56949f */
-	--color-foam-dark: oklch(0.82 0.1 200); /* Moon foam #9ccfd8 */
-	--color-iris: oklch(0.64 0.1 295); /* Dawn iris #907aa9 */
-	--color-iris-dark: oklch(0.78 0.12 295); /* Moon iris #c4a7e7 */
-
-	/* Typography scale - Perfect fifth (1.5) with 17px base */
-	--text-xs: 0.472rem; /* ~8px */
-	--text-sm: 0.708rem; /* ~11px */
-	--text-base: 1.062rem; /* 17px */
-	--text-lg: 1.594rem; /* ~26px */
-	--text-xl: 2.391rem; /* ~38px */
-	--text-2xl: 3.586rem; /* ~57px */
-	--text-3xl: 5.379rem; /* ~86px */
-
-	/* Spacing scale - Golden ratio */
-	--spacing-phi-1: 0.382rem; /* ~6px */
-	--spacing-phi-2: 0.618rem; /* ~10px */
-	--spacing-phi-3: 1rem; /* 16px */
-	--spacing-phi-4: 1.618rem; /* ~26px */
-	--spacing-phi-5: 2.618rem; /* ~42px */
-	--spacing-phi-6: 4.236rem; /* ~68px */
-	--spacing-phi-7: 6.854rem; /* ~110px */
-	--spacing-phi-8: 11.09rem; /* ~177px */
-
+	/* Three color system - warm and minimal */
+	--color-primary: #1a1918;        /* Dark brown - main text */
+	--color-secondary: #6b6560;      /* Warm gray - secondary text */
+	--color-accent: #b85c3f;         /* Terracotta - links, highlights */
+	
+	/* Backgrounds */
+	--color-bg: #fdfcfb;              /* Off-white with warmth */
+	--color-surface: #f9f7f5;         /* Slightly darker for cards */
+	
+	/* Dark mode colors */
+	--color-primary-dark: #f5f2ef;   /* Cream text */
+	--color-secondary-dark: #a39b93; /* Lighter gray */
+	--color-accent-dark: #e08569;    /* Lighter terracotta */
+	--color-bg-dark: #1a1918;        /* Dark background */
+	--color-surface-dark: #252322;   /* Slightly lighter surface */
+	
+	/* Typography - clean, readable scale */
+	--text-xs: 0.75rem;     /* 12px */
+	--text-sm: 0.875rem;    /* 14px */
+	--text-base: 1rem;      /* 16px */
+	--text-lg: 1.125rem;    /* 18px */
+	--text-xl: 1.25rem;     /* 20px */
+	--text-2xl: 1.5rem;     /* 24px */
+	--text-3xl: 2rem;       /* 32px */
+	--text-4xl: 2.5rem;     /* 40px */
+	
+	/* Spacing - simple, consistent */
+	--spacing-1: 0.25rem;   /* 4px */
+	--spacing-2: 0.5rem;    /* 8px */
+	--spacing-3: 0.75rem;   /* 12px */
+	--spacing-4: 1rem;      /* 16px */
+	--spacing-5: 1.25rem;   /* 20px */
+	--spacing-6: 1.5rem;    /* 24px */
+	--spacing-8: 2rem;      /* 32px */
+	--spacing-10: 2.5rem;   /* 40px */
+	--spacing-12: 3rem;     /* 48px */
+	--spacing-16: 4rem;     /* 64px */
+	--spacing-20: 5rem;     /* 80px */
+	
 	/* Font families */
-	--font-sans:
-		"Atkinson", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
-		Arial, sans-serif;
-	--font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
-	--font-mono:
-		"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
-
-	/* Breakpoints with golden ratio */
-	--breakpoint-xs: 23.607rem; /* ~378px */
-	--breakpoint-sm: 38.196rem; /* ~611px */
-	--breakpoint-md: 61.803rem; /* ~989px */
-	--breakpoint-lg: 100rem; /* 1600px */
-	--breakpoint-xl: 161.803rem; /* ~2589px */
+	--font-sans: "Atkinson", system-ui, -apple-system, sans-serif;
+	--font-serif: "Iowan Old Style", Palatino, Georgia, serif;
+	--font-mono: "SF Mono", Monaco, Consolas, monospace;
+	
+	/* Breakpoints */
+	--breakpoint-sm: 640px;
+	--breakpoint-md: 768px;
+	--breakpoint-lg: 1024px;
+	--breakpoint-xl: 1280px;
 }
 
-/* Common Border Styles */
-.border-section {
-	@apply border-sage-200 dark:border-sage-800;
+/* Base styles */
+body {
+	@apply bg-bg text-primary;
+	font-size: var(--text-base);
+	line-height: 1.6;
 }
 
-.border-section-t {
-	@apply border-t border-sage-200 dark:border-sage-800;
+/* Dark mode using Tailwind's class strategy */
+.dark body {
+	@apply bg-bg-dark text-primary-dark;
 }
 
-.border-section-l {
-	@apply border-l-4 border-sage-200 dark:border-sage-800;
+/* Prose styles for articles */
+.prose {
+	@apply max-w-prose mx-auto;
 }
 
-.border-accent {
-	@apply border-rose dark:border-rose-dark;
-}
-
-.border-accent-l {
-	@apply border-l-4 border-rose dark:border-rose-dark;
-}
-
-.border-interactive {
-	@apply border-overlay dark:border-overlay-dark;
-}
-
-/* Common Text Styles */
-.text-primary {
-	@apply text-ink dark:text-ink-dark;
-}
-
-.text-secondary {
-	@apply text-muted dark:text-muted-dark;
-}
-
-.text-tertiary {
-	@apply text-subtle dark:text-subtle-dark;
-}
-
-.text-accent {
-	@apply text-bark-500 dark:text-bark-400;
-}
-
-/* Common Section Styles */
-.section-highlight {
-	@apply border-l-4 border-sage-200 dark:border-sage-800 pl-phi-4 py-phi-3;
-}
-
-.section-accent {
-	@apply border-l-4 border-rose dark:border-rose-dark pl-phi-4 py-phi-3;
-}
-
-.footer-section {
-	@apply mt-phi-8 pt-phi-6 border-t border-sage-200 dark:border-sage-800;
-}
-
-/* Link Styles */
-.link-hover {
-	@apply hover:text-iris dark:hover:text-iris-dark transition-colors;
-}
-
-.link-external {
-	@apply hover:text-foam dark:hover:text-foam-dark transition-colors;
-}
-
-/* Prose utility for article content */
 .prose p {
-	@apply mb-phi-4 text-base leading-relaxed text-ink dark:text-ink-dark text-pretty;
+	@apply mb-6 leading-relaxed;
+}
+
+.prose h1 {
+	@apply text-3xl md:text-4xl font-bold mb-8 mt-12;
 }
 
 .prose h2 {
-	@apply text-sage-800 dark:text-sage-500 text-xl sm:text-2xl font-light mb-phi-4 mt-phi-5;
+	@apply text-2xl md:text-3xl font-bold mb-6 mt-10;
 }
 
 .prose h3 {
-	@apply text-sage-800 dark:text-sage-500 text-lg sm:text-xl font-light mb-phi-4 mt-phi-5;
+	@apply text-xl md:text-2xl font-bold mb-4 mt-8;
 }
 
-.prose ol,
-.prose ul {
-	@apply my-phi-4 pl-phi-4 text-ink dark:text-ink-dark;
+.prose a {
+	@apply text-accent dark:text-accent-dark underline underline-offset-2 hover:no-underline transition-all;
+}
+
+.prose blockquote {
+	@apply border-l-4 border-secondary dark:border-secondary-dark pl-6 my-8 italic text-secondary dark:text-secondary-dark;
+}
+
+.prose code {
+	@apply bg-surface dark:bg-surface-dark px-1 py-0.5 rounded text-sm font-mono;
+}
+
+.prose pre {
+	@apply bg-surface dark:bg-surface-dark p-6 rounded-lg overflow-x-auto my-8;
+}
+
+.prose pre code {
+	@apply bg-transparent p-0;
+}
+
+.prose ul,
+.prose ol {
+	@apply my-6 pl-6;
 }
 
 .prose li {
-	@apply mb-phi-2 leading-relaxed;
+	@apply mb-2;
 }
 
-/* Dark mode color overrides */
-@media (prefers-color-scheme: dark) {
-	:root {
-		/* Base colors */
-		--color-paper: var(--color-paper-dark);
-		--color-surface: var(--color-surface-dark);
-		--color-overlay: var(--color-overlay-dark);
-		--color-ink: var(--color-ink-dark);
-		--color-muted: var(--color-muted-dark);
-		--color-subtle: var(--color-subtle-dark);
-
-		/* Update accent scales for dark mode */
-		--color-sage-400: var(--color-foam-dark);
-		--color-sage-500: var(--color-pine-dark);
-		--color-sage-600: var(--color-pine-dark);
-
-		--color-bark-400: var(--color-subtle-dark);
-		--color-bark-500: var(--color-muted-dark);
-		--color-bark-600: var(--color-muted-dark);
-
-		--color-flower-300: var(--color-rose-dark);
-		--color-flower-400: var(--color-rose-dark);
-		--color-flower-500: var(--color-love-dark);
-		--color-flower-600: var(--color-love-dark);
-
-		/* Accent colors */
-		--color-love: var(--color-love-dark);
-		--color-gold: var(--color-gold-dark);
-		--color-rose: var(--color-rose-dark);
-		--color-pine: var(--color-pine-dark);
-		--color-foam: var(--color-foam-dark);
-		--color-iris: var(--color-iris-dark);
-	}
+.prose hr {
+	@apply my-12 border-secondary/20 dark:border-secondary-dark/20;
 }

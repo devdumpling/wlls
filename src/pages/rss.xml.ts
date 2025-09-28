@@ -16,14 +16,13 @@ export async function GET(context: APIContext) {
 			title: post.frontmatter.title,
 			pubDate: new Date(post.frontmatter.date),
 			description: post.frontmatter.description,
-			link: `/fruits/${slug}/`,
+			link: `/posts/${slug}/`,
 		};
 	});
 
 	return rss({
-		title: "Dev Wells - Digital Garden",
-		description:
-			"Thoughts, technical posts, and reflections from a digital garden",
+		title: "Devon Wells",
+		description: "Principal engineer, writer, dad.",
 		site: context.site || "https://wlls.dev",
 		items,
 		customData: `<language>en-us</language>`,

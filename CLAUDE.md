@@ -2,9 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Philosophy
 
-This is a personal website/portfolio built with Astro, featuring a unique organic/garden/minimalist/programming theme. The site uses MDX for content, Tailwind CSS v4 for styling, and is deployed to Cloudflare Workers.
+A minimal, elegant writing-focused blog that prioritizes the reading experience above all else. The site should feel like reading your own journal - warm, inviting, and personal. The design should be beautiful in its simplicity, making the author want to write and readers want to read.
+
+## Core Principles
+
+1. **Content First**: Every design decision should enhance the reading and writing experience
+2. **Minimal but Elegant**: Simple doesn't mean boring - thoughtful typography and subtle design touches
+3. **Warm and Inviting**: Like reading a personal journal, not a corporate blog
+4. **Clean Code**: No file over 150 lines (excluding content), components and helpers for everything
+5. **Future-Ready**: Built to support footnotes, asides, highlights, tooltips, comments, and a guestbook
 
 ## Development Commands
 
@@ -23,52 +31,58 @@ bun run test:coverage # Run tests with coverage report
 ### Technology Stack
 
 - **Framework**: Astro v5 (SSG/SSR)
-- **Styling**: Tailwind CSS v4 with custom design system
-- **Content**: MDX for blog posts
-- **Animations**: Anime.js for animations
+- **Styling**: Tailwind CSS v4 - utility-first, minimal custom CSS
+- **Content**: MDX for rich blog posts with components
+- **Typography**: Focus on readability and visual hierarchy
 - **Deployment**: Cloudflare Workers via Wrangler
 
 ### Project Structure
 
 - `/src/pages/` - Routes (Astro's file-based routing)
-  - `index.astro` - Homepage with interactive story timeline
-  - `fruits.astro` - Blog listing page
-  - `fruits/*.mdx` - Blog posts
-  - `seeds.astro` - Short posts section
-  - `roots.astro` - About/backstory page
-- `/src/components/` - Reusable Astro components
-- `/src/layouts/` - Page layouts (Layout.astro, ArticleLayout.astro)
-- `/src/styles/global.css` - Tailwind imports and custom CSS
-- `/src/utils/` - Utility functions
+  - `index.astro` - Homepage: name, bio, hero post, post directory
+  - `posts/*.mdx` - Blog posts in MDX format
+  - `about.astro` - About page (personal backstory)
+- `/src/components/` - Small, focused components (< 150 lines)
+- `/src/layouts/` - Minimal page layouts
+- `/src/utils/` - Helper functions and utilities
+- `/src/lib/` - Core logic and functionality
+- `/src/styles/global.css` - Tailwind imports only, minimal custom CSS
 
 ### Design System
 
-The site uses a custom design system defined in global.css:
-
-- **Colors**: OKLCH color space with rose pine moon theme
-- **Spacing**: Golden ratio based (`phi-*` classes: phi-1 through phi-9)
-- **Typography**: Perfect fifth scale, Atkinson font family
-- **Dark mode**: Supported via CSS custom properties
+- **Colors**: Warm, inviting palette - think journal/notebook aesthetic
+- **Typography**: Clean, readable fonts with excellent hierarchy
+- **Spacing**: Consistent, breathable layouts
+- **Interactions**: Subtle, delightful micro-interactions
+- **Dark mode**: Optional, but should maintain warmth
 
 ### Key Features
 
-- Keyboard navigation shortcuts (0-3 for quick nav)
-- Responsive design with custom breakpoints
-- MDX support for rich blog content
+- **Keyboard navigation**: Quick shortcuts for power users
+- **Recent post hero**: Highlight the latest writing prominently
+- **Post directory**: Clean, scannable list of all posts
+- **Future enhancements**: Footnotes, asides, highlights, tooltips, comments, guestbook
 
-## Important Notes
+## Development Guidelines
 
-1. **No test suite** - The project currently has no testing framework configured
-2. **Biome for linting/formatting** - Uses biome for linting/formatting
-3. **Minimal CI/CD** - No CI currently. CD happens by git triggers connected to cloudflare
-4. **Content Management** - Blog posts are MDX files in `/src/pages/fruits/`
-5. **Styling Approach** - Uses Tailwind CSS v4 with extensive custom utility classes defined in global.css
+1. **Keep it simple**: Start with foundations, add visual interest thoughtfully
+2. **No repetition**: Extract components, helpers, and utilities aggressively
+3. **Modularity**: Small files, single responsibilities
+4. **Performance**: Fast load times, minimal JavaScript
+5. **Accessibility**: Keyboard navigation, screen reader friendly
+6. **Fun**: This should be enjoyable to build and use
 
-When making changes:
+## Content Management
 
-- Maintain the organic/garden theme in naming and design
-- Write clean, modular code (subcomponents, lib folders, utilities, helpers, constants)
-- Use anime.js and/or tailwind for animations
-- Follow the existing golden ratio spacing system
-- Use OKLCH colors from the defined palettes
-- Ensure keyboard navigation remains functional
+- Blog posts are MDX files in `/src/pages/posts/`
+- Support for rich content: code blocks, images, embeds
+- Future: footnotes, asides, highlights, tooltips
+
+## Future Features
+
+- **Sync engine**: LiveStore, Zero, or TanStack DB for:
+  - Comments system
+  - Guestbook
+  - Real-time features
+- **Enhanced reading**: Footnotes, asides, highlights
+- **Writing tools**: Better MDX components, preview modes

@@ -1,22 +1,26 @@
 ---
 import Layout from "./Layout.astro";
-import "../styles/article.css";
 
 const { frontmatter } = Astro.props;
 ---
 
 <Layout title={frontmatter.title} description={frontmatter.description}>
-  <div class="min-h-screen px-phi-4 py-phi-6 max-w-[65ch] mx-auto">
-    <main>
-      <h1 class="text-2xl sm:text-3xl font-light tracking-tight mb-phi-4">
+  <article class="min-h-screen px-6 py-12 max-w-3xl mx-auto">
+    <header class="mb-12">
+      <h1 class="text-3xl md:text-4xl font-bold mb-4">
         {frontmatter.title}
       </h1>
-      <date class="text-sm text-bark-500">
+      <time class="text-sm text-secondary dark:text-secondary-dark">
         {frontmatter.date}
-      </date>
-      <article class="prose">
-        <slot />
-      </article>
-    </main>
-  </div>
+      </time>
+    </header>
+    <div class="prose max-w-none">
+      <slot />
+    </div>
+    <footer class="mt-16 pt-8 border-t border-secondary/10 dark:border-secondary-dark/10">
+      <a href="/" class="text-secondary dark:text-secondary-dark hover:text-accent dark:hover:text-accent-dark transition-colors">
+        ← Back home
+      </a>
+    </footer>
+  </article>
 </Layout>

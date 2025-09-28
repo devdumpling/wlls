@@ -4,7 +4,7 @@ import { validateBlogPosts } from "./blogSchema";
 // Centralized blog post fetching
 export function getAllBlogPosts(): BlogPost[] {
 	const rawPosts = Object.values(
-		import.meta.glob("/src/pages/fruits/*.mdx", { eager: true }),
+		import.meta.glob("/src/pages/posts/*.mdx", { eager: true }),
 	);
 	return validateBlogPosts(rawPosts);
 }
@@ -28,10 +28,16 @@ export function getLatestPost(): BlogPost | undefined {
 // Filter out draft posts
 export function getPublishedPosts(): BlogPost[] {
 	const posts = getAllBlogPosts();
-	return posts.filter((post) => post.frontmatter.date !== "Coming Soon");
+	return posts.filter((post) => !post.frontmatter.draft);
 }
 
 // Get post slug from file path
 export function getPostSlug(post: BlogPost): string | undefined {
 	return post.file?.split("/").pop()?.replace(".mdx", "");
+}
+
+// Get all posts sorted by date
+export function getAllPosts(): BlogPost[] {
+	const posts = getPublishedPosts();
+	return sortPostsByDate(posts);
 }
