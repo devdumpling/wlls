@@ -183,3 +183,10 @@ When making changes:
 - **Prioritize readability**: Code and prose should be easy to read
 - **Progressive enhancement**: JavaScript as enhancement, not requirement
 - **Document decisions**: Blog about architectural choices and tradeoffs
+
+## References
+
+Note we use Deno 2.5 and Fresh 2.0 (beta)
+
+Deno: https://docs.deno.com/runtime/
+Fresh example: https://docs.deno.com/examples/fresh_tutorial/
