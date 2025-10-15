@@ -4,50 +4,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a monorepo containing two parallel blog/portfolio projects with a minimal, readable, coding-oriented design:
-
-1. **apps/blog** - Production blog (Deno + Fresh, deployed to Deno Deploy)
-2. **apps/wlls** - 6-month experimental project (Deno + Vite + custom framework)
-
-Both projects prioritize readability and functionality, exploring different technical constraints and approaches.
+This is a Deno-based monorepo for building applications with SvelteKit. Currently focused on migrating an existing Astro blog to SvelteKit + Deno with a minimal, readable, coding-oriented design.
 
 ### Philosophy
 
-This project is fundamentally about exploration through constraints. By limiting myself to Deno + Vite and building a framework from scratch, I'm creating space to deeply experiment with emerging frontend paradigms. I'm particularly interested in resumability (picking up where SSR left off without re-executing), compiler-driven optimizations (shifting work from runtime to build time), and local-first architectures (while maintaining excellent first-load performance). The constraints aren't arbitrary limitations—they're guardrails that force creative problem-solving and deeper understanding. This is as much about the joy of building within boundaries as it is about discovering whether these new ideas can coexist: can we have resumability and simplicity? Can we be local-first without sacrificing performance? The six-month timeline and dual-blog approach let me explore these questions while maintaining a production site for documenting the journey.
+Build great apps with modern tools while maintaining simplicity. SvelteKit provides an excellent foundation for fast, interactive applications. Deno provides a clean runtime with built-in tooling. The monorepo structure allows building multiple apps and experiments while keeping shared tooling and libraries organized.
+
+Stay minimal—question dependencies, write clean code, and let the architecture emerge organically from actual needs.
 
 ## Development Commands
 
 ### Workspace (Root)
+
 ```bash
-deno task dev          # Run development server for apps/blog
-deno task dev:wlls     # Run development server for apps/wlls
-deno task dev:docs     # Run development server for apps/docs
+deno task dev:blog     # Run development server (proxies to main blog app)
 deno task test         # Run tests across all workspaces
 deno task lint         # Lint all workspaces
 deno task format       # Format all workspaces
 ```
 
-### apps/blog (Legacy - Fresh)
+### Individual Apps
+
 ```bash
-cd apps/blog
-deno task dev      # Start Fresh dev server
+cd apps/<app-name>
+deno task dev      # Start dev server for specific app
 deno task build    # Build for production
-deno task deploy   # Deploy to Deno Deploy
+deno task deploy   # Deploy to Deno Deploy (or other platform)
 ```
 
-### apps/wlls (New - Custom Framework)
-```bash
-cd apps/wlls
-deno task dev      # Start custom dev server
-deno task build    # Build for production
-deno task deploy   # Deploy (TBD)
-```
+### Platform & Libraries
 
-### packages/core (Framework Development)
 ```bash
-cd packages/core
-deno task test     # Run framework tests
-deno task build    # Build core packages
+cd platform/<tool-name>  # Build tools, scripts, configs
+cd libs/<lib-name>       # Shared libraries and packages
 ```
 
 ## Architecture
@@ -57,136 +46,107 @@ deno task build    # Build core packages
 ```
 /
 ├── deno.json              # Workspace configuration
+├── CLAUDE.md              # This file
 │
-├── apps/                  # Application layer
-│   ├── docs/              # Documentation site
-│   ├── blog/              # Legacy blog (Fresh migration)
-│   └── wlls/              # New custom framework blog
+├── apps/                  # Applications (created as needed)
+│   └── astro-temp/        # Existing Astro blog (temporary)
 │
-├── packages/              # Shared packages (TBD - created as needed)
-│   └── ...                # plat, core, feat packages emerge organically
+├── platform/              # Tooling, configs, scripts (created as needed)
+│   └── ...                # Build tools, deployment scripts, etc.
 │
-└── CLAUDE.md              # This file
+└── libs/                  # Shared libraries (created as needed)
+    └── ...                # Reusable packages, utilities, etc.
 ```
 
-**Package layer philosophy:**
-- Start simple, extract packages only when patterns emerge
-- Likely layers: plat (tools/scripts), core (framework), feat (UI/business logic)
-- Let architecture evolve based on actual needs
+**Architecture Philosophy:**
+
+- **Start minimal**: Create directories and packages only when actually needed
+- **Don't overindex**: Avoid premature abstraction or over-organization
+- **Organic growth**: Let patterns emerge naturally from actual requirements
+- **Clear boundaries**: apps/ for runnable applications, platform/ for tooling, libs/ for shared code
 
 ### Technology Stack
 
-#### current-blog (Production)
-- **Framework**: Fresh (Preact-based)
-- **Runtime**: Deno
-- **Styling**: Minimal CSS (TBD - likely vanilla CSS or lightweight solution)
-- **Content**: Markdown
-- **Deployment**: Deno Deploy
+**Core:**
 
-#### custom-blog (Experimental)
-- **Framework**: Custom (built from scratch)
-- **Runtime**: Deno
-- **Build Tool**: Vite
-- **Styling**: TBD (minimal approach)
-- **Content**: Markdown with progressive enhancement
-- **Deployment**: TBD
+- **Runtime**: Deno 2.5+
+- **Framework**: SvelteKit
+- **Deployment**: Deno Deploy (primary), Cloudflare (mabybe future option)
+- **Testing**: Deno built-in test runner
+- **Formatting/Linting**: Deno built-in tools
+- **Content**: Markdown-based
+- **Styling**: Minimal CSS (vanilla or lightweight approach)
 
 ### Design Philosophy
 
-Both blogs share these principles:
-- **Minimal**: Strip away unnecessary complexity
+- **Minimal**: Strip away unnecessary complexity, question every dependency
 - **Readable**: Typography and layout optimized for reading code and prose
 - **Coding-oriented**: Designed for technical writing with excellent code highlighting
-- **Fast**: Performance as a feature
+- **Fast**: Performance as a feature, leverage SvelteKit's SSR and routing
 - **Accessible**: Keyboard navigation, semantic HTML
+- **Modern**: Use SvelteKit's best practices and Svelte 5 features
 
-## 6-Month Project Roadmap
+## Migration Plan
 
-### Phase 1: Foundation (Weeks 1-4)
-**Goal**: Set up monorepo and migrate current blog to Fresh
+### Phase 1: Monorepo Setup
 
-- [ ] Create Deno workspace structure
-- [ ] Migrate existing Astro blog to minimal Fresh setup
-- [ ] Strip down to essential features only
-- [ ] Deploy current-blog to Deno Deploy
-- [ ] Write migration retrospective blog post
+**Goal**: Get basic Deno workspace configured
 
-**Blog posts**: "Migrating from Astro to Fresh", "Why Constraints Matter"
+- [x] Create workspace deno.json with apps/, platform/, libs/ structure
+- [x] Set up root-level tasks (dev, test, lint, format)
+- [x] Move existing Astro app to tmp
+- [x] Verify existing app still runs from new location
 
-### Phase 2: Framework Foundations (Weeks 5-12)
-**Goal**: Build core custom framework capabilities
+### Phase 2: SvelteKit Bootstrap
 
-- [ ] File-based routing system
-- [ ] Markdown parsing and rendering
-- [ ] Basic templating/component system
-- [ ] Static site generation
-- [ ] Development server with hot reload
-- [ ] Vite integration for client-side code
+**Goal**: Create new SvelteKit app with Deno
 
-**Blog posts**: "Building a Routing System from Scratch", "SSG Architecture Decisions", "Vite + Deno Integration"
+- [x] Initialize new SvelteKit app in apps/blog/
+- [x] Configure SvelteKit to work with Deno
+- [x] Set up basic routing structure
+- [ ] Add Deno Deploy configuration
+- [ ] Get hello world deployed to Deno Deploy
 
-### Phase 3: Progressive Enhancement (Weeks 13-16)
-**Goal**: Add client-side interactivity without losing simplicity
+### Phase 3: Content Migration
 
-- [ ] Island architecture / partial hydration
-- [ ] Client-side routing (optional)
-- [ ] Progressive enhancement patterns
-- [ ] Build optimization
+**Goal**: Move content and features from Astro to SvelteKit
 
-**Blog posts**: "Islands Architecture Explained", "Progressive Enhancement in Practice"
+- [ ] Set up markdown processing in SvelteKit
+- [ ] Migrate blog posts and content
+- [ ] Implement minimal styling (typography-focused)
+- [ ] Add code syntax highlighting
+- [ ] Migrate any other essential features
 
-### Phase 4: Developer Experience (Weeks 17-20)
-**Goal**: Make the framework pleasant to use
+### Phase 4: Polish & Launch
 
-- [ ] TypeScript support and type safety
-- [ ] Error handling and debugging
-- [ ] Plugin system (if needed)
-- [ ] Documentation
-- [ ] Testing utilities
-
-**Blog posts**: "DX Matters: Building Developer Tools", "Testing Custom Frameworks"
-
-### Phase 5: Content Migration (Weeks 21-22)
-**Goal**: Move content from current-blog to custom-blog
-
-- [ ] Migrate all blog posts
-- [ ] Ensure feature parity
-- [ ] Performance comparison
-- [ ] Deploy custom-blog
-
-**Blog posts**: "6 Months of Custom Framework Development: Retrospective"
-
-### Phase 6: Refinement (Weeks 23-26)
-**Goal**: Polish and long-term maintenance planning
+**Goal**: Make it production-ready
 
 - [ ] Performance optimization
-- [ ] Accessibility audit
-- [ ] Code cleanup and documentation
-- [ ] Decide on framework's future (OSS? Personal use only?)
-- [ ] Sunset current-blog or keep both
-
-**Blog posts**: "Lessons Learned Building a Framework", "The Value of Constraints"
+- [ ] Accessibility checks
+- [ ] SEO metadata
+- [ ] Deploy to production
+- [ ] Archive or remove apps/astro-temp/
 
 ## Important Notes
 
-1. **Dual blogs**: current-blog is for production use while custom-blog is being built
-2. **Blog the journey**: Write about the process in current-blog as you build custom-blog
-3. **Constraints are features**: Deno + Vite only, no external frameworks
-4. **Testing**: Both projects should have tests (Deno's built-in test runner)
-5. **Minimal styling**: Focus on typography and readability, avoid heavy CSS frameworks
-6. **Content format**: Markdown for both blogs (potential for MDX later in custom-blog)
+1. **Migration approach**: Keep Astro app temporarily in apps/astro-temp/ while building SvelteKit version
+2. **Minimal dependencies**: Question every package addition, lean on Deno and SvelteKit built-ins
+3. **Testing**: Use Deno's built-in test runner for all tests
+4. **Minimal styling**: Focus on typography and readability, avoid heavy CSS frameworks
+5. **Content format**: Markdown-based content with good code highlighting
+6. **Monorepo hygiene**: Only create platform/ and libs/ directories when actually needed
 
 When making changes:
 
-- **Minimize dependencies**: Question every package addition
 - **Write clean code**: Modular, well-tested, documented
 - **Prioritize readability**: Code and prose should be easy to read
 - **Progressive enhancement**: JavaScript as enhancement, not requirement
-- **Document decisions**: Blog about architectural choices and tradeoffs
+- **Question abstractions**: Don't create shared packages until patterns emerge
+- **Use modern features**: Leverage Svelte 5 runes and SvelteKit best practices
 
 ## References
 
-Note we use Deno 2.5 and Fresh 2.0 (beta)
-
-Deno: https://docs.deno.com/runtime/
-Fresh example: https://docs.deno.com/examples/fresh_tutorial/
+- Deno: https://docs.deno.com/runtime/
+- SvelteKit: https://kit.svelte.dev/docs
+- Svelte: https://svelte.dev/docs
+- Deno Deploy: https://docs.deno.com/deploy/manual/

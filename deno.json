@@ -1,50 +1,47 @@
 {
-	"$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
-	"workspace": ["./apps/*", "./packages/*"],
-	"tasks": {
-		"dev:blog": "deno task --cwd apps/blog dev",
-		"dev:wlls": "deno task --cwd apps/wlls dev",
-		"dev:docs": "deno task --cwd apps/docs dev"
-	},
-	"lint": {
-		"include": ["apps/", "packages/"],
-		"exclude": [
-			"**/node_modules",
-			"**/.astro",
-			"**/dist",
-			"**/.wrangler",
-			"**/build",
-			"**/_fresh"
-		],
-		"rules": {
-			"tags": ["recommended"],
-			"include": ["ban-untagged-todo"],
-			"exclude": ["no-unused-vars"]
-		}
-	},
-	"fmt": {
-		"include": ["apps/", "packages/"],
-		"exclude": [
-			"**/node_modules",
-			"**/.astro",
-			"**/dist",
-			"**/.wrangler",
-			"**/build",
-			"**/_fresh"
-		],
-		"lineWidth": 100,
-		"indentWidth": 2,
-		"semiColons": true,
-		"singleQuote": false,
-		"proseWrap": "preserve"
-	},
-	"imports": {},
-	"exclude": [
-		"**/node_modules",
-		"**/.astro",
-		"**/dist",
-		"**/.wrangler",
-		"**/build",
-		"**/_fresh"
-	]
+  "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
+  "nodeModulesDir": "auto",
+  "workspace": ["./apps/*", "./platform/*", "./libs/*"],
+  "tasks": {
+    "dev:blog": "deno task --filter 'blog' dev",
+    "build:blog": "deno task --filter 'blog' build",
+    "test": "deno test",
+    "lint": "deno lint",
+    "format": "deno fmt"
+  },
+  "lint": {
+    "include": ["apps/", "platform/", "libs/"],
+    "exclude": [
+      "**/node_modules",
+      "**/dist",
+      "**/build",
+      "**/.svelte-kit",
+      "**/.deno-deploy",
+      "**/.vite"
+    ],
+    "rules": {
+      "tags": ["recommended"],
+      "include": ["ban-untagged-todo"],
+      "exclude": ["no-unused-vars"]
+    }
+  },
+  "fmt": {
+    "include": ["apps/", "platform/", "libs/"],
+    "exclude": ["**/node_modules", "**/dist", "**/build", "**/.deno-deploy"],
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
+    "proseWrap": "preserve"
+  },
+  "unstable": ["fmt-component"],
+  "imports": {},
+  "exclude": [
+    "**/node_modules",
+    "**/dist",
+    "**/build",
+    "**/.svelte-kit",
+    "**/.deno-deploy",
+    "**/.vite"
+  ]
 }
