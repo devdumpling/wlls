@@ -1,0 +1,30 @@
+{
+  "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
+  "name": "@wlls/blog",
+  "version": "0.0.1",
+  "exports": {
+    ".": "./src/app.d.ts"
+  },
+  "tasks": {
+    "dev": "deno run -A npm:vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "prepare": "svelte-kit sync || echo ''",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test:e2e": "playwright test",
+    "test": "npm run test:e2e"
+  },
+  "imports": {
+    "@playwright/test": "npm:@playwright/test@^1.55.1",
+    "@sveltejs/adapter-auto": "npm:@sveltejs/adapter-auto@^6.1.0",
+    "@sveltejs/kit": "npm:@sveltejs/kit@^2.43.2",
+    "@sveltejs/vite-plugin-svelte": "npm:@sveltejs/vite-plugin-svelte@^6.2.0",
+    "mdsvex": "npm:mdsvex@^0.12.6",
+    "svelte": "npm:svelte@^5.39.5",
+    "svelte-check": "npm:svelte-check@^4.3.2",
+    "typescript": "npm:typescript@^5.9.2",
+    "vite": "npm:vite@^7.1.7",
+    "vite-plugin-devtools-json": "npm:vite-plugin-devtools-json@^1.0.0"
+  }
+}

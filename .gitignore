@@ -19,6 +19,7 @@ bun-debug.log*
 
 # framework specific
 .astro
+.vite
 
 # testing
 coverage
