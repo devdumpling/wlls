@@ -4,6 +4,7 @@
   "workspace": ["./apps/*", "./platform/*", "./libs/*"],
   "tasks": {
     "dev:blog": "deno task --filter 'blog' dev",
+    "build:blog": "deno task --filter 'blog' build",
     "test": "deno test",
     "lint": "deno lint",
     "format": "deno fmt"
