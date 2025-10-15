@@ -723,6 +723,9 @@
     }
   },
   "workspace": {
+    "dependencies": [
+      "npm:@deno/svelte-adapter@0.1"
+    ],
     "members": {
       "apps/blog": {
         "dependencies": [
