@@ -35,7 +35,9 @@
     "proseWrap": "preserve"
   },
   "unstable": ["fmt-component"],
-  "imports": {},
+  "imports": {
+    "@deno/svelte-adapter": "npm:@deno/svelte-adapter@^0.1.0"
+  },
   "exclude": [
     "**/node_modules",
     "**/dist",
