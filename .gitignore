@@ -20,6 +20,7 @@ bun-debug.log*
 # framework specific
 .astro
 .vite
+.deno-deploy
 
 # testing
 coverage
