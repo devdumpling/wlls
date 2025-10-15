@@ -15,14 +15,16 @@ Stay minimal—question dependencies, write clean code, and let the architecture
 ## Development Commands
 
 ### Workspace (Root)
+
 ```bash
-deno task dev          # Run development server (proxies to main app)
+deno task dev:blog     # Run development server (proxies to main blog app)
 deno task test         # Run tests across all workspaces
 deno task lint         # Lint all workspaces
 deno task format       # Format all workspaces
 ```
 
 ### Individual Apps
+
 ```bash
 cd apps/<app-name>
 deno task dev      # Start dev server for specific app
@@ -31,6 +33,7 @@ deno task deploy   # Deploy to Deno Deploy (or other platform)
 ```
 
 ### Platform & Libraries
+
 ```bash
 cd platform/<tool-name>  # Build tools, scripts, configs
 cd libs/<lib-name>       # Shared libraries and packages
@@ -56,6 +59,7 @@ cd libs/<lib-name>       # Shared libraries and packages
 ```
 
 **Architecture Philosophy:**
+
 - **Start minimal**: Create directories and packages only when actually needed
 - **Don't overindex**: Avoid premature abstraction or over-organization
 - **Organic growth**: Let patterns emerge naturally from actual requirements
@@ -64,9 +68,10 @@ cd libs/<lib-name>       # Shared libraries and packages
 ### Technology Stack
 
 **Core:**
+
 - **Runtime**: Deno 2.5+
 - **Framework**: SvelteKit
-- **Deployment**: Deno Deploy (primary), Cloudflare (future option)
+- **Deployment**: Deno Deploy (primary), Cloudflare (mabybe future option)
 - **Testing**: Deno built-in test runner
 - **Formatting/Linting**: Deno built-in tools
 - **Content**: Markdown-based
@@ -84,14 +89,16 @@ cd libs/<lib-name>       # Shared libraries and packages
 ## Migration Plan
 
 ### Phase 1: Monorepo Setup
+
 **Goal**: Get basic Deno workspace configured
 
-- [ ] Create workspace deno.json with apps/, platform/, libs/ structure
-- [ ] Set up root-level tasks (dev, test, lint, format)
-- [ ] Move existing Astro app to apps/astro-temp/
-- [ ] Verify existing app still runs from new location
+- [x] Create workspace deno.json with apps/, platform/, libs/ structure
+- [x] Set up root-level tasks (dev, test, lint, format)
+- [x] Move existing Astro app to tmp
+- [x] Verify existing app still runs from new location
 
 ### Phase 2: SvelteKit Bootstrap
+
 **Goal**: Create new SvelteKit app with Deno
 
 - [ ] Initialize new SvelteKit app in apps/blog/
@@ -101,6 +108,7 @@ cd libs/<lib-name>       # Shared libraries and packages
 - [ ] Get hello world deployed to Deno Deploy
 
 ### Phase 3: Content Migration
+
 **Goal**: Move content and features from Astro to SvelteKit
 
 - [ ] Set up markdown processing in SvelteKit
@@ -110,6 +118,7 @@ cd libs/<lib-name>       # Shared libraries and packages
 - [ ] Migrate any other essential features
 
 ### Phase 4: Polish & Launch
+
 **Goal**: Make it production-ready
 
 - [ ] Performance optimization
