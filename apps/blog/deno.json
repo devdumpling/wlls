@@ -16,8 +16,8 @@
     "test": "npm run test:e2e"
   },
   "imports": {
+    "@deno/svelte-adapter": "npm:@deno/svelte-adapter@^0.1.0",
     "@playwright/test": "npm:@playwright/test@^1.55.1",
-    "@sveltejs/adapter-auto": "npm:@sveltejs/adapter-auto@^6.1.0",
     "@sveltejs/kit": "npm:@sveltejs/kit@^2.43.2",
     "@sveltejs/vite-plugin-svelte": "npm:@sveltejs/vite-plugin-svelte@^6.2.0",
     "mdsvex": "npm:mdsvex@^0.12.6",

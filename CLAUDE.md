@@ -101,9 +101,9 @@ cd libs/<lib-name>       # Shared libraries and packages
 
 **Goal**: Create new SvelteKit app with Deno
 
-- [ ] Initialize new SvelteKit app in apps/blog/
-- [ ] Configure SvelteKit to work with Deno
-- [ ] Set up basic routing structure
+- [x] Initialize new SvelteKit app in apps/blog/
+- [x] Configure SvelteKit to work with Deno
+- [x] Set up basic routing structure
 - [ ] Add Deno Deploy configuration
 - [ ] Get hello world deployed to Deno Deploy
 

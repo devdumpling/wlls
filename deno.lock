@@ -1,8 +1,8 @@
 {
   "version": "5",
   "specifiers": {
+    "npm:@deno/svelte-adapter@0.1": "0.1.0_@sveltejs+kit@2.46.5__@sveltejs+vite-plugin-svelte@6.2.1___svelte@5.39.12____acorn@8.15.0___vite@7.1.9____picomatch@4.0.3__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3__acorn@8.15.0_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3_svelte@5.39.12__acorn@8.15.0_vite@7.1.9__picomatch@4.0.3",
     "npm:@playwright/test@^1.55.1": "1.56.0",
-    "npm:@sveltejs/adapter-auto@^6.1.0": "6.1.1_@sveltejs+kit@2.46.5__@sveltejs+vite-plugin-svelte@6.2.1___svelte@5.39.12____acorn@8.15.0___vite@7.1.9____picomatch@4.0.3__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3__acorn@8.15.0_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3_svelte@5.39.12__acorn@8.15.0_vite@7.1.9__picomatch@4.0.3",
     "npm:@sveltejs/kit@^2.43.2": "2.46.5_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3_svelte@5.39.12__acorn@8.15.0_vite@7.1.9__picomatch@4.0.3_acorn@8.15.0",
     "npm:@sveltejs/vite-plugin-svelte@^6.2.0": "6.2.1_svelte@5.39.12__acorn@8.15.0_vite@7.1.9__picomatch@4.0.3",
     "npm:mdsvex@~0.12.6": "0.12.6_svelte@5.39.12__acorn@8.15.0",
@@ -11,10 +11,23 @@
     "npm:svelte@^5.39.5": "5.39.12_acorn@8.15.0",
     "npm:typescript@^5.9.2": "5.9.3",
     "npm:vite-plugin-devtools-json@1": "1.0.0_vite@7.1.9__picomatch@4.0.3",
-    "npm:vite@*": "7.1.9_picomatch@4.0.3",
+    "npm:vite@7.1.9": "7.1.9_picomatch@4.0.3",
     "npm:vite@^7.1.7": "7.1.9_picomatch@4.0.3"
   },
   "npm": {
+    "@deno/experimental-route-config@0.0.5": {
+      "integrity": "sha512-0PN4qij3sC3Qm8WbiOBGlOQz8WtB0AENGkzsTHOYyPenf40iW7OGFid8QT3L8lGApnz3t6ufET0c2XgagV8Jjw==",
+      "dependencies": [
+        "urlpattern-polyfill"
+      ]
+    },
+    "@deno/svelte-adapter@0.1.0_@sveltejs+kit@2.46.5__@sveltejs+vite-plugin-svelte@6.2.1___svelte@5.39.12____acorn@8.15.0___vite@7.1.9____picomatch@4.0.3__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3__acorn@8.15.0_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3_svelte@5.39.12__acorn@8.15.0_vite@7.1.9__picomatch@4.0.3": {
+      "integrity": "sha512-fx4Kj1lSx1rJvjtPr3cXO7qKveI1vUyGW8jX+clJHQEqEeIDnEcBW0FpMZEVORPlay2SGydQWSGbwh4j2iENzg==",
+      "dependencies": [
+        "@deno/experimental-route-config",
+        "@sveltejs/kit"
+      ]
+    },
     "@esbuild/aix-ppc64@0.25.10": {
       "integrity": "sha512-0NFWnA+7l41irNuaSVlLfgNT12caWJVLzp5eAVhZ0z1qpxbockccEt3s+149rE64VUI3Ml2zt8Nv5JVc4QXTsw==",
       "os": ["aix"],
@@ -299,12 +312,6 @@
       "integrity": "sha512-4awhxtMh4cx9blePWl10HRHj8Iivtqj+2QdDCSMDzxG+XKa9+VCNupQuCuvzEhYPzZSrX+0gC+0lHA/0fFKKQQ==",
       "dependencies": [
         "acorn"
-      ]
-    },
-    "@sveltejs/adapter-auto@6.1.1_@sveltejs+kit@2.46.5__@sveltejs+vite-plugin-svelte@6.2.1___svelte@5.39.12____acorn@8.15.0___vite@7.1.9____picomatch@4.0.3__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3__acorn@8.15.0_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3_svelte@5.39.12__acorn@8.15.0_vite@7.1.9__picomatch@4.0.3": {
-      "integrity": "sha512-cBNt4jgH4KuaNO5gRSB2CZKkGtz+OCZ8lPjRQGjhvVUD4akotnj2weUia6imLl2v07K3IgsQRyM36909miSwoQ==",
-      "dependencies": [
-        "@sveltejs/kit"
       ]
     },
     "@sveltejs/kit@2.46.5_@sveltejs+vite-plugin-svelte@6.2.1__svelte@5.39.12___acorn@8.15.0__vite@7.1.9___picomatch@4.0.3_svelte@5.39.12__acorn@8.15.0_vite@7.1.9__picomatch@4.0.3_acorn@8.15.0": {
@@ -666,6 +673,9 @@
         "unist-util-visit-parents"
       ]
     },
+    "urlpattern-polyfill@10.1.0": {
+      "integrity": "sha512-IGjKp/o0NL3Bso1PymYURCJxMPNAf/ILOpendP9f5B6e1rTJgdgiOvgfoT8VxCAdY+Wisb9uhGaJJf3yZ2V9nw=="
+    },
     "uuid@11.1.0": {
       "integrity": "sha512-0/A9rDy9P7cJ+8w1c9WD9V//9Wj15Ce2MPz8Ri6032usz+NfePxx5AcN3bN+r6ZL6jEo066/yNYB3tn4pQEx+A==",
       "bin": true
@@ -716,8 +726,8 @@
     "members": {
       "apps/blog": {
         "dependencies": [
+          "npm:@deno/svelte-adapter@0.1",
           "npm:@playwright/test@^1.55.1",
-          "npm:@sveltejs/adapter-auto@^6.1.0",
           "npm:@sveltejs/kit@^2.43.2",
           "npm:@sveltejs/vite-plugin-svelte@^6.2.0",
           "npm:mdsvex@~0.12.6",
