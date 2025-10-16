@@ -60,12 +60,17 @@ p {
 a {
 	color: #0066cc;
 	text-decoration: none;
-	border-bottom: 1px solid transparent;
+	border-bottom: 1px dotted transparent;
 	transition: border-color 0.2s;
 }
 
 a:hover {
 	border-bottom-color: currentColor;
+}
+
+/* External links use solid underline */
+a[href^="http"]:not([href*="wlls.dev"]) {
+	border-bottom-style: solid;
 }
 
 /* Lists */

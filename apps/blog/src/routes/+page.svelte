@@ -1,10 +1,10 @@
 <script>
-	import { resolve } from "$app/paths";
+import { resolve } from "$app/paths";
 </script>
 
 <main class="landing">
-	<h1>wlls.dev</h1>
-	<p class="intro">Software engineer, tinkerer, writer.</p>
+	<h1>Dev Wells</h1>
+	<p class="intro">Dad. Engineer. Writer.</p>
 
 	<nav class="links">
 		<a href={resolve("/blog")}>→ blog</a>
@@ -18,8 +18,6 @@
 	}
 
 	h1 {
-		font-size: 2rem;
-		font-weight: 600;
 		margin-bottom: 0.5rem;
 	}
 
@@ -37,11 +35,11 @@
 	.links a {
 		color: inherit;
 		text-decoration: none;
-		border-bottom: none;
+		border-bottom: 1px dotted transparent;
 	}
 
 	.links a:hover {
-		border-bottom: 1px solid currentColor;
+		border-bottom-color: currentColor;
 	}
 
 	@media (prefers-color-scheme: dark) {

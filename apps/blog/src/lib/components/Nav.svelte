@@ -40,7 +40,7 @@
 	a {
 		color: inherit;
 		text-decoration: none;
-		border-bottom: 1px solid transparent;
+		border-bottom: 1px dotted transparent;
 	}
 
 	a:hover {
