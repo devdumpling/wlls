@@ -20,10 +20,18 @@
 
 @theme {
 	/* Colors - Rosé Pine palette */
-	--color-paper: oklch(0.97 0.02 50); /* Light background - Rosé Pine Dawn base #faf4ed */
-	--color-paper-dark: oklch(0.23 0.04 290); /* Dark background - Rosé Pine Moon base #232136 */
-	--color-ink: oklch(0.45 0.08 295); /* Light text - Rosé Pine Dawn text #575279 */
-	--color-ink-dark: oklch(0.9 0.03 295); /* Dark text - Rosé Pine Moon text #e0def4 */
+	--color-paper: oklch(
+		0.97 0.02 50
+	); /* Light background - Rosé Pine Dawn base #faf4ed */
+	--color-paper-dark: oklch(
+		0.23 0.04 290
+	); /* Dark background - Rosé Pine Moon base #232136 */
+	--color-ink: oklch(
+		0.45 0.08 295
+	); /* Light text - Rosé Pine Dawn text #575279 */
+	--color-ink-dark: oklch(
+		0.9 0.03 295
+	); /* Dark text - Rosé Pine Moon text #e0def4 */
 	--color-sage-50: oklch(0.97 0.02 190);
 	--color-sage-100: oklch(0.95 0.04 190);
 	--color-sage-200: oklch(0.9 0.06 190);

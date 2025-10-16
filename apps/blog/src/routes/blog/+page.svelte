@@ -1,13 +1,13 @@
 <script lang="ts">
-  // This will be enhanced later to load posts dynamically
-  const posts = [
-    {
-      slug: 'hello-world',
-      title: 'Hello World',
-      date: '2025-10-15',
-      description: 'Testing mdsvex with SvelteKit'
-    }
-  ];
+// This will be enhanced later to load posts dynamically
+const posts = [
+	{
+		slug: "hello-world",
+		title: "Hello World",
+		date: "2025-10-15",
+		description: "Testing mdsvex with SvelteKit",
+	},
+];
 </script>
 
 <h1>Blog</h1>

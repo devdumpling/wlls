@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { z } from "zod";
 import {
 	type BlogPost,
 	type BlogPostFrontmatter,
@@ -318,7 +317,7 @@ describe("blogSchema", () => {
 			const largePosts = Array.from({ length: 1000 }, (_, i) => ({
 				frontmatter: {
 					title: `Post ${i}`,
-					date: `2024-01-${String(i % 28 + 1).padStart(2, "0")}`,
+					date: `2024-01-${String((i % 28) + 1).padStart(2, "0")}`,
 					description: `Description ${i}`,
 				},
 			}));

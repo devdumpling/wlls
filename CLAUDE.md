@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Deno-based monorepo for building applications with SvelteKit. Currently focused on migrating an existing Astro blog to SvelteKit + Deno with a minimal, readable, coding-oriented design.
+This is a Bun-based monorepo for building applications with SvelteKit. Currently focused on migrating an existing Astro blog to SvelteKit + Bun with a minimal, readable, coding-oriented design.
 
 ### Philosophy
 
-Build great apps with modern tools while maintaining simplicity. SvelteKit provides an excellent foundation for fast, interactive applications. Deno provides a clean runtime with built-in tooling. The monorepo structure allows building multiple apps and experiments while keeping shared tooling and libraries organized.
+Build great apps with modern tools while maintaining simplicity. SvelteKit provides an excellent foundation for fast, interactive applications. Bun provides a fast runtime with excellent tooling and workspace support. The monorepo structure allows building multiple apps and experiments while keeping shared tooling and libraries organized.
 
 Stay minimal—question dependencies, write clean code, and let the architecture emerge organically from actual needs.
 
@@ -17,19 +17,20 @@ Stay minimal—question dependencies, write clean code, and let the architecture
 ### Workspace (Root)
 
 ```bash
-deno task dev:blog     # Run development server (proxies to main blog app)
-deno task test         # Run tests across all workspaces
-deno task lint         # Lint all workspaces
-deno task format       # Format all workspaces
+bun dev:blog        # Run development server (proxies to main blog app)
+bun test            # Run tests across all workspaces
+bun lint            # Lint all workspaces with Biome
+bun format          # Format all workspaces with Biome
+bun check           # Run both lint and format checks with Biome
 ```
 
 ### Individual Apps
 
 ```bash
 cd apps/<app-name>
-deno task dev      # Start dev server for specific app
-deno task build    # Build for production
-deno task deploy   # Deploy to Deno Deploy (or other platform)
+bun dev             # Start dev server for specific app
+bun build           # Build for production
+bun deploy          # Deploy to Cloudflare Workers
 ```
 
 ### Platform & Libraries
@@ -45,11 +46,13 @@ cd libs/<lib-name>       # Shared libraries and packages
 
 ```
 /
-├── deno.json              # Workspace configuration
+├── package.json           # Workspace configuration
+├── bun.lockb              # Bun lockfile
 ├── CLAUDE.md              # This file
 │
 ├── apps/                  # Applications (created as needed)
-│   └── astro-temp/        # Existing Astro blog (temporary)
+│   ├── blog/              # SvelteKit blog
+│   └── wlls/              # Additional apps (created as needed)
 │
 ├── platform/              # Tooling, configs, scripts (created as needed)
 │   └── ...                # Build tools, deployment scripts, etc.
@@ -69,12 +72,12 @@ cd libs/<lib-name>       # Shared libraries and packages
 
 **Core:**
 
-- **Runtime**: Deno 2.5+
+- **Runtime**: Bun 1.3+
 - **Framework**: SvelteKit
-- **Deployment**: Deno Deploy (primary), Cloudflare (mabybe future option)
-- **Testing**: Deno built-in test runner
-- **Formatting/Linting**: Deno built-in tools
-- **Content**: Markdown-based
+- **Deployment**: Cloudflare Workers
+- **Testing**: Bun test runner
+- **Formatting/Linting**: Biome
+- **Content**: Markdown-based (mdsvex)
 - **Styling**: Minimal CSS (vanilla or lightweight approach)
 
 ### Design Philosophy
@@ -90,22 +93,22 @@ cd libs/<lib-name>       # Shared libraries and packages
 
 ### Phase 1: Monorepo Setup
 
-**Goal**: Get basic Deno workspace configured
+**Goal**: Get basic Bun workspace configured
 
-- [x] Create workspace deno.json with apps/, platform/, libs/ structure
-- [x] Set up root-level tasks (dev, test, lint, format)
-- [x] Move existing Astro app to tmp
-- [x] Verify existing app still runs from new location
+- [x] Create workspace package.json with apps/, platform/, libs/ structure
+- [x] Set up root-level scripts (dev, test, lint, format)
+- [x] Set up Biome for formatting and linting
+- [x] Install dependencies with Bun
 
 ### Phase 2: SvelteKit Bootstrap
 
-**Goal**: Create new SvelteKit app with Deno
+**Goal**: Create new SvelteKit app with Bun
 
 - [x] Initialize new SvelteKit app in apps/blog/
-- [x] Configure SvelteKit to work with Deno
+- [x] Configure SvelteKit with Cloudflare adapter
 - [x] Set up basic routing structure
-- [ ] Add Deno Deploy configuration
-- [ ] Get hello world deployed to Deno Deploy
+- [x] Add Cloudflare Workers configuration (wrangler.toml)
+- [ ] Get hello world deployed to Cloudflare Workers
 
 ### Phase 3: Content Migration
 
@@ -129,12 +132,13 @@ cd libs/<lib-name>       # Shared libraries and packages
 
 ## Important Notes
 
-1. **Migration approach**: Keep Astro app temporarily in apps/astro-temp/ while building SvelteKit version
-2. **Minimal dependencies**: Question every package addition, lean on Deno and SvelteKit built-ins
-3. **Testing**: Use Deno's built-in test runner for all tests
+1. **Migration approach**: Building SvelteKit version from scratch with Bun + Cloudflare Workers
+2. **Minimal dependencies**: Question every package addition, lean on Bun and SvelteKit built-ins
+3. **Testing**: Use Bun's built-in test runner for all tests
 4. **Minimal styling**: Focus on typography and readability, avoid heavy CSS frameworks
-5. **Content format**: Markdown-based content with good code highlighting
+5. **Content format**: Markdown-based content with mdsvex and good code highlighting
 6. **Monorepo hygiene**: Only create platform/ and libs/ directories when actually needed
+7. **Tooling**: Biome for formatting and linting - fast and unified
 
 When making changes:
 
@@ -146,7 +150,8 @@ When making changes:
 
 ## References
 
-- Deno: https://docs.deno.com/runtime/
+- Bun: https://bun.com/docs
 - SvelteKit: https://kit.svelte.dev/docs
 - Svelte: https://svelte.dev/docs
-- Deno Deploy: https://docs.deno.com/deploy/manual/
+- Cloudflare Workers: https://developers.cloudflare.com/workers/
+- Biome: https://biomejs.dev/
