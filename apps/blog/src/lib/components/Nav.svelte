@@ -52,7 +52,7 @@
 	}
 
 	.divider {
-		color: #999;
+		color: oklch(0.6 0 0);
 		user-select: none;
 	}
 
@@ -62,7 +62,7 @@
 
 	@media (prefers-color-scheme: dark) {
 		.divider {
-			color: #666;
+			color: oklch(0.5 0 0);
 		}
 	}
 </style>

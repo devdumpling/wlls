@@ -18,8 +18,8 @@ body {
 	line-height: 1.6;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
 		Arial, sans-serif;
-	color: #1a1a1a;
-	background: #ffffff;
+	color: oklch(0.2 0 0);
+	background: oklch(1 0 0);
 	max-width: 65ch;
 	margin: 0 auto;
 	padding: 2rem 1rem;
@@ -58,7 +58,7 @@ p {
 
 /* Links */
 a {
-	color: #0066cc;
+	color: oklch(0.5 0.15 250);
 	text-decoration: none;
 	border-bottom: 1px dotted transparent;
 	transition: border-color 0.2s;
@@ -68,9 +68,16 @@ a:hover {
 	border-bottom-color: currentColor;
 }
 
-/* External links use solid underline */
+/* External links use solid underline - always visible */
 a[href^="http"]:not([href*="wlls.dev"]) {
-	border-bottom-style: solid;
+	border-bottom: 1px solid currentColor;
+}
+
+/* Dark mode link color for better contrast */
+@media (prefers-color-scheme: dark) {
+	a {
+		color: oklch(0.75 0.12 180);
+	}
 }
 
 /* Lists */
@@ -88,9 +95,9 @@ li {
 blockquote {
 	margin: 1.5em 0;
 	padding: 0.5em 0 0.5em 1.5em;
-	border-left: 3px solid #ccc;
+	border-left: 3px solid oklch(0.8 0 0);
 	font-style: italic;
-	color: #555;
+	color: oklch(0.45 0 0);
 }
 
 blockquote p {
@@ -102,7 +109,7 @@ code {
 	font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
 		monospace;
 	font-size: 0.9em;
-	background: #f5f5f5;
+	background: oklch(0.96 0 0);
 	padding: 0.2em 0.4em;
 	border-radius: 3px;
 }
@@ -110,7 +117,7 @@ code {
 pre {
 	margin: 1.5em 0;
 	padding: 1em;
-	background: #f5f5f5;
+	background: oklch(0.96 0 0);
 	border-radius: 4px;
 	overflow-x: auto;
 	line-height: 1.5;
@@ -126,7 +133,7 @@ pre code {
 hr {
 	margin: 3em 0;
 	border: none;
-	border-top: 1px solid #e0e0e0;
+	border-top: 1px solid oklch(0.88 0 0);
 }
 
 /* Emphasis */
@@ -141,28 +148,24 @@ em {
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
 	body {
-		color: #e0e0e0;
-		background: #0a0a0a;
-	}
-
-	a {
-		color: #4d9fff;
+		color: oklch(0.88 0 0);
+		background: oklch(0.15 0.01 40);
 	}
 
 	blockquote {
-		color: #aaa;
-		border-left-color: #444;
+		color: oklch(0.65 0 0);
+		border-left-color: oklch(0.35 0 0);
 	}
 
 	code {
-		background: #1a1a1a;
+		background: oklch(0.1 0.01 40);
 	}
 
 	pre {
-		background: #1a1a1a;
+		background: oklch(0.1 0.01 40);
 	}
 
 	hr {
-		border-top-color: #333;
+		border-top-color: oklch(0.3 0 0);
 	}
 }

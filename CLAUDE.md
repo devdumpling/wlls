@@ -78,7 +78,7 @@ cd libs/<lib-name>       # Shared libraries and packages
 - **Testing**: Bun test runner
 - **Formatting/Linting**: Biome
 - **Content**: Markdown-based (mdsvex)
-- **Styling**: Minimal CSS (vanilla or lightweight approach)
+- **Styling**: Minimal CSS with oklch colors for perceptual uniformity
 
 ### Design Philosophy
 
@@ -139,6 +139,7 @@ cd libs/<lib-name>       # Shared libraries and packages
 5. **Content format**: Markdown-based content with mdsvex and good code highlighting
 6. **Monorepo hygiene**: Only create platform/ and libs/ directories when actually needed
 7. **Tooling**: Biome for formatting and linting - fast and unified
+8. **Colors**: Use oklch color space throughout for perceptual uniformity and better contrast
 
 When making changes:
 

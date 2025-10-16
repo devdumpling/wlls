@@ -22,7 +22,7 @@ import { resolve } from "$app/paths";
 	}
 
 	.intro {
-		color: #666;
+		color: oklch(0.5 0 0);
 		margin-bottom: 2rem;
 	}
 
@@ -44,7 +44,7 @@ import { resolve } from "$app/paths";
 
 	@media (prefers-color-scheme: dark) {
 		.intro {
-			color: #999;
+			color: oklch(0.65 0 0);
 		}
 	}
 </style>

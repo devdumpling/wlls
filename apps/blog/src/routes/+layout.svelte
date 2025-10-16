@@ -1,13 +1,16 @@
 <script lang="ts">
-import favicon from "$lib/assets/favicon.svg";
 import Nav from "$lib/components/Nav.svelte";
 import "../app.css";
 
-let { children } = $props();
+let { children, data } = $props();
 </script>
 
 <svelte:head>
-  <link rel="icon" href={favicon} />
+	<link rel="icon" href="/favicon.svg" />
+	<title>{data?.title || "wlls.dev"}</title>
+	{#if data?.description}
+		<meta name="description" content={data.description} />
+	{/if}
 </svelte:head>
 
 <Nav />
