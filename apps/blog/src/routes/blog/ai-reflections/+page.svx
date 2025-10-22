@@ -1,6 +1,6 @@
 ---
 title: "AI Reflections: Skepticism"
-topic: "Writing"
+topic: "Engineering"
 date: "Jan 14 2025"
 description: "Part 1: On the creative process, craftsmanship, and finding balance with AI tools."
 ---

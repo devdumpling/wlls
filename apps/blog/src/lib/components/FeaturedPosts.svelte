@@ -6,7 +6,7 @@ let { posts }: { posts: Post[] } = $props();
 </script>
 
 <section class="featured-posts">
-	<h2>Recent Thoughts</h2>
+	<h2>Words</h2>
 
 	<div class="posts-list">
 		{#each posts as post (post.slug)}
