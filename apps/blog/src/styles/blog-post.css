@@ -65,7 +65,8 @@ article.blog-post blockquote p {
 }
 
 article.blog-post code {
-	font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
+	font-family:
+		"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
 		monospace;
 	font-size: 0.875em;
 	background: color-mix(in oklch, var(--foreground) 5%, transparent);

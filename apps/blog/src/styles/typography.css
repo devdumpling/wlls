@@ -79,7 +79,8 @@ blockquote p {
 
 /* Code */
 code {
-	font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
+	font-family:
+		"SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
 		monospace;
 	font-size: 0.9em;
 	background: oklch(0.96 0 0);

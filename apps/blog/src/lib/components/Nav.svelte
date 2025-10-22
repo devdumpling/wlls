@@ -1,18 +1,18 @@
 <script>
-	import { page } from "$app/state";
-	import { resolve } from "$app/paths";
+import { page } from "$app/state";
+import { resolve } from "$app/paths";
 
-	// Build breadcrumb segments from current path
-	const breadcrumbs = $derived.by(() => {
-		const pathname = page.url.pathname;
-		if (pathname === "/") return [];
+// Build breadcrumb segments from current path
+const breadcrumbs = $derived.by(() => {
+	const pathname = page.url.pathname;
+	if (pathname === "/") return [];
 
-		const segments = pathname.split("/").filter(Boolean);
-		return segments.map((segment, index) => {
-			const path = "/" + segments.slice(0, index + 1).join("/");
-			return { label: segment, path };
-		});
+	const segments = pathname.split("/").filter(Boolean);
+	return segments.map((segment, index) => {
+		const path = "/" + segments.slice(0, index + 1).join("/");
+		return { label: segment, path };
 	});
+});
 </script>
 
 <nav>

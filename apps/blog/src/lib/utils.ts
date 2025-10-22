@@ -4,17 +4,20 @@
  * @param format - The format style: 'full' (Month Day, Year) or 'short' (Month Year)
  * @returns Formatted date string
  */
-export function formatDate(dateString: string, format: 'full' | 'short' = 'full'): string {
+export function formatDate(
+	dateString: string,
+	format: "full" | "short" = "full",
+): string {
 	const date = new Date(dateString);
 
-	if (format === 'short') {
-		return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+	if (format === "short") {
+		return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
 	}
 
-	return date.toLocaleDateString('en-US', {
-		year: 'numeric',
-		month: 'long',
-		day: 'numeric',
+	return date.toLocaleDateString("en-US", {
+		year: "numeric",
+		month: "long",
+		day: "numeric",
 	});
 }
 
@@ -24,7 +27,10 @@ export function formatDate(dateString: string, format: 'full' | 'short' = 'full'
  * @param wordsPerMinute - Average reading speed (default: 200)
  * @returns Formatted reading time string (e.g., "5 min read")
  */
-export function calculateReadTime(content: string, wordsPerMinute = 200): string {
+export function calculateReadTime(
+	content: string,
+	wordsPerMinute = 200,
+): string {
 	const words = content.trim().split(/\s+/).length;
 	const minutes = Math.ceil(words / wordsPerMinute);
 	return `${minutes} min read`;
@@ -38,7 +44,7 @@ export function calculateReadTime(content: string, wordsPerMinute = 200): string
  */
 export function throttle<T extends (...args: unknown[]) => void>(
 	fn: T,
-	delay: number
+	delay: number,
 ): (...args: Parameters<T>) => void {
 	let lastCall = 0;
 	let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -54,10 +60,13 @@ export function throttle<T extends (...args: unknown[]) => void>(
 			if (timeoutId) {
 				clearTimeout(timeoutId);
 			}
-			timeoutId = setTimeout(() => {
-				lastCall = Date.now();
-				fn(...args);
-			}, delay - (now - lastCall));
+			timeoutId = setTimeout(
+				() => {
+					lastCall = Date.now();
+					fn(...args);
+				},
+				delay - (now - lastCall),
+			);
 		}
 	};
 }

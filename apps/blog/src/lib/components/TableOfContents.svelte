@@ -1,65 +1,65 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
-	import type { TocItem } from "$lib/types";
-	import { throttle } from "$lib/utils";
+import { onMount } from "svelte";
+import type { TocItem } from "$lib/types";
+import { throttle } from "$lib/utils";
 
-	let { items }: { items: TocItem[] } = $props();
+let { items }: { items: TocItem[] } = $props();
 
-	let activeSection = $state('');
+let activeSection = $state("");
 
-	onMount(() => {
-		const handleScroll = () => {
-			// Find all h2 headings with IDs
-			const headings = document.querySelectorAll('h2[id]');
-			let current = '';
+onMount(() => {
+	const handleScroll = () => {
+		// Find all h2 headings with IDs
+		const headings = document.querySelectorAll("h2[id]");
+		let current = "";
 
-			// Find the heading that's currently visible at the top of the viewport
+		// Find the heading that's currently visible at the top of the viewport
+		headings.forEach((heading) => {
+			const rect = heading.getBoundingClientRect();
+			// Consider a heading active if it's within 100px of the top
+			if (rect.top <= 100 && rect.top >= -100) {
+				current = heading.id;
+			}
+		});
+
+		// If no heading is in the sweet spot, use the last one that's above the viewport
+		if (!current) {
 			headings.forEach((heading) => {
 				const rect = heading.getBoundingClientRect();
-				// Consider a heading active if it's within 100px of the top
-				if (rect.top <= 100 && rect.top >= -100) {
+				if (rect.top <= 100) {
 					current = heading.id;
 				}
 			});
-
-			// If no heading is in the sweet spot, use the last one that's above the viewport
-			if (!current) {
-				headings.forEach((heading) => {
-					const rect = heading.getBoundingClientRect();
-					if (rect.top <= 100) {
-						current = heading.id;
-					}
-				});
-			}
-
-			activeSection = current;
-		};
-
-		// Throttle scroll handler to run at most every 100ms
-		const throttledScroll = throttle(handleScroll, 100);
-
-		// Run once on mount
-		handleScroll();
-
-		window.addEventListener('scroll', throttledScroll, { passive: true });
-		return () => window.removeEventListener('scroll', throttledScroll);
-	});
-
-	// Smooth scroll to heading
-	function scrollToHeading(id: string, event: MouseEvent) {
-		event.preventDefault();
-		const element = document.getElementById(id);
-		if (element) {
-			const offset = 80; // Account for fixed nav
-			const elementPosition = element.getBoundingClientRect().top;
-			const offsetPosition = elementPosition + window.scrollY - offset;
-
-			window.scrollTo({
-				top: offsetPosition,
-				behavior: 'smooth'
-			});
 		}
+
+		activeSection = current;
+	};
+
+	// Throttle scroll handler to run at most every 100ms
+	const throttledScroll = throttle(handleScroll, 100);
+
+	// Run once on mount
+	handleScroll();
+
+	window.addEventListener("scroll", throttledScroll, { passive: true });
+	return () => window.removeEventListener("scroll", throttledScroll);
+});
+
+// Smooth scroll to heading
+function scrollToHeading(id: string, event: MouseEvent) {
+	event.preventDefault();
+	const element = document.getElementById(id);
+	if (element) {
+		const offset = 80; // Account for fixed nav
+		const elementPosition = element.getBoundingClientRect().top;
+		const offsetPosition = elementPosition + window.scrollY - offset;
+
+		window.scrollTo({
+			top: offsetPosition,
+			behavior: "smooth",
+		});
 	}
+}
 </script>
 
 {#if items.length > 0}

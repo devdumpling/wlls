@@ -1,6 +1,6 @@
 <script lang="ts" module>
-	import type { Metadata } from "$lib/types";
-	export type { Metadata };
+import type { Metadata } from "$lib/types";
+export type { Metadata };
 </script>
 
 <script lang="ts">

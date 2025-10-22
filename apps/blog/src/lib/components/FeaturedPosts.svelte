@@ -1,8 +1,8 @@
 <script lang="ts">
-	import type { Post } from "$lib/types";
-	import { formatDate } from "$lib/utils";
+import type { Post } from "$lib/types";
+import { formatDate } from "$lib/utils";
 
-	let { posts }: { posts: Post[] } = $props();
+let { posts }: { posts: Post[] } = $props();
 </script>
 
 <section class="featured-posts">

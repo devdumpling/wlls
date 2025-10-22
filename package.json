@@ -1,24 +1,24 @@
 {
-  "name": "wlls",
-  "version": "0.0.1",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "platform/*",
-    "libs/*"
-  ],
-  "scripts": {
-    "dev:blog": "bun --filter blog dev",
-    "build:blog": "bun --filter blog build",
-    "deploy:blog": "bun --filter blog deploy",
-    "deploy:blog:preview": "bun --filter blog deploy:preview",
-    "test": "bun test",
-    "lint": "biome lint .",
-    "format": "biome format --write .",
-    "format:check": "biome format .",
-    "check": "biome check ."
-  },
-  "devDependencies": {
-    "@biomejs/biome": "2.2.6"
-  }
+	"name": "wlls",
+	"version": "0.0.1",
+	"private": true,
+	"workspaces": [
+		"apps/*",
+		"platform/*",
+		"libs/*"
+	],
+	"scripts": {
+		"dev:blog": "bun --filter blog dev",
+		"build:blog": "bun --filter blog build",
+		"deploy:blog": "bun --filter blog deploy",
+		"deploy:blog:preview": "bun --filter blog deploy:preview",
+		"test": "bun test",
+		"lint": "biome lint .",
+		"format": "biome format --write .",
+		"format:check": "biome format .",
+		"check": "biome check ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.2.6"
+	}
 }

@@ -294,5 +294,3 @@ let { children, data } = $props();
 <main id="main-content">
 	{@render children?.()}
 </main>
-
-<!-- Styles moved to inlined CSS in <svelte:head> for performance -->
