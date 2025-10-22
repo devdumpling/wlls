@@ -1,27 +1,18 @@
 <script lang="ts" module>
-	export interface Metadata {
-		title?: string;
-		date?: string;
-		description?: string;
-		topic?: string;
-		layout?: string;
-	}
+	import type { Metadata } from "$lib/types";
+	export type { Metadata };
 </script>
 
 <script lang="ts">
-import { onMount } from "svelte";
-import ReadingProgress from "./ReadingProgress.svelte";
+import { onMount, type Snippet } from "svelte";
 import TableOfContents from "./TableOfContents.svelte";
-
-interface TocItem {
-	id: string;
-	text: string;
-}
+import type { TocItem } from "$lib/types";
+import { formatDate } from "$lib/utils";
 
 // Props that mdsvex provides - try both metadata and direct props
 type Props = {
 	metadata?: Metadata;
-	children?: any;
+	children?: Snippet;
 } & Metadata;
 
 let props = $props<Props>();
@@ -35,15 +26,7 @@ const metadata: Metadata = props.metadata || {
 };
 
 // Format date nicely
-const formattedDate = $derived.by(() => {
-	if (!metadata.date) return null;
-	const d = new Date(metadata.date);
-	return d.toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "long",
-		day: "numeric",
-	});
-});
+const formattedDate = $derived(metadata.date ? formatDate(metadata.date) : null);
 
 // Table of contents items
 let tocItems = $state<TocItem[]>([]);
@@ -61,8 +44,6 @@ onMount(() => {
 });
 
 </script>
-
-<ReadingProgress />
 
 <TableOfContents items={tocItems} />
 

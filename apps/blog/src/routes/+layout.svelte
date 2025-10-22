@@ -13,5 +13,28 @@ let { children, data } = $props();
 	{/if}
 </svelte:head>
 
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
 <Nav />
-{@render children?.()}
+
+<main id="main-content">
+	{@render children?.()}
+</main>
+
+<style>
+	.skip-link {
+		position: absolute;
+		top: -80px;
+		left: 0;
+		background: var(--background);
+		color: var(--foreground);
+		padding: 0.5rem 1rem;
+		text-decoration: none;
+		border: 2px solid var(--accent);
+		z-index: 100;
+	}
+
+	.skip-link:focus {
+		top: 0;
+	}
+</style>

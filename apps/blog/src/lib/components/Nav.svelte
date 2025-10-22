@@ -3,7 +3,7 @@
 	import { resolve } from "$app/paths";
 
 	// Build breadcrumb segments from current path
-	const breadcrumbs = $derived(() => {
+	const breadcrumbs = $derived.by(() => {
 		const pathname = page.url.pathname;
 		if (pathname === "/") return [];
 
@@ -17,11 +17,11 @@
 
 <nav>
 	<a href={resolve("/")} class="home">wlls.dev</a>
-	{#if breadcrumbs().length > 0}
+	{#if breadcrumbs.length > 0}
 		<span class="divider">/</span>
-		{#each breadcrumbs() as crumb, i}
+		{#each breadcrumbs as crumb, i}
 			<a href={resolve(crumb.path)} class="crumb">{crumb.label}</a>
-			{#if i < breadcrumbs().length - 1}
+			{#if i < breadcrumbs.length - 1}
 				<span class="divider">/</span>
 			{/if}
 		{/each}

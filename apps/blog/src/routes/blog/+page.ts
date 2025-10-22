@@ -1,21 +1,23 @@
+import type { Metadata, Post } from "$lib/types";
+
 export const load = async () => {
 	// Dynamically import all blog posts using Vite's import.meta.glob
-	const postModules = import.meta.glob('./**/*.svx', { eager: true });
+	const postModules = import.meta.glob("./**/*.svx", { eager: true });
 
-	const posts = Object.entries(postModules).map(([path, module]) => {
+	const posts: Post[] = Object.entries(postModules).map(([path, module]) => {
 		// Extract the slug from the path
 		// Path format: ./hello-world/+page.svx -> hello-world
 		const slug = path.match(/\.\/(.+?)\/\+page\.svx/)?.[1];
 
 		// Access the metadata from the mdsvex module
-		const metadata = (module as { metadata?: Record<string, unknown> }).metadata || {};
+		const metadata = (module as { metadata?: Metadata }).metadata || {};
 
 		return {
-			slug,
-			title: metadata.title as string,
-			topic: metadata.topic as string | undefined,
-			date: metadata.date as string,
-			description: metadata.description as string,
+			slug: slug || "",
+			title: metadata.title || "",
+			topic: metadata.topic,
+			date: metadata.date || "",
+			description: metadata.description || "",
 		};
 	});
 

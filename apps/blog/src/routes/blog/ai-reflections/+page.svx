@@ -5,7 +5,7 @@ date: "Jan 14 2025"
 description: "Part 1: On the creative process, craftsmanship, and finding balance with AI tools."
 ---
 
-> **Note:** This was originally posted on my old blog, [alexwells.dev](https://alexwells.dev/blog/on-ai-and-fulfillment) in mid January, 2025, coming out of paternity leave. My thoughts have continued to evolve here as the AI arms race wages on. You can read [Read part 2 here.](./ai-reflections-2).
+> **Note:** This was originally posted on my old blog, [alexwells.dev](https://alexwells.dev/blog/on-ai-and-fulfillment) in mid January, 2025, coming out of paternity leave. My thoughts have continued to evolve here as the AI arms race wages on.
 
 > **Note:** some of the references on this post mention elements from my prior blog. I left them in for posterity, and definitely not laziness.
 
@@ -141,7 +141,7 @@ Finally, questioning whether our tools are building this up or diminishing it sh
 
 <hr />
 
-### Afterward: more thoughts
+## Afterward
 
 One pessimistic read on what I'm saying is that perhaps most companies _don't_ need this sense of purpose from their engineers, but just need efficiency. Or maybe they only need a smaller number of effective engineers to innovate and create if efficiency was higher.
 

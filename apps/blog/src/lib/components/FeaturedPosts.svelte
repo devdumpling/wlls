@@ -1,19 +1,8 @@
 <script lang="ts">
-	interface Post {
-		slug: string;
-		title: string;
-		topic?: string;
-		date: string;
-		description: string;
-	}
+	import type { Post } from "$lib/types";
+	import { formatDate } from "$lib/utils";
 
 	let { posts }: { posts: Post[] } = $props();
-
-	// Simple helper to format dates nicely
-	function formatDate(dateString: string): string {
-		const date = new Date(dateString);
-		return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-	}
 </script>
 
 <section class="featured-posts">
@@ -34,7 +23,7 @@
 							<h3>{post.title}</h3>
 							<p class="post-excerpt">{post.description}</p>
 							<div class="post-info">
-								<span>{formatDate(post.date)}</span>
+								<span>{formatDate(post.date, 'short')}</span>
 							</div>
 						</div>
 

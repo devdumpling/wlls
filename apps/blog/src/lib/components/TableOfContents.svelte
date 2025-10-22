@@ -1,10 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-
-	interface TocItem {
-		id: string;
-		text: string;
-	}
+	import type { TocItem } from "$lib/types";
+	import { throttle } from "$lib/utils";
 
 	let { items }: { items: TocItem[] } = $props();
 
@@ -38,11 +35,14 @@
 			activeSection = current;
 		};
 
+		// Throttle scroll handler to run at most every 100ms
+		const throttledScroll = throttle(handleScroll, 100);
+
 		// Run once on mount
 		handleScroll();
 
-		window.addEventListener('scroll', handleScroll, { passive: true });
-		return () => window.removeEventListener('scroll', handleScroll);
+		window.addEventListener('scroll', throttledScroll, { passive: true });
+		return () => window.removeEventListener('scroll', throttledScroll);
 	});
 
 	// Smooth scroll to heading
@@ -73,6 +73,7 @@
 							href="#{item.id}"
 							class="toc-link"
 							class:active={activeSection === item.id}
+							aria-current={activeSection === item.id ? 'location' : undefined}
 							onclick={(e) => scrollToHeading(item.id, e)}
 						>
 							{item.text}
