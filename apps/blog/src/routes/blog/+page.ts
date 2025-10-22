@@ -18,6 +18,7 @@ export const load = async () => {
 			topic: metadata.topic,
 			date: metadata.date || "",
 			description: metadata.description || "",
+			archive: metadata.archive || false,
 		};
 	});
 

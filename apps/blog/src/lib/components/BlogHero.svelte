@@ -1,5 +1,4 @@
 <section class="hero">
-	<!-- Organic floating elements -->
 	<div class="floating-elements">
 		<div class="dot dot-1 animate-float"></div>
 		<div class="dot dot-2 animate-drift"></div>
@@ -10,7 +9,7 @@
 	<div class="hero-content">
 		<h1>Dev Wells</h1>
 		<p class="tagline">
-			Full time Dad, part time Engineer
+			Dad, engineer, sometimes writer,
 			crafting elegant interfaces, exploring fantasy realms, and
 			building worlds through code and story.
 		</p>

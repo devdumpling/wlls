@@ -4,6 +4,7 @@ export interface Post {
 	topic?: string;
 	date: string;
 	description: string;
+	archive?: boolean;
 }
 
 export interface Metadata {
@@ -12,6 +13,7 @@ export interface Metadata {
 	description?: string;
 	topic?: string;
 	layout?: string;
+	archive?: boolean;
 }
 
 export interface TocItem {

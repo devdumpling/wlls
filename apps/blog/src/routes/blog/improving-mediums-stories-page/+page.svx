@@ -1,0 +1,162 @@
+---
+title: "How I Improved Medium's 'Your Stories' Page"
+topic: "Engineering"
+date: "Oct 24 2020"
+description: "Building a better Medium story management experience with Next.js, complete with search, filtering, and sorting."
+archive: true
+---
+
+> **Note:** This post is from 2020 and describes Medium's interface and my implementation at that time. Both Medium and the technologies I used have evolved significantly since then. I'm preserving this as a time capsule of a fun weekend project that taught me Next.js fundamentals.
+
+I've spent a few months on Medium now, and for the most part, I love the simple UI. As both a writer and developer, there's a lot to love. The webapp is clean and fast, a must for any reader or writer that would spend a lot of time here. Writing is a breeze in the editor, and even in the updated UI, navigating through stories feels organic.
+
+Unfortunately, there's one part of Medium that drives me nuts: the "Your Stories" page.
+
+In this article, I explain why it's so frustrating, how it could be improved, and then provide an improved implementation. I've wanted to try Next.js for a while, so I implemented my version in that as a learning experience.
+
+_Preface: I started writing this before the minor UI changes to Medium, so the screenshots of Medium are taken from the old version. Unfortunately, the update did not fix my gripe with the Your Stories page._
+
+_Additionally, due to the length, I've separated this article into the main sections. Feel free to skip to what interests you._
+
+## Your stories: your problem
+
+If you've written anything on Medium, you're familiar with this page.
+
+This is where all of a user's stories are saved. We can separate this page into two main features: an archive for your stories (drafts and published) and a button to create a new story. The latter isn't this article's concern — it functions fine. The archive, however, leaves a lot to be desired.
+
+So, what's the problem?
+
+### Navigation
+
+There are two tabs: Drafts and Published. Both tabs can contain stories or comments. The only difference is whether or not they've been published to the platform.
+
+Clicking on either tab shows you a list of entries in chronological order. Published shows the most recently published entry, while Drafts shows the most recently edited.
+
+The problem is there's no sorting, filtering, search, or similar easy feature built into the platform to navigate through your content. This hindrance scales as you produce more content. At least once a week I have to scroll through my published stories trying to find a story for some reason or another. Maybe I want to see that stories detailed stats, which can be done either by navigating to the story or by clicking this arrow and navigating to _view stats_.
+
+Or maybe I write a ton of stories and simply need a link to an old story I wrote as a reference in a piece in progress. Either way, I have to scroll through a bunch of stories (or Ctrl-F) in order to find what I'm looking for. If I don't remember the exact name of it, then I have no choice but to look through month by month until I find it.
+
+### Categorization
+
+Another issue is that half of the entries in the archive are comments that I virtually never look at. I understand that Medium wants users to be able to think of their comments as "stories" in their own right, and that's all fine and dandy. But it adds to an already cumbersome experience when trying to find specific content or view content at a macro level.
+
+In addition to this, there's no way to look at stories by any filtering other than the default, which shows everything chronologically. If I want to see posts only from this year, it's not terrible, but what happens when I want to know everything I wrote last March? Get ready to scroll and/or Ctrl-F March.
+
+In order to get around this, I've used the stats page or the archive in the Medium Partner Program page to find stories more quickly, as you only see ones that are able to generate revenue (non-story partner program comments). As an added bonus, you can look at earnings by month which helps narrow things down. However, this is only a soft workaround for a bigger problem.
+
+What if I want to see my stories by publication? Length? Reads? What if I want to know which of my drafts are pending a publication review or are scheduled for publishing?
+
+It would be immensely helpful to just have some basic search, filtering, and sorting functionality, let alone advanced options in order to easily cross-analyze stats.
+
+The end goal should be to provide more flexibility for users in the stories page itself, as that's where I as a user expect to view my stories.
+
+## Drafting a solution
+
+Coming up with a good solution requires answering a simpler question first. What exactly is the purpose of the Stories page in the first place? I don't work at Medium, so I can't say what the original intent for the page was. Nonetheless, we can draw some conclusions from the rest of the Medium ecosystem.
+
+**The Medium Partner Program page** is the place for viewing earnings for your stories, and it does its job — month to month earnings history for all of your partnered stories. Could it be more robust? Sure, but it doesn't need to be for the average user. Most people are just concerned with their month to month earnings. For yearly totals, we can look to Stripe or tax forms. The bottom line is this isn't where I'd expect to go to view and search through my stories.
+
+**The stats page** is the place for, well, viewing stats. It gives you more options for sorting your stories than the Partner Program page, but its express goal is still viewing stats. Again, there are parts that could be improved, but this isn't where I'd go to look for drafts, edit a story, etc.
+
+From this, we can gather that the **Stories** page's express concern isn't stats nor earnings. Maybe it's obvious at this point, but then that means it's primary focus is viewing and navigating subsets of your stories, regardless of whether they're comments, drafts, or published pieces.
+
+To that end, the current page technically accomplishes this — it just does a bad job. Now that we've made our assumption about what it's supposed to do, we can formalize the improvements as follows.
+
+1. Add search
+2. Improve filtering to go beyond simply "Drafts" and "Published"
+3. Add sorting
+
+### Redesign
+
+The first thing I did was a couple of quick-and-dirty devtools mocks — nothing more complicated than changing static HTML and CSS. Honestly, something as simple as being able to quickly filter stories, comments, and drafts would go a long way.
+
+A minimal fix would be to add a filter button to the right with advanced filtering options such as date, length, and so on. It's hard to ask for much more than that without overcomplicating the page, so that'll be the focus for my implementation.
+
+## Implementation in Next.js
+
+For the rest of the article, I'll be walking through my implementation in Next.js. Since it's my first time working in Next, I'll do my best to explain my process in hopes of helping others learn. However, if you're the kind of person that reads the last page of a book first (or you just don't care about the details and want to see what the end result like), I've deployed the finished project on Vercel [here](https://easy-stories.vercel.app/).
+
+A quick peek under Medium's hood shows, unsurprisingly, that Medium is using React, so that's what I'll be using. (They also openly write about their work in their Medium Engineering publication.) I've been fiddling around in Next.js, as I wanted to compare it to Gatsby (both are React frameworks).
+
+Gatsby and Next have both gained popularity for generating static single-page applications, though Next also supports server-side rendering (SSR). Since our implementation is only for demonstration, we won't concern ourselves with robust database operations. We simply want something we can tool together quickly that mimics Medium. Static single-page applications are a perfect use case here.
+
+Plus I figure this is as good a project as any to practice on.
+
+### Bootstrapping with Markdown
+
+First, let's bootstrap a Next app pulling data from Markdown files stored in a local `_posts` directory.
+
+While it might be better practice to build completely from scratch, this project's concern is mostly with redesigning the Stories page, not making a fully functioning Medium clone. Because of that, all I need is a quick example skeleton of a basic blog. Luckily, Next.js provides a simple one I bootstrapped with npx.
+
+```bash
+npx create-next-app --example blog-starter medium-stories-example
+```
+
+This gives us a few things out of the box. First, it sets up the aforementioned posts directory with some markdown files of sample posts. It also gives us boilerplate for dynamic routes and slugs for those posts, as well as a landing page that implements those routes. Finally, it sets up TailwindCSS for styling and boilerplate components that we will end up extending.
+
+A little npm magic gets us a development environment up and running on `localhost:3000`.
+
+This accomplished a number of other things under the hood, like setting up authors, sample assets, and some components I won't use. But again, the important thing is it sets us up with fast, dynamic routing for our posts.
+
+Now I can create some dummy posts in markdown and Next will create the corresponding pages at build time. This will effectively mimic what Medium does for the purpose of this demonstration.
+
+### Adding Search
+
+In Archive, we'll add a `Search` component that we'll pass two props: an array of posts to query and a callback function that updates Archive with the results. This callback function will be part of a `useState` hook in `Archive`.
+
+```javascript
+const [searchResults, setSearchResults] = useState([]);
+```
+
+We'll also set up a hook for whether or not we're actively searching or not.
+
+```javascript
+const [searchActive, setSearchActive] = useState(false);
+```
+
+Our `Search` component takes a query in an input element with an `onChange` callback function. Every time a user types in the input, it calls this function which matches the input value to titles in `allEntries`. If there's a match, it updates the parent component by calling the passed in hook with the matched results.
+
+The result is a lightweight search that feels responsive and intuitive.
+
+### Adding Filter
+
+Being able to search is already a huge improvement over the current page, but that only helps if we know what we're looking for. If you've got 1000+ stories, half of which are comments, and stuff is spread out over months if not years, then you need more granular results. Time to implement the filter.
+
+In this next section, we'll build a `Filter` component and add it to the `YourStories` component. We do it at the `YourStories` component level so that we can simply pass our posts through the `Filter` component, which will filter the input based on what a user selects, and then build our list of `ArchivePreview`s out of those results.
+
+First, we set up hooks for all of our filtering options:
+
+- `active`: handles the main filter dropdown
+- `startDate, endDate`: values for our date inputs
+- `clear`: handles a button which resets the filters to default values
+- `length, lengthOptions`: handles filtering by read time with some basic hard-coded ranges for show
+- `publication, publicationOptions`: handles filtering by publication out of all publications passed in
+- `partnerOnly, submittedOnly`: limits posts to only those that are partnered or submitted, respectively
+
+Each of these is set by an event handler attached to its corresponding JSX element.
+
+The end result filters our stories as expected.
+
+We can also combine filters and/or filter with the date inputs. Currently, the date inputs only handle simple MM-DD-YYYY strings. A future enhancement could be to add a robust datepicker, but that's overkill for now.
+
+### Adding Sorting
+
+The final piece to this is a way to sort posts. As stated above, you can sort in other areas of Medium, but for some reason, there's nothing on the "Your Stories" page. To remedy that, let's add a few basic sorts to our filter.
+
+The default sort is date descending. We will add date ascending and read time.
+
+That's it for sorting!
+
+## Conclusions
+
+After importing and deploying, the app is up and available at [easy-stories.vercel.app](https://easy-stories.vercel.app/).
+
+Thank you for reading, and I hope you learned something if you read this far. Medium is making a lot of UI changes lately, so I've got my fingers crossed that they'll improve the Stories archive soon.
+
+### Resources Covered
+
+- [React](https://reactjs.org/) ([Hooks](https://reactjs.org/docs/hooks-intro.html))
+- [Next.js](https://nextjs.org/) ([Vercel](https://vercel.com/docs))
+- [TailwindCSS](https://tailwindcss.com/)
+- [Markdown](https://www.markdownguide.org/)
+- [Medium Export](https://help.medium.com/hc/en-us/articles/115004745787-Download-your-information)
