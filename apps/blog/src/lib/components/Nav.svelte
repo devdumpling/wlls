@@ -28,4 +28,44 @@ const breadcrumbs = $derived.by(() => {
 	{/if}
 </nav>
 
-<!-- Styles moved to inlined CSS in +layout.svelte for performance -->
+<style>
+	nav {
+		position: fixed;
+		top: 2rem;
+		left: 2rem;
+		z-index: 50;
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	a {
+		color: inherit;
+		text-decoration: none;
+		border-bottom: 1px dotted transparent;
+	}
+
+	a:hover {
+		border-bottom-color: currentColor;
+	}
+
+	.home {
+		font-weight: 600;
+	}
+
+	.divider {
+		color: oklch(0.6 0 0);
+		user-select: none;
+	}
+
+	.crumb {
+		font-weight: 400;
+	}
+
+	@media (prefers-color-scheme: dark) {
+		.divider {
+			color: oklch(0.5 0 0);
+		}
+	}
+</style>

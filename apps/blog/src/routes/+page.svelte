@@ -3,27 +3,23 @@ import BlogHero from "$lib/components/BlogHero.svelte";
 import { resolve } from "$app/paths";
 </script>
 
-<main>
-	<BlogHero />
+<BlogHero />
 
-	<section class="quick-links">
-		<nav class="links">
-			<a href={resolve("/blog")}>→ blog</a>
-			<a href={resolve("/whois")}>→ whois</a>
-		</nav>
-	</section>
-</main>
+<section class="quick-links">
+	<nav class="links">
+		<a href={resolve("/blog")}>→ blog</a>
+		<a href={resolve("/whois")}>→ whois</a>
+	</nav>
+</section>
 
 <style>
-	main {
-		min-height: 100vh;
-	}
-
 	.quick-links {
-		padding: 4rem 1.5rem;
-		max-width: 56rem;
-		margin: 0 auto;
+		position: fixed;
+		bottom: 2rem;
+		left: 0;
+		right: 0;
 		text-align: center;
+		z-index: 10;
 	}
 
 	.links {

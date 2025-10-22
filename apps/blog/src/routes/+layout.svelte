@@ -226,64 +226,6 @@ let { children, data } = $props();
 		.animate-drift {
 			animation: drift 8s ease-in-out infinite;
 		}
-
-		/* Nav component styles - always visible, so inline */
-		nav {
-			position: fixed;
-			top: 2rem;
-			left: 2rem;
-			z-index: 50;
-			display: flex;
-			align-items: center;
-			gap: 0.5rem;
-			flex-wrap: wrap;
-		}
-
-		nav a {
-			color: inherit;
-			text-decoration: none;
-			border-bottom: 1px dotted transparent;
-		}
-
-		nav a:hover {
-			border-bottom-color: currentColor;
-		}
-
-		nav .home {
-			font-weight: 600;
-		}
-
-		nav .divider {
-			color: oklch(0.6 0 0);
-			user-select: none;
-		}
-
-		nav .crumb {
-			font-weight: 400;
-		}
-
-		@media (prefers-color-scheme: dark) {
-			nav .divider {
-				color: oklch(0.5 0 0);
-			}
-		}
-
-		/* Skip link styles */
-		.skip-link {
-			position: absolute;
-			top: -80px;
-			left: 0;
-			background: var(--background);
-			color: var(--foreground);
-			padding: 0.5rem 1rem;
-			text-decoration: none;
-			border: 2px solid var(--accent);
-			z-index: 100;
-		}
-
-		.skip-link:focus {
-			top: 0;
-		}
 	</style>
 </svelte:head>
 
@@ -294,3 +236,21 @@ let { children, data } = $props();
 <main id="main-content">
 	{@render children?.()}
 </main>
+
+<style>
+	.skip-link {
+		position: absolute;
+		top: -80px;
+		left: 0;
+		background: var(--background);
+		color: var(--foreground);
+		padding: 0.5rem 1rem;
+		text-decoration: none;
+		border: 2px solid var(--accent);
+		z-index: 100;
+	}
+
+	.skip-link:focus {
+		top: 0;
+	}
+</style>
