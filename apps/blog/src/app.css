@@ -1,6 +1,4 @@
-/* Modular CSS Imports */
-@import "./styles/variables.css";
-@import "./styles/reset.css";
-@import "./styles/typography.css";
+/* Non-critical CSS - blog post styles and animations */
+/* Critical CSS (variables, reset, typography) is inlined in +layout.svelte */
 @import "./styles/blog-post.css";
 @import "./styles/animations.css";
