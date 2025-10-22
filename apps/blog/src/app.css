@@ -1,3 +1,22 @@
+/* CSS Variables */
+:root {
+	--background: oklch(0.98 0.002 106);
+	--foreground: oklch(0.25 0.01 106);
+	--muted-foreground: oklch(0.55 0.01 106);
+	--accent: oklch(0.65 0.15 45);
+	--border: oklch(0.88 0.005 106);
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--background: oklch(0.15 0.01 106);
+		--foreground: oklch(0.95 0.005 106);
+		--muted-foreground: oklch(0.65 0.01 106);
+		--accent: oklch(0.7 0.18 45);
+		--border: oklch(0.25 0.01 106);
+	}
+}
+
 /* Reset & Base */
 *,
 *::before,
@@ -18,11 +37,10 @@ body {
 	line-height: 1.6;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
 		Arial, sans-serif;
-	color: oklch(0.2 0 0);
-	background: oklch(1 0 0);
-	max-width: 65ch;
-	margin: 0 auto;
-	padding: 2rem 1rem;
+	color: var(--foreground);
+	background: var(--background);
+	padding: 0;
+	margin: 0;
 }
 
 /* Typography Scale */
@@ -54,6 +72,122 @@ h3 {
 
 p {
 	margin: 1em 0;
+}
+
+/* Article/Prose Styles - Only for blog post content */
+article.blog-post {
+	max-width: 48rem;
+	margin: 0 auto;
+	padding: 8rem 1.5rem 4rem;
+}
+
+article.blog-post h1 {
+	font-size: clamp(2.5rem, 6vw, 3.75rem);
+	font-weight: 300;
+	letter-spacing: -0.03em;
+	margin: 0 0 1.5rem 0;
+	line-height: 1.1;
+}
+
+article.blog-post h2 {
+	font-size: clamp(1.875rem, 4vw, 2.25rem);
+	font-weight: 300;
+	letter-spacing: -0.02em;
+	margin: 4rem 0 1.5rem 0;
+	scroll-margin-top: 6rem;
+}
+
+article.blog-post h3 {
+	font-size: clamp(1.5rem, 3vw, 1.875rem);
+	font-weight: 300;
+	letter-spacing: -0.02em;
+	margin: 3rem 0 1rem 0;
+	scroll-margin-top: 6rem;
+}
+
+article.blog-post p {
+	font-size: 1.125rem;
+	line-height: 1.75;
+	margin: 0 0 2rem 0;
+	color: var(--foreground);
+}
+
+article.blog-post ul,
+article.blog-post ol {
+	font-size: 1.125rem;
+	line-height: 1.75;
+	margin: 0 0 2rem 0;
+	padding-left: 2rem;
+}
+
+article.blog-post li {
+	margin: 0.75rem 0;
+}
+
+article.blog-post blockquote {
+	margin: 3rem 0;
+	padding: 0.5rem 0 0.5rem 1.5rem;
+	border-left: 2px solid var(--accent);
+	font-size: 1.25rem;
+	font-weight: 300;
+	font-style: italic;
+	line-height: 1.6;
+	color: var(--muted-foreground);
+}
+
+article.blog-post blockquote p {
+	margin: 0.5rem 0;
+	font-size: inherit;
+}
+
+article.blog-post code {
+	font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New",
+		monospace;
+	font-size: 0.875em;
+	background: color-mix(in oklch, var(--foreground) 5%, transparent);
+	padding: 0.2em 0.4em;
+	border-radius: 4px;
+}
+
+article.blog-post pre {
+	margin: 2rem 0;
+	padding: 1.5rem;
+	background: color-mix(in oklch, var(--foreground) 3%, transparent);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	overflow-x: auto;
+	line-height: 1.6;
+}
+
+article.blog-post pre code {
+	background: none;
+	padding: 0;
+	font-size: 0.9375rem;
+}
+
+article.blog-post hr {
+	margin: 4rem 0;
+	border: none;
+	border-top: 1px solid var(--border);
+}
+
+article.blog-post a {
+	color: var(--accent);
+	text-decoration: none;
+	border-bottom: 1px solid transparent;
+	transition: border-color 0.2s;
+}
+
+article.blog-post a:hover {
+	border-bottom-color: var(--accent);
+}
+
+article.blog-post strong {
+	font-weight: 600;
+}
+
+article.blog-post em {
+	font-style: italic;
 }
 
 /* Links */
@@ -147,11 +281,6 @@ em {
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
-	body {
-		color: oklch(0.88 0 0);
-		background: oklch(0.15 0.01 40);
-	}
-
 	blockquote {
 		color: oklch(0.65 0 0);
 		border-left-color: oklch(0.35 0 0);
@@ -168,4 +297,33 @@ em {
 	hr {
 		border-top-color: oklch(0.3 0 0);
 	}
+}
+
+/* Animations */
+@keyframes float {
+	0%,
+	100% {
+		transform: translateY(0px);
+	}
+	50% {
+		transform: translateY(-20px);
+	}
+}
+
+@keyframes drift {
+	0%,
+	100% {
+		transform: translateX(0px) rotate(0deg);
+	}
+	50% {
+		transform: translateX(30px) rotate(5deg);
+	}
+}
+
+.animate-float {
+	animation: float 6s ease-in-out infinite;
+}
+
+.animate-drift {
+	animation: drift 8s ease-in-out infinite;
 }

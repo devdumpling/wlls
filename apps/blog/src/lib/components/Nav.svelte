@@ -30,10 +30,13 @@
 
 <style>
 	nav {
+		position: fixed;
+		top: 2rem;
+		left: 2rem;
+		z-index: 50;
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		margin-bottom: 3rem;
 		flex-wrap: wrap;
 	}
 

@@ -3,9 +3,7 @@ title: Roots
 description: The journey so far
 ---
 
-# Roots
-
-## The Journey So Far
+## Past
 
 It all started in the Blue Ridge Mountains, Southern Virginia.
 
@@ -28,7 +26,7 @@ Sadly, no chump change was going to save my parents' marriage. I also got banned
 
 However, coding those floppies was enough of a gateway drug to make me want to learn more.
 
-### Wanderlust
+## Wanderlust
 
 From here I ventured to Oberlin College with a vague goal to study computer science. Fortunately, Oberlin (like many liberal arts colleges) was the perfect place for someone like me who had no clue what the fuck they were doing. In 2015, I narrowly earned my Bachelor of Arts in Computer Science. I say narrowly because I was an awful student. I'll spare you the typical coming-of-age details.
 
@@ -52,7 +50,7 @@ That propelled me into the next couple years working for a local non-profit wher
 
 But I was in my 20s. Content was not it.
 
-### Rekindling
+## Rekindling
 
 When I originally left Oberlin, I spurned my CS colleagues for their near-obsessive desire to interview and work at FANG companies. It simply didn't sit right with me (yes, I was insufferable). However, the more I taught others to code, the more I found myself wondering what I was missing. I never really spent time in "big tech", only small, comfortingly-adjacent tech (re: content).
 
@@ -68,7 +66,7 @@ Honestly though, I couldn't complain. The pay was more than I ever dreamed of as
 
 Toward the end of my time there the pandemic was just ramping up. I had (thankfully) been asked to work from home. I had also moved to a smaller team doing more modern frontend work, which is where my interests always were. No more IE11 support, and my coworkers had at least heard of ES6. I learned the enterprise arts of navigating bureaucracy, legacy systems, and corporate tribalism. More importantly, I learned what I didn't want: to be another cog.
 
-### Suddenly, Dad
+## Suddenly, Dad
 
 In the Fall of 2020 I got the best news ever: I was going to be a dad. Life started moving real fast. I'm going to speedrun you through the next 12 months:
 
@@ -82,7 +80,7 @@ Engineering at GoodRx was good. It had its problems, like every mid-sized org tr
 
 I grew in my role over 3 years there on the Frontend Platform team. I spent a lovely stint as a manager before realizing that, while I liked people, I didn't like them more than the craft. I found my way back to IC. After building a sophisticated frontend platform, mentoring teams, recording podcasts, and making a lot of friends, I stepped into the big "Principal Engineer" shoes.
 
-### Present
+## Present
 
 That brings us to the present arc. Vehemently in my early 30s, my wife and I grew the family in late 2024.
 

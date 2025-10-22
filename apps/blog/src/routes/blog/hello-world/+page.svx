@@ -1,5 +1,6 @@
 ---
 title: Hello World
+topic: Engineering
 date: 2025-10-15
 description: Testing mdsvex with SvelteKit
 ---
@@ -7,8 +8,6 @@ description: Testing mdsvex with SvelteKit
 <script>
   let name = 'SvelteKit';
 </script>
-
-# {title}
 
 Welcome to my first post using **mdsvex** and {name}!
 

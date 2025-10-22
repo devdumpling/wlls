@@ -1,50 +1,48 @@
 <script>
-import { resolve } from "$app/paths";
+	import BlogHero from "$lib/components/BlogHero.svelte";
+	import { resolve } from "$app/paths";
 </script>
 
-<main class="landing">
-	<h1>Dev Wells</h1>
-	<p class="intro">Dad. Engineer. Writer.</p>
+<main>
+	<BlogHero />
 
-	<nav class="links">
-		<a href={resolve("/blog")}>→ blog</a>
-		<a href={resolve("/whois")}>→ whois</a>
-	</nav>
+	<section class="quick-links">
+		<nav class="links">
+			<a href={resolve("/blog")}>→ blog</a>
+			<a href={resolve("/whois")}>→ whois</a>
+		</nav>
+	</section>
 </main>
 
 <style>
-	.landing {
-		margin-top: 4rem;
+	main {
+		min-height: 100vh;
 	}
 
-	h1 {
-		margin-bottom: 0.5rem;
-	}
-
-	.intro {
-		color: oklch(0.5 0 0);
-		margin-bottom: 2rem;
+	.quick-links {
+		padding: 4rem 1.5rem;
+		max-width: 56rem;
+		margin: 0 auto;
+		text-align: center;
 	}
 
 	.links {
 		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
+		flex-direction: row;
+		gap: 2rem;
+		justify-content: center;
+		font-size: 1.125rem;
 	}
 
 	.links a {
-		color: inherit;
+		color: var(--muted-foreground);
 		text-decoration: none;
 		border-bottom: 1px dotted transparent;
+		transition: all 0.3s ease;
 	}
 
 	.links a:hover {
-		border-bottom-color: currentColor;
-	}
-
-	@media (prefers-color-scheme: dark) {
-		.intro {
-			color: oklch(0.65 0 0);
-		}
+		border-bottom-color: var(--accent);
+		color: var(--accent);
 	}
 </style>

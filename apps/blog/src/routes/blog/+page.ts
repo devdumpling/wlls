@@ -13,6 +13,7 @@ export const load = async () => {
 		return {
 			slug,
 			title: metadata.title as string,
+			topic: metadata.topic as string | undefined,
 			date: metadata.date as string,
 			description: metadata.description as string,
 		};
