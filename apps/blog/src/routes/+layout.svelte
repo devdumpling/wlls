@@ -2,7 +2,7 @@
 import Nav from "$lib/components/Nav.svelte";
 
 let { children, data } = $props();
-
+</script>
 
 <svelte:head>
 	<link rel="icon" href="/favicon.svg" />
