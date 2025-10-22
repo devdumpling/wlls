@@ -1,6 +1,6 @@
 <script>
-import BlogHero from "$lib/components/BlogHero.svelte";
 import { resolve } from "$app/paths";
+import BlogHero from "$lib/components/BlogHero.svelte";
 </script>
 
 <BlogHero />

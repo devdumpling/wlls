@@ -10,7 +10,8 @@
 	<div class="hero-content">
 		<h1>Dev Wells</h1>
 		<p class="tagline">
-			Principal Frontend Engineer crafting elegant interfaces, exploring fantasy realms, and
+			Full time Dad, part time Engineer
+			crafting elegant interfaces, exploring fantasy realms, and
 			building worlds through code and story.
 		</p>
 	</div>

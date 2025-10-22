@@ -1,7 +1,7 @@
 <script>
-import { page } from "$app/state";
-import { resolve } from "$app/paths";
 import { onMount } from "svelte";
+import { resolve } from "$app/paths";
+import { page } from "$app/state";
 
 // Build breadcrumb segments from current path
 const breadcrumbs = $derived.by(() => {
