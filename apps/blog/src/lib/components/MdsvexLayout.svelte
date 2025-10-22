@@ -8,6 +8,8 @@ import { onMount, type Snippet } from "svelte";
 import TableOfContents from "./TableOfContents.svelte";
 import type { TocItem } from "$lib/types";
 import { formatDate } from "$lib/utils";
+// Import blog post styles only on blog post pages
+import "../../styles/blog-post.css";
 
 // Props that mdsvex provides - try both metadata and direct props
 type Props = {

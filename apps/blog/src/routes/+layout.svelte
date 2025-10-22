@@ -1,10 +1,8 @@
 <script lang="ts">
 import Nav from "$lib/components/Nav.svelte";
-// Import non-critical CSS (blog-post styles, animations) - deferred by browser
-import "../app.css";
 
 let { children, data } = $props();
-</script>
+
 
 <svelte:head>
 	<link rel="icon" href="/favicon.svg" />
@@ -198,6 +196,35 @@ let { children, data } = $props();
 			hr {
 				border-top-color: oklch(0.3 0 0);
 			}
+		}
+
+		/* Animations - small enough to inline */
+		@keyframes float {
+			0%,
+			100% {
+				transform: translateY(0px);
+			}
+			50% {
+				transform: translateY(-20px);
+			}
+		}
+
+		@keyframes drift {
+			0%,
+			100% {
+				transform: translateX(0px) rotate(0deg);
+			}
+			50% {
+				transform: translateX(30px) rotate(5deg);
+			}
+		}
+
+		.animate-float {
+			animation: float 6s ease-in-out infinite;
+		}
+
+		.animate-drift {
+			animation: drift 8s ease-in-out infinite;
 		}
 	</style>
 </svelte:head>
