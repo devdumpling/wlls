@@ -29,23 +29,8 @@ const archivedPosts = posts.filter((post) => post.archive);
 							<p class="post-excerpt">{post.description}</p>
 							<div class="post-info">
 								<span>{formatDate(post.date, 'short')}</span>
+								<span class="post-indicator">→</span>
 							</div>
-						</div>
-
-						<div class="post-arrow">
-							<svg
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M7 7h10v10" />
-								<path d="M7 17 17 7" />
-							</svg>
 						</div>
 					</div>
 				</a>
@@ -78,23 +63,8 @@ const archivedPosts = posts.filter((post) => post.archive);
 									<p class="post-excerpt">{post.description}</p>
 									<div class="post-info">
 										<span>{formatDate(post.date, 'short')}</span>
+										<span class="post-indicator">→</span>
 									</div>
-								</div>
-
-								<div class="post-arrow">
-									<svg
-										width="24"
-										height="24"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-									>
-										<path d="M7 7h10v10" />
-										<path d="M7 17 17 7" />
-									</svg>
 								</div>
 							</div>
 						</a>
@@ -164,6 +134,27 @@ const archivedPosts = posts.filter((post) => post.archive);
 
 	.post-main {
 		flex: 1;
+		position: relative;
+		padding-bottom: 1.5rem;
+	}
+
+	.post-main::after {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 0;
+		height: 1px;
+		background: linear-gradient(
+			to right,
+			var(--accent),
+			transparent
+		);
+		transition: width 0.5s ease;
+	}
+
+	.post-item:hover .post-main::after {
+		width: 12rem;
 	}
 
 	h3 {
@@ -193,28 +184,18 @@ const archivedPosts = posts.filter((post) => post.archive);
 		color: var(--muted-foreground);
 	}
 
-	.post-arrow {
-		flex-shrink: 0;
-		align-self: flex-start;
-	}
-
-	.post-arrow svg {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 3rem;
-		height: 3rem;
-		border-radius: 50%;
-		border: 1px solid var(--border);
-		padding: 0.75rem;
-		color: var(--muted-foreground);
+	.post-indicator {
+		opacity: 0;
+		transform: translateX(-0.5rem);
 		transition: all 0.3s ease;
+		color: var(--accent);
+		font-size: 1rem;
+		margin-left: 0.5rem;
 	}
 
-	.post-item:hover .post-arrow svg {
-		border-color: var(--accent);
-		background: color-mix(in oklch, var(--accent) 5%, transparent);
-		color: var(--accent);
+	.post-item:hover .post-indicator {
+		opacity: 1;
+		transform: translateX(0);
 	}
 
 	/* Archive Section */
@@ -270,10 +251,6 @@ const archivedPosts = posts.filter((post) => post.archive);
 
 		.post-meta {
 			width: 8rem;
-		}
-
-		.post-arrow {
-			align-self: center;
 		}
 	}
 </style>
