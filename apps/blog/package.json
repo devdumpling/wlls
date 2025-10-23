@@ -14,7 +14,11 @@
 	},
 	"dependencies": {
 		"@sveltejs/adapter-cloudflare": "^7.2.4",
-		"mdsvex": "^0.12.6"
+		"@threlte/core": "^8.1.8",
+		"@threlte/extras": "^9.5.5",
+		"@types/three": "^0.180.0",
+		"mdsvex": "^0.12.6",
+		"three": "^0.180.0"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20241127.0",

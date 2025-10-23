@@ -9,6 +9,7 @@ import BlogHero from "$lib/components/BlogHero.svelte";
 	<nav class="links">
 		<a href={resolve("/blog")}>→ blog</a>
 		<a href={resolve("/whois")}>→ whois</a>
+		<a href={resolve("/lab")}>→ lab</a>
 	</nav>
 </section>
 
