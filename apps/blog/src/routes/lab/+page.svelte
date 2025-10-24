@@ -1,6 +1,25 @@
 <script lang="ts">
-import { Canvas } from "@threlte/core";
-import HeroScene from "$lib/components/HeroScene.svelte";
+import { onMount } from 'svelte';
+
+let Canvas: any = null;
+let Scene: any = null;
+let loading = true;
+let error: Error | null = null;
+
+onMount(async () => {
+	try {
+		const [canvasModule, sceneModule] = await Promise.all([
+			import("@threlte/core"),
+			import("$lib/components/HeroScene.svelte")
+		]);
+		Canvas = canvasModule.Canvas;
+		Scene = sceneModule.default;
+	} catch (e) {
+		error = e as Error;
+	} finally {
+		loading = false;
+	}
+});
 </script>
 
 <svelte:head>
@@ -11,15 +30,26 @@ import HeroScene from "$lib/components/HeroScene.svelte";
 	<div class="lab-header">
 		<h1>Lab</h1>
 		<p class="description">
-			Experiments with WebGL, 3D graphics, and interactive visualizations. A
-			playground for creative coding.
+			Experiments with WebGL, 3D graphics, and interactive visualizations.
 		</p>
 	</div>
 
 	<div class="scene-container">
-		<Canvas>
-			<HeroScene />
-		</Canvas>
+		{#if loading}
+			<div class="scene-loading">
+				<div class="spinner"></div>
+				<p>Loading 3D scene...</p>
+			</div>
+		{:else if error}
+			<div class="scene-error">
+				<p>Failed to load 3D scene</p>
+				<p class="error-detail">{error.message}</p>
+			</div>
+		{:else if Canvas && Scene}
+			<Canvas>
+				<Scene />
+			</Canvas>
+		{/if}
 	</div>
 
 	<div class="scene-info">
@@ -100,6 +130,42 @@ import HeroScene from "$lib/components/HeroScene.svelte";
 
 	.scene-info a:hover {
 		border-bottom-style: solid;
+	}
+
+	.scene-loading,
+	.scene-error {
+		height: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+		color: var(--muted-foreground);
+	}
+
+	.spinner {
+		width: 40px;
+		height: 40px;
+		border: 3px solid var(--border);
+		border-top-color: var(--accent);
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	.scene-error {
+		color: var(--muted-foreground);
+	}
+
+	.error-detail {
+		font-size: 0.875rem;
+		font-family: monospace;
+		color: var(--accent);
 	}
 
 	@media (min-width: 768px) {
