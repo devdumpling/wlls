@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from 'svelte';
+import { onMount } from "svelte";
 
 type Cell = {
 	x: number;
@@ -27,15 +27,15 @@ const STABLE_THRESHOLD = 3; // Ticks before cell considered stable
 const STAGNATION_CHECK_COUNT = 5; // Check alive count stability
 
 // Colors (Rose Pine inspired)
-const ACTIVE_COLOR = 'oklch(0.7 0.18 45)'; // Default accent
-const STABLE_COLOR_1 = 'oklch(0.75 0.1 320)'; // Lavender
-const STABLE_COLOR_2 = 'oklch(0.72 0.12 25)'; // Salmon
+const ACTIVE_COLOR = "oklch(0.7 0.18 45)"; // Default accent
+const STABLE_COLOR_1 = "oklch(0.75 0.1 320)"; // Lavender
+const STABLE_COLOR_2 = "oklch(0.72 0.12 25)"; // Salmon
 
 // Stagnation detection
 let populationHistory: number[] = [];
 
 onMount(() => {
-	ctx = canvas.getContext('2d')!;
+	ctx = canvas.getContext("2d")!;
 	resizeCanvas();
 	initializeCells();
 
@@ -61,11 +61,11 @@ onMount(() => {
 
 	animate();
 
-	window.addEventListener('resize', resizeCanvas);
+	window.addEventListener("resize", resizeCanvas);
 
 	return () => {
 		cancelAnimationFrame(animationFrame);
-		window.removeEventListener('resize', resizeCanvas);
+		window.removeEventListener("resize", resizeCanvas);
 	};
 });
 
@@ -164,7 +164,9 @@ function updateGameOfLife() {
 
 	// Check for stagnation (same population for N ticks)
 	if (populationHistory.length === STAGNATION_CHECK_COUNT) {
-		const allSame = populationHistory.every(count => count === populationHistory[0]);
+		const allSame = populationHistory.every(
+			(count) => count === populationHistory[0],
+		);
 		if (allSame || aliveCount === 0) {
 			// Reset the simulation
 			setTimeout(() => {
@@ -185,7 +187,12 @@ function countNeighbors(row: number, col: number): number {
 			const newRow = row + dr;
 			const newCol = col + dc;
 
-			if (newRow >= 0 && newRow < GRID_SIZE && newCol >= 0 && newCol < GRID_SIZE) {
+			if (
+				newRow >= 0 &&
+				newRow < GRID_SIZE &&
+				newCol >= 0 &&
+				newCol < GRID_SIZE
+			) {
 				if (cells[newRow][newCol].alive) {
 					count++;
 				}
@@ -233,7 +240,10 @@ function render() {
 
 					const dist = Math.hypot(cell.x - other.x, cell.y - other.y);
 					if (dist < CONNECTION_DISTANCE) {
-						const opacity = Math.min(cell.opacity, other.opacity) * (1 - dist / CONNECTION_DISTANCE) * 0.15;
+						const opacity =
+							Math.min(cell.opacity, other.opacity) *
+							(1 - dist / CONNECTION_DISTANCE) *
+							0.15;
 
 						// Use the cell's color for the line
 						ctx.strokeStyle = cell.color;

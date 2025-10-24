@@ -47,9 +47,11 @@ function typewriterEffect(element: HTMLElement, reverse = false) {
 			// Add cursor to this character when it appears, remove from all previous
 			animation.finished.then(() => {
 				// Remove cursor from ALL characters in the breadcrumb wrapper
-				document.querySelectorAll(".breadcrumb-wrapper .char.has-cursor").forEach((c) => {
-					c.classList.remove("has-cursor");
-				});
+				document
+					.querySelectorAll(".breadcrumb-wrapper .char.has-cursor")
+					.forEach((c) => {
+						c.classList.remove("has-cursor");
+					});
 				// Add cursor to current character
 				char.classList.add("has-cursor");
 			});
@@ -61,9 +63,24 @@ function typewriterEffect(element: HTMLElement, reverse = false) {
 function selectAndDeleteEffect(element: HTMLElement) {
 	element.animate(
 		[
-			{ background: "var(--accent)", color: "var(--background)", opacity: 1, offset: 0 },
-			{ background: "var(--accent)", color: "var(--background)", opacity: 1, offset: 0.5 },
-			{ background: "var(--accent)", color: "var(--background)", opacity: 0, offset: 0.501 },
+			{
+				background: "var(--accent)",
+				color: "var(--background)",
+				opacity: 1,
+				offset: 0,
+			},
+			{
+				background: "var(--accent)",
+				color: "var(--background)",
+				opacity: 1,
+				offset: 0.5,
+			},
+			{
+				background: "var(--accent)",
+				color: "var(--background)",
+				opacity: 0,
+				offset: 0.501,
+			},
 			{ opacity: 0, offset: 1 },
 		],
 		{
@@ -86,7 +103,8 @@ onNavigate((navigation) => {
 		const oldCrumbs = oldCrumbLinks.map((link) => link.textContent || "");
 
 		// Determine navigation direction by comparing destination with current
-		const targetPath = (navigation as any).to?.url?.pathname || window.location.pathname;
+		const targetPath =
+			(navigation as any).to?.url?.pathname || window.location.pathname;
 		const targetSegments = targetPath.split("/").filter(Boolean);
 		const willGoUp = targetSegments.length < oldCrumbs.length;
 
@@ -100,9 +118,11 @@ onNavigate((navigation) => {
 			});
 		} else {
 			// Going down/same level: remove all cursors immediately to prevent flash
-			document.querySelectorAll(".breadcrumb-wrapper .char.has-cursor").forEach((char) => {
-				char.classList.remove("has-cursor");
-			});
+			document
+				.querySelectorAll(".breadcrumb-wrapper .char.has-cursor")
+				.forEach((char) => {
+					char.classList.remove("has-cursor");
+				});
 		}
 
 		const transition = document.startViewTransition(async () => {
@@ -119,9 +139,11 @@ onNavigate((navigation) => {
 
 			// Helpers for cursor management
 			const removeAllCursors = () => {
-				document.querySelectorAll(".breadcrumb-wrapper .char.has-cursor").forEach((char) => {
-					char.classList.remove("has-cursor");
-				});
+				document
+					.querySelectorAll(".breadcrumb-wrapper .char.has-cursor")
+					.forEach((char) => {
+						char.classList.remove("has-cursor");
+					});
 			};
 
 			const addCursorToLastChar = (element: HTMLElement) => {
@@ -135,7 +157,10 @@ onNavigate((navigation) => {
 				if (chars.length === 0) {
 					element.innerHTML = text
 						.split("")
-						.map((char) => `<span class="char">${char === " " ? "&nbsp;" : char}</span>`)
+						.map(
+							(char) =>
+								`<span class="char">${char === " " ? "&nbsp;" : char}</span>`,
+						)
 						.join("");
 				}
 
@@ -160,7 +185,8 @@ onNavigate((navigation) => {
 				// Going down: typewrite only NEW segments
 				crumbLinks.forEach((link, i) => {
 					if (link instanceof HTMLElement) {
-						const isNew = i >= oldCrumbs.length || newCrumbs[i] !== oldCrumbs[i];
+						const isNew =
+							i >= oldCrumbs.length || newCrumbs[i] !== oldCrumbs[i];
 						if (isNew) {
 							typewriterEffect(link);
 						} else {
@@ -169,7 +195,10 @@ onNavigate((navigation) => {
 							if (text && link.querySelectorAll(".char").length === 0) {
 								link.innerHTML = text
 									.split("")
-									.map((char) => `<span class="char">${char === " " ? "&nbsp;" : char}</span>`)
+									.map(
+										(char) =>
+											`<span class="char">${char === " " ? "&nbsp;" : char}</span>`,
+									)
 									.join("");
 							}
 						}

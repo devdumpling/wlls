@@ -1,24 +1,24 @@
 <script lang="ts">
-	import { T, useTask } from '@threlte/core';
-	import * as THREE from 'three';
+import { T, useTask } from "@threlte/core";
+import * as THREE from "three";
 
-	let rotation = $state(0);
-	let time = $state(0);
+let rotation = $state(0);
+let time = $state(0);
 
-	useTask((delta) => {
-		rotation += delta * 0.15;
-		time += delta;
-	});
+useTask((delta) => {
+	rotation += delta * 0.15;
+	time += delta;
+});
 
-	// Particle stream configuration - slower, more subtle
-	const streamCount = 20;
-	const streams = Array.from({ length: streamCount }, (_, i) => ({
-		angle: (i / streamCount) * Math.PI * 2,
-		radius: 5 + Math.random() * 3,
-		speed: 0.08 + Math.random() * 0.05, // Much slower
-		offset: Math.random() * Math.PI * 2,
-		color: i % 3 === 0 ? '#9ccfd8' : i % 3 === 1 ? '#c4a7e7' : '#eb6f92',
-	}));
+// Particle stream configuration - slower, more subtle
+const streamCount = 20;
+const streams = Array.from({ length: streamCount }, (_, i) => ({
+	angle: (i / streamCount) * Math.PI * 2,
+	radius: 5 + Math.random() * 3,
+	speed: 0.08 + Math.random() * 0.05, // Much slower
+	offset: Math.random() * Math.PI * 2,
+	color: i % 3 === 0 ? "#9ccfd8" : i % 3 === 1 ? "#c4a7e7" : "#eb6f92",
+}));
 </script>
 
 <!-- Camera -->

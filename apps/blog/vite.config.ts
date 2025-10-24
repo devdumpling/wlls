@@ -18,15 +18,15 @@ export default defineConfig({
 			output: {
 				manualChunks: (id) => {
 					// Split Three.js and related packages into separate chunks
-					if (id.includes('three')) {
-						return 'three';
+					if (id.includes("three")) {
+						return "three";
 					}
-					if (id.includes('@threlte')) {
-						return 'threlte';
+					if (id.includes("@threlte")) {
+						return "threlte";
 					}
 					// Split node_modules into vendor chunk
-					if (id.includes('node_modules')) {
-						return 'vendor';
+					if (id.includes("node_modules")) {
+						return "vendor";
 					}
 				},
 			},

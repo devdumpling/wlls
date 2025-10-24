@@ -1,5 +1,4 @@
 <script>
-import { resolve } from "$app/paths";
 import BlogHero from "$lib/components/BlogHero.svelte";
 </script>
 
@@ -7,9 +6,9 @@ import BlogHero from "$lib/components/BlogHero.svelte";
 
 <section class="quick-links">
 	<nav class="links">
-		<a href={resolve("/blog")}>→ blog</a>
-		<a href={resolve("/whois")}>→ whois</a>
-		<a href={resolve("/lab")}>→ lab</a>
+		<a href="/blog">→ blog</a>
+		<a href="/whois">→ whois</a>
+		<a href="/lab">→ lab</a>
 	</nav>
 </section>
 

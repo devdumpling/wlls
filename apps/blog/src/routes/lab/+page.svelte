@@ -1,5 +1,5 @@
 <script lang="ts">
-import { onMount } from 'svelte';
+import { onMount } from "svelte";
 
 // NOTE: Using onMount pattern instead of experimental async (<svelte:boundary> + await)
 // because Threlte's context API is incompatible with async boundaries as of Svelte 5.3.
@@ -12,7 +12,7 @@ let loading = true;
 
 onMount(async () => {
 	try {
-		const module = await import('$lib/components/ThrelteScene.svelte');
+		const module = await import("$lib/components/ThrelteScene.svelte");
 		ThrelteScene = module.default;
 	} finally {
 		loading = false;
@@ -123,8 +123,7 @@ onMount(async () => {
 		border-bottom-style: solid;
 	}
 
-	.scene-loading,
-	.scene-error {
+	.scene-loading {
 		height: 100%;
 		display: flex;
 		flex-direction: column;
@@ -147,16 +146,6 @@ onMount(async () => {
 		to {
 			transform: rotate(360deg);
 		}
-	}
-
-	.scene-error {
-		color: var(--muted-foreground);
-	}
-
-	.error-detail {
-		font-size: 0.875rem;
-		font-family: monospace;
-		color: var(--accent);
 	}
 
 	@media (min-width: 768px) {

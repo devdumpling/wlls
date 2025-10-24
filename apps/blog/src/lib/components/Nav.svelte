@@ -1,6 +1,5 @@
 <script>
 import { onMount } from "svelte";
-import { resolve } from "$app/paths";
 import { page } from "$app/state";
 
 // Build breadcrumb segments from current path
@@ -10,7 +9,7 @@ const breadcrumbs = $derived.by(() => {
 
 	const segments = pathname.split("/").filter(Boolean);
 	return segments.map((segment, index) => {
-		const path = "/" + segments.slice(0, index + 1).join("/");
+		const path = `/${segments.slice(0, index + 1).join("/")}`;
 		return { label: segment, path };
 	});
 });
@@ -43,13 +42,13 @@ onMount(() => {
 </script>
 
 <nav class:hidden={!isVisible}>
-	<a href={resolve("/")} class="home">wlls.dev</a>
+	<a href="/" class="home">wlls.dev</a>
 	{#if breadcrumbs.length > 0}
 		<span class="divider">/</span>
 		<span class="breadcrumb-wrapper">
 			{#each breadcrumbs as crumb, i (crumb.path)}
 				<a
-					href={resolve(crumb.path)}
+					href={crumb.path}
 					class="crumb"
 					style="view-transition-name: nav-crumb{crumb.path.replace(/\//g, '-')};"
 				>

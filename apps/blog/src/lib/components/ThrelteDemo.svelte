@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Canvas } from '@threlte/core';
-	import Scene from './ThrelteScene.svelte';
+import { Canvas } from "@threlte/core";
+import Scene from "./ThrelteScene.svelte";
 </script>
 
 <div class="threlte-container">

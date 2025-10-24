@@ -12,23 +12,27 @@ import { formatDate } from "$lib/utils";
 import "../../styles/blog-post.css";
 
 // Props that mdsvex provides - try both metadata and direct props
-type Props = {
+interface Props {
 	metadata?: Metadata;
 	children?: Snippet;
-} & Metadata;
+	title?: string;
+	date?: string;
+	description?: string;
+	topic?: string;
+}
 
-let props = $props<Props>();
+let { metadata, children, title, date, description, topic }: Props = $props();
 
 // Access metadata either from metadata prop or directly from props
-const metadata: Metadata = props.metadata || {
-	title: props.title,
-	date: props.date,
-	description: props.description,
-	topic: props.topic,
+const metadataValue: Metadata = metadata || {
+	title: title!,
+	date: date!,
+	description: description!,
+	topic: topic!,
 };
 
 // Format date nicely
-const formattedDate = $derived(metadata.date ? formatDate(metadata.date) : null);
+const formattedDate = $derived(metadataValue.date ? formatDate(metadataValue.date) : null);
 
 // Table of contents items
 let tocItems = $state<TocItem[]>([]);
@@ -52,24 +56,24 @@ onMount(() => {
 <article class="blog-post">
 	<header class="post-header">
 		<div class="metadata">
-			{#if metadata.topic}
-				<span class="topic">{metadata.topic}</span>
+			{#if metadataValue.topic}
+				<span class="topic">{metadataValue.topic}</span>
 				<span class="divider">·</span>
 			{/if}
 			{#if formattedDate}
 				<span class="date">{formattedDate}</span>
 			{/if}
 		</div>
-		{#if metadata.title}
-			<h1>{metadata.title}</h1>
+		{#if metadataValue.title}
+			<h1>{metadataValue.title}</h1>
 		{/if}
-		{#if metadata.description}
-			<p class="description">{metadata.description}</p>
+		{#if metadataValue.description}
+			<p class="description">{metadataValue.description}</p>
 		{/if}
 	</header>
 
 	<div class="content">
-		{@render props.children?.()}
+		{@render children?.()}
 	</div>
 
 	<footer class="post-footer">
@@ -133,9 +137,7 @@ onMount(() => {
 		margin: 0;
 	}
 
-	.content {
-		/* Content styles are handled by article styles in app.css */
-	}
+	/* Content styles are handled by article styles in app.css */
 
 	.post-footer {
 		margin-top: 6rem;

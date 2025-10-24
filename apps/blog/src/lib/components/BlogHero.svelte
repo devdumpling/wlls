@@ -1,6 +1,8 @@
 <script lang="ts">
 // Lazy load the constellation component
-const ConstellationGoL = import('./ConstellationGoL.svelte').then(m => m.default);
+const ConstellationGoL = import("./ConstellationGoL.svelte").then(
+	(m) => m.default,
+);
 </script>
 
 <section class="hero">

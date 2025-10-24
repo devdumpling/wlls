@@ -4,9 +4,9 @@ import { formatDate } from "$lib/utils";
 
 let { posts }: { posts: Post[] } = $props();
 
-// Separate current and archived posts
-const currentPosts = posts.filter((post) => !post.archive);
-const archivedPosts = posts.filter((post) => post.archive);
+// Separate current and archived posts using $derived for reactivity
+const currentPosts = $derived(posts.filter((post) => !post.archive));
+const archivedPosts = $derived(posts.filter((post) => post.archive));
 </script>
 
 <section class="featured-posts">
