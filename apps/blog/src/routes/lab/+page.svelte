@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { Canvas } from '@threlte/core';
-	import HeroScene from '$lib/components/HeroScene.svelte';
+import { Canvas } from "@threlte/core";
+import HeroScene from "$lib/components/HeroScene.svelte";
 </script>
 
 <svelte:head>
@@ -95,7 +95,7 @@
 	.scene-info a {
 		color: var(--accent);
 		text-decoration: none;
-		border-bottom: 1px dotted var(--accent);
+		border-bottom: 1px dashed var(--accent);
 	}
 
 	.scene-info a:hover {

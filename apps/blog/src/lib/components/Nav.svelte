@@ -48,11 +48,9 @@ onMount(() => {
 		<span class="divider">/</span>
 		<span class="breadcrumb-wrapper">
 			{#each breadcrumbs as crumb, i (crumb.path)}
-				<span style="view-transition-name: nav-crumb-{i};">
-					<a href={resolve(crumb.path)} class="crumb">
-						{crumb.label}
-					</a>
-				</span>
+				<a href={resolve(crumb.path)} class="crumb">
+					{crumb.label}
+				</a>
 				{#if i < breadcrumbs.length - 1}
 					<span class="divider">/</span>
 				{/if}
@@ -84,7 +82,6 @@ onMount(() => {
 	@media (max-width: 1279px) {
 		nav {
 			background: var(--background);
-			border-bottom: 1px solid var(--border);
 			backdrop-filter: blur(10px);
 			background: color-mix(in oklch, var(--background) 95%, transparent);
 		}
@@ -110,7 +107,7 @@ onMount(() => {
 	a {
 		color: inherit;
 		text-decoration: none;
-		border-bottom: 1px dotted transparent;
+		border-bottom: 1px dashed transparent;
 		transition: border-color 0.2s ease, transform 0.1s ease;
 		display: inline-block;
 	}

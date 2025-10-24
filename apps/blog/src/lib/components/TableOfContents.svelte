@@ -63,7 +63,7 @@ function scrollToHeading(id: string, event: MouseEvent) {
 </script>
 
 {#if items.length > 0}
-	<aside class="table-of-contents">
+	<aside class="table-of-contents" style="view-transition-name: toc;">
 		<nav>
 			<p class="toc-title">Contents</p>
 			<ul>

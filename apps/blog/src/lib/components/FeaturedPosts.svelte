@@ -19,7 +19,7 @@ const archivedPosts = posts.filter((post) => post.archive);
 				<a href="/blog/{post.slug}" class="post-link">
 					<div class="post-content">
 						{#if post.topic}
-							<div class="post-meta">
+							<div class="post-meta" style="view-transition-name: post-topic-{post.slug};">
 								<span class="post-topic">{post.topic}</span>
 							</div>
 						{/if}
@@ -27,7 +27,7 @@ const archivedPosts = posts.filter((post) => post.archive);
 						<div class="post-main">
 							<h3>{post.title}</h3>
 							<p class="post-excerpt">{post.description}</p>
-							<div class="post-info">
+							<div class="post-info" style="view-transition-name: post-date-{post.slug};">
 								<span>{formatDate(post.date, 'short')}</span>
 								<span class="post-indicator">→</span>
 							</div>
@@ -43,8 +43,7 @@ const archivedPosts = posts.filter((post) => post.archive);
 		<div class="archive-section">
 			<h3 class="archive-heading">Archive</h3>
 			<p class="archive-description">
-				Older writing from my Medium days, preserved here as artifacts from a different era of my
-				work.
+				Older writing preserved here as artifacts from a different era of my work.
 			</p>
 
 			<div class="posts-list archive-posts">
@@ -53,7 +52,7 @@ const archivedPosts = posts.filter((post) => post.archive);
 						<a href="/blog/{post.slug}" class="post-link">
 							<div class="post-content">
 								{#if post.topic}
-									<div class="post-meta">
+									<div class="post-meta" style="view-transition-name: post-topic-{post.slug};">
 										<span class="post-topic">{post.topic}</span>
 									</div>
 								{/if}
@@ -61,7 +60,7 @@ const archivedPosts = posts.filter((post) => post.archive);
 								<div class="post-main">
 									<h4>{post.title}</h4>
 									<p class="post-excerpt">{post.description}</p>
-									<div class="post-info">
+									<div class="post-info" style="view-transition-name: post-date-{post.slug};">
 										<span>{formatDate(post.date, 'short')}</span>
 										<span class="post-indicator">→</span>
 									</div>
@@ -200,9 +199,8 @@ const archivedPosts = posts.filter((post) => post.archive);
 
 	/* Archive Section */
 	.archive-section {
-		margin-top: 8rem;
+		margin-top: 4rem;
 		padding-top: 4rem;
-		border-top: 1px solid var(--border);
 	}
 
 	.archive-heading {

@@ -34,7 +34,7 @@ import BlogHero from "$lib/components/BlogHero.svelte";
 	.links a {
 		color: var(--muted-foreground);
 		text-decoration: none;
-		border-bottom: 1px dotted transparent;
+		border-bottom: 1px dashed transparent;
 		transition: all 0.2s ease;
 		display: inline-block;
 	}

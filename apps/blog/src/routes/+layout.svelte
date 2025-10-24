@@ -1,17 +1,145 @@
 <script lang="ts">
-import { onNavigate } from '$app/navigation';
+import { onNavigate } from "$app/navigation";
 import Nav from "$lib/components/Nav.svelte";
 
 let { children, data } = $props();
 
-// Enable view transitions with custom animations
+// Store previous breadcrumbs to detect changes
+let previousCrumbs: string[] = [];
+
+// Typewriter effect with instant character appearance and variance
+function typewriterEffect(element: HTMLElement, reverse = false) {
+	const text = element.textContent || "";
+	if (!text) return;
+
+	// Split into character spans
+	element.innerHTML = text
+		.split("")
+		.map(
+			(char) => `<span class="char">${char === " " ? "&nbsp;" : char}</span>`,
+		)
+		.join("");
+
+	const chars = element.querySelectorAll(".char");
+	const baseDelay = 60; // Base ms between characters
+	const variance = 30; // Random variance (+/- ms)
+
+	chars.forEach((char, i) => {
+		if (char instanceof HTMLElement) {
+			// Add random variance to make it feel like real typing
+			const randomVariance = (Math.random() - 0.5) * variance;
+			const index = reverse ? chars.length - i - 1 : i;
+			const delay = index * baseDelay + randomVariance;
+
+			char.animate(
+				[
+					{ opacity: 0, offset: 0 },
+					{ opacity: 0, offset: 0.99 },
+					{ opacity: 1, offset: 1 },
+				],
+				{
+					duration: 10, // Very short duration - instant appearance
+					delay: Math.max(0, delay),
+					easing: "linear",
+					fill: "both",
+				},
+			);
+		}
+	});
+}
+
+// Backspace effect - characters disappear from end to start
+function backspaceEffect(element: HTMLElement) {
+	const text = element.textContent || "";
+	if (!text) return;
+
+	// Already split into chars or needs splitting
+	const chars = element.querySelectorAll(".char");
+	if (chars.length === 0) {
+		// Not yet split, split it
+		element.innerHTML = text
+			.split("")
+			.map(
+				(char) => `<span class="char">${char === " " ? "&nbsp;" : char}</span>`,
+			)
+			.join("");
+	}
+
+	const charElements = element.querySelectorAll(".char");
+	const baseDelay = 40; // Faster than typing
+	const variance = 20;
+
+	charElements.forEach((char, i) => {
+		if (char instanceof HTMLElement) {
+			const randomVariance = (Math.random() - 0.5) * variance;
+			const index = charElements.length - i - 1; // Reverse order
+			const delay = index * baseDelay + randomVariance;
+
+			char.animate(
+				[
+					{ opacity: 1, offset: 0 },
+					{ opacity: 1, offset: 0.99 },
+					{ opacity: 0, offset: 1 },
+				],
+				{
+					duration: 10,
+					delay: Math.max(0, delay),
+					easing: "linear",
+					fill: "both",
+				},
+			);
+		}
+	});
+}
+
+// Enable view transitions with WAAPI typewriter for nav
 onNavigate((navigation) => {
 	if (!document.startViewTransition) return;
 
 	return new Promise((resolve) => {
-		document.startViewTransition(async () => {
+		const transition = document.startViewTransition(async () => {
 			resolve();
 			await navigation.complete;
+		});
+
+		// After view transition updates DOM, trigger typewriter
+		transition.ready.then(() => {
+			const crumbLinks = Array.from(
+				document.querySelectorAll(".breadcrumb-wrapper .crumb"),
+			);
+			const currentCrumbs = crumbLinks.map((link) => link.textContent || "");
+
+			// Detect if we're going up or down the tree
+			const goingUp = currentCrumbs.length < previousCrumbs.length;
+			const goingDown = currentCrumbs.length > previousCrumbs.length;
+
+			if (goingUp) {
+				// Going up - don't animate, just update
+				// (The removed crumbs are already gone, nothing to animate)
+			} else if (goingDown) {
+				// Going down - only animate the NEW segments
+				crumbLinks.forEach((link, i) => {
+					if (link instanceof HTMLElement) {
+						// Check if this crumb existed before
+						const isNew =
+							i >= previousCrumbs.length ||
+							currentCrumbs[i] !== previousCrumbs[i];
+						if (isNew) {
+							typewriterEffect(link);
+						}
+					}
+				});
+			} else {
+				// Same level navigation - animate all
+				crumbLinks.forEach((link) => {
+					if (link instanceof HTMLElement) {
+						typewriterEffect(link);
+					}
+				});
+			}
+
+			// Store current state for next navigation
+			previousCrumbs = currentCrumbs;
 		});
 	});
 });
@@ -106,7 +234,7 @@ onNavigate((navigation) => {
 		a {
 			color: oklch(0.5 0.15 250);
 			text-decoration: none;
-			border-bottom: 1px dotted transparent;
+			border-bottom: 1px dashed transparent;
 			transition: border-color 0.2s;
 		}
 
@@ -250,58 +378,38 @@ onNavigate((navigation) => {
 			animation: none;
 		}
 
-		/* Nav breadcrumb typing effect when appearing/disappearing
-		   Each breadcrumb segment gets its own transition name (nav-crumb-0, nav-crumb-1, etc) */
-		::view-transition-new(nav-crumb-0):only-child,
-		::view-transition-new(nav-crumb-1):only-child,
-		::view-transition-new(nav-crumb-2):only-child {
-			animation: type-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+		/* Post topics slide in from left when appearing */
+		::view-transition-new(post-topic-*):only-child {
+			animation: slide-in-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
 		}
 
-		::view-transition-old(nav-crumb-0):only-child,
-		::view-transition-old(nav-crumb-1):only-child,
-		::view-transition-old(nav-crumb-2):only-child {
-			animation: type-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+		/* Post dates fade in subtly when appearing */
+		::view-transition-new(post-date-*):only-child {
+			animation: fade-in-subtle 0.25s ease-out both;
 		}
 
-		/* When breadcrumb exists on both pages, update instantly */
-		::view-transition-group(nav-crumb-0):not(:only-child),
-		::view-transition-group(nav-crumb-1):not(:only-child),
-		::view-transition-group(nav-crumb-2):not(:only-child) {
+		/* Table of contents fades in when appearing on post pages */
+		::view-transition-new(toc):only-child {
+			animation: fade-in-subtle 0.3s ease-out 0.1s both;
+		}
+
+		/* When these elements exist on both pages, update instantly */
+		::view-transition-group(post-topic-*):not(:only-child),
+		::view-transition-group(post-date-*):not(:only-child),
+		::view-transition-group(toc):not(:only-child) {
 			animation: none;
 		}
 
-		::view-transition-old(nav-crumb-0):not(:only-child),
-		::view-transition-old(nav-crumb-1):not(:only-child),
-		::view-transition-old(nav-crumb-2):not(:only-child) {
-			animation: instant-out 0.001ms both;
-		}
-
-		::view-transition-new(nav-crumb-0):not(:only-child),
-		::view-transition-new(nav-crumb-1):not(:only-child),
-		::view-transition-new(nav-crumb-2):not(:only-child) {
+		::view-transition-old(post-topic-*):not(:only-child),
+		::view-transition-old(post-date-*):not(:only-child),
+		::view-transition-old(toc):not(:only-child),
+		::view-transition-new(post-topic-*):not(:only-child),
+		::view-transition-new(post-date-*):not(:only-child),
+		::view-transition-new(toc):not(:only-child) {
 			animation: instant-in 0.001ms both;
 		}
 
 		/* Keyframe animations */
-		@keyframes type-in {
-			from {
-				clip-path: inset(0 100% 0 0);
-			}
-			to {
-				clip-path: inset(0 0 0 0);
-			}
-		}
-
-		@keyframes type-out {
-			from {
-				clip-path: inset(0 0 0 0);
-			}
-			to {
-				clip-path: inset(0 100% 0 0);
-			}
-		}
-
 		@keyframes instant-out {
 			to {
 				opacity: 0;
@@ -315,6 +423,31 @@ onNavigate((navigation) => {
 			to {
 				opacity: 1;
 			}
+		}
+
+		@keyframes slide-in-left {
+			from {
+				transform: translateX(-3rem);
+				opacity: 0;
+			}
+			to {
+				transform: translateX(0);
+				opacity: 1;
+			}
+		}
+
+		@keyframes fade-in-subtle {
+			from {
+				opacity: 0;
+			}
+			to {
+				opacity: 1;
+			}
+		}
+
+		/* Character spans for typewriter effect */
+		:global(.char) {
+			display: inline-block;
 		}
 	</style>
 </svelte:head>
