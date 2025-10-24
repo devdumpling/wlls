@@ -4,10 +4,7 @@ import Nav from "$lib/components/Nav.svelte";
 
 let { children, data } = $props();
 
-// Store previous breadcrumbs to detect changes
-let previousCrumbs: string[] = [];
-
-// Typewriter effect with instant character appearance and variance
+// Typewriter effect with instant character appearance and natural variance
 function typewriterEffect(element: HTMLElement, reverse = false) {
 	const text = element.textContent || "";
 	if (!text) return;
@@ -22,15 +19,15 @@ function typewriterEffect(element: HTMLElement, reverse = false) {
 
 	const chars = element.querySelectorAll(".char");
 	const baseDelay = 60; // Base ms between characters
-	const variance = 30; // Random variance (+/- ms)
+	const variance = 40; // Random variance (+/- ms)
 
 	chars.forEach((char, i) => {
 		if (char instanceof HTMLElement) {
 			// Add random variance to make it feel like real typing
-			const randomVariance = (Math.random() - 0.5) * variance;
+			// Use full range variance (not just +/-)
+			const randomVariance = (Math.random() - 0.5) * 2 * variance;
 			const index = reverse ? chars.length - i - 1 : i;
 			const delay = index * baseDelay + randomVariance;
-			const isLastChar = i === chars.length - 1;
 
 			// Animate character appearance
 			const animation = char.animate(
@@ -60,9 +57,8 @@ function typewriterEffect(element: HTMLElement, reverse = false) {
 	});
 }
 
-// Selection highlight and delete effect for going up the tree
+// Selection highlight and instant delete effect (like selecting text and hitting delete)
 function selectAndDeleteEffect(element: HTMLElement) {
-	// Highlight the entire element with accent color, then delete instantly
 	element.animate(
 		[
 			{ background: "var(--accent)", color: "var(--background)", opacity: 1, offset: 0 },
@@ -83,20 +79,19 @@ onNavigate((navigation) => {
 	if (!document.startViewTransition) return;
 
 	return new Promise((resolve) => {
-		// Capture current breadcrumbs BEFORE the transition
+		// Capture current breadcrumbs before transition starts
 		const oldCrumbLinks = Array.from(
 			document.querySelectorAll(".breadcrumb-wrapper .crumb"),
 		);
 		const oldCrumbs = oldCrumbLinks.map((link) => link.textContent || "");
 
-		// Determine destination by parsing the target URL
-		// This is a bit hacky but we need to know direction before transition
+		// Determine navigation direction by comparing destination with current
 		const targetPath = (navigation as any).to?.url?.pathname || window.location.pathname;
 		const targetSegments = targetPath.split("/").filter(Boolean);
 		const willGoUp = targetSegments.length < oldCrumbs.length;
 
-		// If going up, highlight and animate removal BEFORE transition
 		if (willGoUp) {
+			// Going up tree: animate highlight+delete on removed segments (while still in DOM)
 			const removedSegments = oldCrumbLinks.slice(targetSegments.length);
 			removedSegments.forEach((link) => {
 				if (link instanceof HTMLElement) {
@@ -104,7 +99,7 @@ onNavigate((navigation) => {
 				}
 			});
 		} else {
-			// If going down or same level, immediately remove all cursors to avoid flash
+			// Going down/same level: remove all cursors immediately to prevent flash
 			document.querySelectorAll(".breadcrumb-wrapper .char.has-cursor").forEach((char) => {
 				char.classList.remove("has-cursor");
 			});
@@ -115,29 +110,27 @@ onNavigate((navigation) => {
 			await navigation.complete;
 		});
 
-		// After view transition updates DOM, trigger typewriter
+		// After DOM updates, handle cursor positioning and typewriter animations
 		transition.ready.then(() => {
 			const crumbLinks = Array.from(
 				document.querySelectorAll(".breadcrumb-wrapper .crumb"),
 			);
 			const newCrumbs = crumbLinks.map((link) => link.textContent || "");
 
-			// Helper to remove all cursors from breadcrumbs
+			// Helpers for cursor management
 			const removeAllCursors = () => {
 				document.querySelectorAll(".breadcrumb-wrapper .char.has-cursor").forEach((char) => {
 					char.classList.remove("has-cursor");
 				});
 			};
 
-			// Helper to add cursor to last character of an element
 			const addCursorToLastChar = (element: HTMLElement) => {
 				const text = element.textContent || "";
 				if (!text) return;
 
-				// Remove all existing cursors first
 				removeAllCursors();
 
-				// Split into character spans if not already split
+				// Split into character spans if needed
 				const chars = element.querySelectorAll(".char");
 				if (chars.length === 0) {
 					element.innerHTML = text
@@ -149,38 +142,31 @@ onNavigate((navigation) => {
 				// Add cursor to last character
 				const allChars = element.querySelectorAll(".char");
 				if (allChars.length > 0) {
-					const lastChar = allChars[allChars.length - 1];
-					lastChar.classList.add("has-cursor");
+					allChars[allChars.length - 1].classList.add("has-cursor");
 				}
 			};
 
-			// Detect if we're going up or down the tree
-			// oldCrumbs = where we were, newCrumbs = where we are now
+			// Determine direction
 			const goingUp = newCrumbs.length < oldCrumbs.length;
 			const goingDown = newCrumbs.length > oldCrumbs.length;
 
 			if (goingUp) {
-				// Going up - just add cursor to last crumb's last char (no typewriter)
-				// (Delete animation already played before transition)
+				// Going up: add cursor to remaining segment (delete animation already ran)
 				const lastCrumb = crumbLinks[crumbLinks.length - 1];
 				if (lastCrumb instanceof HTMLElement) {
 					addCursorToLastChar(lastCrumb);
 				}
 			} else if (goingDown) {
-				// Going down - only animate the NEW segments
+				// Going down: typewrite only NEW segments
 				crumbLinks.forEach((link, i) => {
 					if (link instanceof HTMLElement) {
-						// Check if this crumb existed before
-						const isNew =
-							i >= oldCrumbs.length ||
-							newCrumbs[i] !== oldCrumbs[i];
+						const isNew = i >= oldCrumbs.length || newCrumbs[i] !== oldCrumbs[i];
 						if (isNew) {
 							typewriterEffect(link);
 						} else {
-							// Existing crumb - just ensure it has character spans (no cursor)
+							// Existing segment: split into character spans (no cursor, no animation)
 							const text = link.textContent || "";
-							const chars = link.querySelectorAll(".char");
-							if (chars.length === 0 && text) {
+							if (text && link.querySelectorAll(".char").length === 0) {
 								link.innerHTML = text
 									.split("")
 									.map((char) => `<span class="char">${char === " " ? "&nbsp;" : char}</span>`)
@@ -190,16 +176,13 @@ onNavigate((navigation) => {
 					}
 				});
 			} else {
-				// Same level navigation - animate all
+				// Same level: typewrite all segments
 				crumbLinks.forEach((link) => {
 					if (link instanceof HTMLElement) {
 						typewriterEffect(link);
 					}
 				});
 			}
-
-			// Store current state for next navigation (not used anymore, but keeping for reference)
-			previousCrumbs = newCrumbs;
 		});
 	});
 });
@@ -438,7 +421,7 @@ onNavigate((navigation) => {
 			animation: none;
 		}
 
-		/* Disable all default animations for nav breadcrumbs - we'll handle with JS */
+		/* Nav breadcrumbs: disable all default view transition animations (handled with WAAPI in JS) */
 		::view-transition-old(nav-crumb-blog),
 		::view-transition-old(nav-crumb-blog-ai-reflections),
 		::view-transition-old(nav-crumb-blog-ai-agents),
@@ -450,17 +433,13 @@ onNavigate((navigation) => {
 		::view-transition-new(nav-crumb-blog-ai-agents),
 		::view-transition-new(nav-crumb-blog-react-is-dead),
 		::view-transition-new(nav-crumb-whois),
-		::view-transition-new(nav-crumb-lab) {
-			animation: none !important;
-		}
-
-		/* Instant update when elements exist on both pages */
-		::view-transition-group(nav-crumb-blog):not(:only-child),
-		::view-transition-group(nav-crumb-blog-ai-reflections):not(:only-child),
-		::view-transition-group(nav-crumb-blog-ai-agents):not(:only-child),
-		::view-transition-group(nav-crumb-blog-react-is-dead):not(:only-child),
-		::view-transition-group(nav-crumb-whois):not(:only-child),
-		::view-transition-group(nav-crumb-lab):not(:only-child) {
+		::view-transition-new(nav-crumb-lab),
+		::view-transition-group(nav-crumb-blog),
+		::view-transition-group(nav-crumb-blog-ai-reflections),
+		::view-transition-group(nav-crumb-blog-ai-agents),
+		::view-transition-group(nav-crumb-blog-react-is-dead),
+		::view-transition-group(nav-crumb-whois),
+		::view-transition-group(nav-crumb-lab) {
 			animation: none !important;
 		}
 
@@ -528,25 +507,6 @@ onNavigate((navigation) => {
 			}
 			to {
 				opacity: 1;
-			}
-		}
-
-		@keyframes select-and-delete {
-			0% {
-				background: var(--accent);
-				color: var(--background);
-				opacity: 1;
-			}
-			50% {
-				background: var(--accent);
-				color: var(--background);
-				opacity: 1;
-			}
-			50.01% {
-				opacity: 0;
-			}
-			100% {
-				opacity: 0;
 			}
 		}
 
