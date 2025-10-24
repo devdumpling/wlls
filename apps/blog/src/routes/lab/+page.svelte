@@ -1,25 +1,7 @@
 <script lang="ts">
-import { onMount } from 'svelte';
-
-let Canvas: any = null;
-let Scene: any = null;
-let loading = true;
-let error: Error | null = null;
-
-onMount(async () => {
-	try {
-		const [canvasModule, sceneModule] = await Promise.all([
-			import("@threlte/core"),
-			import("$lib/components/HeroScene.svelte")
-		]);
-		Canvas = canvasModule.Canvas;
-		Scene = sceneModule.default;
-	} catch (e) {
-		error = e as Error;
-	} finally {
-		loading = false;
-	}
-});
+// Lazy load heavy 3D dependencies - these will load in parallel
+const Canvas = import("@threlte/core").then(m => m.Canvas);
+const Scene = import("$lib/components/HeroScene.svelte").then(m => m.default);
 </script>
 
 <svelte:head>
@@ -35,21 +17,27 @@ onMount(async () => {
 	</div>
 
 	<div class="scene-container">
-		{#if loading}
-			<div class="scene-loading">
-				<div class="spinner"></div>
-				<p>Loading 3D scene...</p>
-			</div>
-		{:else if error}
-			<div class="scene-error">
-				<p>Failed to load 3D scene</p>
-				<p class="error-detail">{error.message}</p>
-			</div>
-		{:else if Canvas && Scene}
-			<Canvas>
-				<Scene />
-			</Canvas>
-		{/if}
+		<svelte:boundary>
+			{#snippet pending()}
+				<div class="scene-loading">
+					<div class="spinner"></div>
+					<p>Loading 3D scene...</p>
+				</div>
+			{/snippet}
+
+			{#snippet failed(error)}
+				<div class="scene-error">
+					<p>Failed to load 3D scene</p>
+					<p class="error-detail">{error.message}</p>
+				</div>
+			{/snippet}
+
+			{@const CanvasComponent = await Canvas}
+			{@const SceneComponent = await Scene}
+			<CanvasComponent>
+				<SceneComponent />
+			</CanvasComponent>
+		</svelte:boundary>
 	</div>
 
 	<div class="scene-info">

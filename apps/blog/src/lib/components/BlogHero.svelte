@@ -1,26 +1,18 @@
 <script lang="ts">
-import { onMount } from 'svelte';
-
-let ConstellationGoL: any = null;
-let loading = true;
-
-onMount(async () => {
-	try {
-		const module = await import('./ConstellationGoL.svelte');
-		ConstellationGoL = module.default;
-	} catch (error) {
-		console.error('Failed to load constellation:', error);
-	} finally {
-		loading = false;
-	}
-});
+// Lazy load the constellation component
+const ConstellationGoL = import('./ConstellationGoL.svelte').then(m => m.default);
 </script>
 
 <section class="hero">
 	<!-- Lazy-loaded constellation background -->
-	{#if ConstellationGoL}
-		<ConstellationGoL />
-	{/if}
+	<svelte:boundary>
+		{#snippet pending()}
+			<!-- Show nothing while loading - hero content is visible below -->
+		{/snippet}
+
+		{@const Constellation = await ConstellationGoL}
+		<Constellation />
+	</svelte:boundary>
 
 	<!-- Hero content (always visible) -->
 	<div class="hero-content">
