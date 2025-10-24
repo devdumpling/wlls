@@ -48,7 +48,11 @@ onMount(() => {
 		<span class="divider">/</span>
 		<span class="breadcrumb-wrapper">
 			{#each breadcrumbs as crumb, i (crumb.path)}
-				<a href={resolve(crumb.path)} class="crumb">
+				<a
+					href={resolve(crumb.path)}
+					class="crumb"
+					style="view-transition-name: nav-crumb{crumb.path.replace(/\//g, '-')};"
+				>
 					{crumb.label}
 				</a>
 				{#if i < breadcrumbs.length - 1}
@@ -137,6 +141,14 @@ onMount(() => {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+		position: relative;
+	}
+
+	/* Vim/Helix-style block cursor - applied to last character */
+	:global(.crumb .char.has-cursor) {
+		background: var(--accent);
+		color: var(--background);
+		opacity: 1;
 	}
 
 	@media (prefers-color-scheme: dark) {
