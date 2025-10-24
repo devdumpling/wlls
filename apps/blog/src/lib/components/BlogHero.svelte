@@ -20,9 +20,9 @@ const ConstellationGoL = import("./ConstellationGoL.svelte").then(
 	<div class="hero-content">
 		<h1>Dev Wells</h1>
 		<p class="tagline">
-			Dad, engineer, sometimes writer,
-			crafting elegant interfaces, exploring fantasy realms, and
-			building worlds through code and story.
+			Dad / Engineer / Writer,<br />
+			crafting interfaces, exploring worlds<br />
+			through code and story.
 		</p>
 	</div>
 </section>
@@ -41,7 +41,6 @@ const ConstellationGoL = import("./ConstellationGoL.svelte").then(
 	.hero-content {
 		max-width: 56rem;
 		margin: 0 auto;
-		text-align: center;
 		position: relative;
 		z-index: 10;
 	}
@@ -52,15 +51,17 @@ const ConstellationGoL = import("./ConstellationGoL.svelte").then(
 		letter-spacing: -0.03em;
 		margin: 0 0 2rem 0;
 		line-height: 1.1;
+		text-align: left;
 	}
 
 	.tagline {
 		font-size: clamp(1.125rem, 2.5vw, 1.5rem);
 		color: var(--muted-foreground);
 		font-weight: 300;
-		line-height: 1.6;
+		line-height: 1.8;
 		max-width: 42rem;
-		margin: 0 auto;
+		margin: 0;
+		text-align: left;
 	}
 
 	@media (min-width: 768px) {
