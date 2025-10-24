@@ -46,12 +46,18 @@ onMount(() => {
 	<a href={resolve("/")} class="home">wlls.dev</a>
 	{#if breadcrumbs.length > 0}
 		<span class="divider">/</span>
-		{#each breadcrumbs as crumb, i}
-			<a href={resolve(crumb.path)} class="crumb">{crumb.label}</a>
-			{#if i < breadcrumbs.length - 1}
-				<span class="divider">/</span>
-			{/if}
-		{/each}
+		<span class="breadcrumb-wrapper">
+			{#each breadcrumbs as crumb, i (crumb.path)}
+				<span style="view-transition-name: nav-crumb-{i};">
+					<a href={resolve(crumb.path)} class="crumb">
+						{crumb.label}
+					</a>
+				</span>
+				{#if i < breadcrumbs.length - 1}
+					<span class="divider">/</span>
+				{/if}
+			{/each}
+		</span>
 	{/if}
 </nav>
 
@@ -105,10 +111,16 @@ onMount(() => {
 		color: inherit;
 		text-decoration: none;
 		border-bottom: 1px dotted transparent;
+		transition: border-color 0.2s ease, transform 0.1s ease;
+		display: inline-block;
 	}
 
 	a:hover {
 		border-bottom-color: currentColor;
+	}
+
+	a:active {
+		transform: scale(0.92);
 	}
 
 	.home {
@@ -122,6 +134,12 @@ onMount(() => {
 
 	.crumb {
 		font-weight: 400;
+	}
+
+	.breadcrumb-wrapper {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
 	}
 
 	@media (prefers-color-scheme: dark) {

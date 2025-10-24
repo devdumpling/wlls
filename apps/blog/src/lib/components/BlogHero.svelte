@@ -1,14 +1,20 @@
 <section class="hero">
 	<div class="floating-elements">
-		<!-- Gradient orbs with CSS animations -->
-		<div class="orb orb-1"></div>
-		<div class="orb orb-2"></div>
-		<div class="orb orb-3"></div>
+		<!-- Abstract shapes with interesting details -->
 
-		<!-- Subtle geometric shapes -->
-		<div class="shape shape-1"></div>
-		<div class="shape shape-2"></div>
-		<div class="shape shape-3"></div>
+		<!-- Circle with a missing chunk and inner dot -->
+		<div class="shape shape-circle">
+			<div class="inner-dot"></div>
+		</div>
+
+		<!-- Square rotated 45deg with gradient border -->
+		<div class="shape shape-square"></div>
+
+		<!-- Triangle with subtle animation -->
+		<div class="shape shape-triangle"></div>
+
+		<!-- Line that slowly rotates -->
+		<div class="shape shape-line"></div>
 	</div>
 
 	<div class="hero-content">
@@ -39,90 +45,48 @@
 		overflow: hidden;
 	}
 
-	/* Gradient orbs */
-	.orb {
-		position: absolute;
-		border-radius: 50%;
-		filter: blur(60px);
-		opacity: 0.15;
-		animation: float 20s ease-in-out infinite;
-	}
-
-	.orb-1 {
-		width: 400px;
-		height: 400px;
-		background: radial-gradient(circle, var(--accent), transparent);
-		top: 10%;
-		left: 10%;
-		animation-delay: 0s;
-	}
-
-	.orb-2 {
-		width: 300px;
-		height: 300px;
-		background: radial-gradient(circle, #c4a7e7, transparent);
-		bottom: 20%;
-		right: 15%;
-		animation-delay: 7s;
-	}
-
-	.orb-3 {
-		width: 350px;
-		height: 350px;
-		background: radial-gradient(circle, #9ccfd8, transparent);
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		animation-delay: 14s;
-	}
-
-	/* Geometric shapes */
 	.shape {
 		position: absolute;
-		border: 1px solid var(--accent);
-		opacity: 0.1;
-		animation: rotate-slow 30s linear infinite;
+		opacity: 0.08;
 	}
 
-	.shape-1 {
-		width: 80px;
-		height: 80px;
-		top: 20%;
+	/* Circle with missing chunk and inner dot */
+	.shape-circle {
+		width: 200px;
+		height: 200px;
+		top: 15%;
 		right: 20%;
-		transform: rotate(45deg);
-	}
-
-	.shape-2 {
-		width: 120px;
-		height: 120px;
-		bottom: 30%;
-		left: 15%;
+		border: 2px solid var(--accent);
 		border-radius: 50%;
-		animation: pulse 8s ease-in-out infinite;
+		animation: rotate-circle 25s linear infinite, drift-subtle 18s ease-in-out infinite;
 	}
 
-	.shape-3 {
-		width: 60px;
-		height: 60px;
-		top: 60%;
-		right: 30%;
-		clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
-		animation: drift 12s ease-in-out infinite;
+	/* Create the missing chunk using a background-colored wedge */
+	.shape-circle::before {
+		content: '';
+		position: absolute;
+		width: 30px;
+		height: 30px;
+		background: var(--background);
+		top: 50%;
+		right: -2px;
+		transform: translateY(-50%) rotate(45deg);
+		z-index: 1;
 	}
 
-	@keyframes float {
-		0%, 100% {
-			transform: translate(0, 0);
-		}
-		33% {
-			transform: translate(30px, -30px);
-		}
-		66% {
-			transform: translate(-20px, 20px);
-		}
+	.inner-dot {
+		position: absolute;
+		width: 8px;
+		height: 8px;
+		background: var(--accent);
+		border-radius: 50%;
+		top: 50%;
+		right: 10px;
+		transform: translateY(-50%);
+		z-index: 2;
 	}
 
-	@keyframes rotate-slow {
+	@keyframes rotate-circle {
 		from {
 			transform: rotate(0deg);
 		}
@@ -131,23 +95,125 @@
 		}
 	}
 
-	@keyframes pulse {
+	@keyframes drift-subtle {
 		0%, 100% {
-			transform: scale(1);
-			opacity: 0.1;
+			transform: translate(0, 0) rotate(0deg);
 		}
-		50% {
-			transform: scale(1.1);
-			opacity: 0.2;
+		33% {
+			transform: translate(15px, -10px) rotate(120deg);
+		}
+		66% {
+			transform: translate(-10px, 8px) rotate(240deg);
 		}
 	}
 
-	@keyframes drift {
+	/* Square rotated with gradient-like effect using multiple borders */
+	.shape-square {
+		width: 120px;
+		height: 120px;
+		bottom: 25%;
+		left: 15%;
+		border: 2px solid var(--accent);
+		transform: rotate(45deg);
+		animation: rotate-slow 30s linear infinite, drift-square 22s ease-in-out infinite;
+		box-shadow:
+			inset 0 0 0 1px oklch(0.7 0.18 340),
+			inset 0 0 0 2px oklch(0.65 0.15 45);
+	}
+
+	/* Triangle */
+	.shape-triangle {
+		width: 0;
+		height: 0;
+		border-left: 60px solid transparent;
+		border-right: 60px solid transparent;
+		border-bottom: 100px solid var(--accent);
+		top: 60%;
+		right: 25%;
+		animation: pulse-subtle 8s ease-in-out infinite, drift-triangle 20s ease-in-out infinite;
+	}
+
+	/* Rotating line */
+	.shape-line {
+		width: 150px;
+		height: 2px;
+		background: linear-gradient(
+			to right,
+			transparent,
+			var(--accent),
+			transparent
+		);
+		top: 35%;
+		left: 25%;
+		transform-origin: center;
+		animation: rotate-line 25s linear infinite, drift-line 24s ease-in-out infinite;
+	}
+
+	@keyframes drift-slow {
 		0%, 100% {
-			transform: translateX(0) translateY(0);
+			transform: translate(0, 0) rotate(0deg);
+		}
+		33% {
+			transform: translate(20px, -15px) rotate(5deg);
+		}
+		66% {
+			transform: translate(-15px, 10px) rotate(-3deg);
+		}
+	}
+
+	@keyframes rotate-slow {
+		from {
+			transform: rotate(45deg);
+		}
+		to {
+			transform: rotate(405deg);
+		}
+	}
+
+	@keyframes pulse-subtle {
+		0%, 100% {
+			opacity: 0.08;
+			transform: scale(1);
 		}
 		50% {
-			transform: translateX(40px) translateY(-20px);
+			opacity: 0.12;
+			transform: scale(1.05);
+		}
+	}
+
+	@keyframes rotate-line {
+		from {
+			transform: rotate(0deg);
+		}
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@keyframes drift-square {
+		0%, 100% {
+			transform: translate(0, 0) rotate(45deg);
+		}
+		50% {
+			transform: translate(-12px, 10px) rotate(45deg);
+		}
+	}
+
+	@keyframes drift-triangle {
+		0%, 100% {
+			transform: translate(0, 0);
+		}
+		50% {
+			transform: translate(10px, -8px);
+		}
+	}
+
+	@keyframes drift-line {
+		0%, 100% {
+			transform: translate(0, 0);
+		}
+		50% {
+			transform: translate(-8px, 12px);
 		}
 	}
 

@@ -1,7 +1,20 @@
 <script lang="ts">
+import { onNavigate } from '$app/navigation';
 import Nav from "$lib/components/Nav.svelte";
 
 let { children, data } = $props();
+
+// Enable view transitions with custom animations
+onNavigate((navigation) => {
+	if (!document.startViewTransition) return;
+
+	return new Promise((resolve) => {
+		document.startViewTransition(async () => {
+			resolve();
+			await navigation.complete;
+		});
+	});
+});
 </script>
 
 <svelte:head>
@@ -225,6 +238,83 @@ let { children, data } = $props();
 
 		.animate-drift {
 			animation: drift 8s ease-in-out infinite;
+		}
+
+		/* ========================================
+		   View Transitions
+		   ======================================== */
+
+		/* Disable default cross-fade on all pages */
+		::view-transition-old(root),
+		::view-transition-new(root) {
+			animation: none;
+		}
+
+		/* Nav breadcrumb typing effect when appearing/disappearing
+		   Each breadcrumb segment gets its own transition name (nav-crumb-0, nav-crumb-1, etc) */
+		::view-transition-new(nav-crumb-0):only-child,
+		::view-transition-new(nav-crumb-1):only-child,
+		::view-transition-new(nav-crumb-2):only-child {
+			animation: type-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+		}
+
+		::view-transition-old(nav-crumb-0):only-child,
+		::view-transition-old(nav-crumb-1):only-child,
+		::view-transition-old(nav-crumb-2):only-child {
+			animation: type-out 0.2s cubic-bezier(0.4, 0, 0.2, 1) both;
+		}
+
+		/* When breadcrumb exists on both pages, update instantly */
+		::view-transition-group(nav-crumb-0):not(:only-child),
+		::view-transition-group(nav-crumb-1):not(:only-child),
+		::view-transition-group(nav-crumb-2):not(:only-child) {
+			animation: none;
+		}
+
+		::view-transition-old(nav-crumb-0):not(:only-child),
+		::view-transition-old(nav-crumb-1):not(:only-child),
+		::view-transition-old(nav-crumb-2):not(:only-child) {
+			animation: instant-out 0.001ms both;
+		}
+
+		::view-transition-new(nav-crumb-0):not(:only-child),
+		::view-transition-new(nav-crumb-1):not(:only-child),
+		::view-transition-new(nav-crumb-2):not(:only-child) {
+			animation: instant-in 0.001ms both;
+		}
+
+		/* Keyframe animations */
+		@keyframes type-in {
+			from {
+				clip-path: inset(0 100% 0 0);
+			}
+			to {
+				clip-path: inset(0 0 0 0);
+			}
+		}
+
+		@keyframes type-out {
+			from {
+				clip-path: inset(0 0 0 0);
+			}
+			to {
+				clip-path: inset(0 100% 0 0);
+			}
+		}
+
+		@keyframes instant-out {
+			to {
+				opacity: 0;
+			}
+		}
+
+		@keyframes instant-in {
+			from {
+				opacity: 0;
+			}
+			to {
+				opacity: 1;
+			}
 		}
 	</style>
 </svelte:head>

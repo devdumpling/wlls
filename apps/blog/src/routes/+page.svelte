@@ -35,11 +35,16 @@ import BlogHero from "$lib/components/BlogHero.svelte";
 		color: var(--muted-foreground);
 		text-decoration: none;
 		border-bottom: 1px dotted transparent;
-		transition: all 0.3s ease;
+		transition: all 0.2s ease;
+		display: inline-block;
 	}
 
 	.links a:hover {
 		border-bottom-color: var(--accent);
 		color: var(--accent);
+	}
+
+	.links a:active {
+		transform: scale(0.92);
 	}
 </style>
