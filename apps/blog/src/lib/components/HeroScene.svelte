@@ -2,8 +2,8 @@
 	import { T, useTask } from '@threlte/core';
 	import * as THREE from 'three';
 
-	let rotation = 0;
-	let time = 0;
+	let rotation = $state(0);
+	let time = $state(0);
 
 	useTask((delta) => {
 		rotation += delta * 0.15;

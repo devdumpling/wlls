@@ -1,7 +1,23 @@
 <script lang="ts">
-// Lazy load heavy 3D dependencies - these will load in parallel
-const Canvas = import("@threlte/core").then(m => m.Canvas);
-const Scene = import("$lib/components/HeroScene.svelte").then(m => m.default);
+import { onMount } from 'svelte';
+
+// NOTE: Using onMount pattern instead of experimental async (<svelte:boundary> + await)
+// because Threlte's context API is incompatible with async boundaries as of Svelte 5.3.
+// When components load through <svelte:boundary>, they lose the reactive context that
+// Threlte's useTask depends on, breaking animations.
+// TODO: Check if Threlte has updated to work with experimental async boundaries
+// See: https://svelte.dev/docs/svelte/svelte-boundary
+let ThrelteScene: any = null;
+let loading = true;
+
+onMount(async () => {
+	try {
+		const module = await import('$lib/components/ThrelteScene.svelte');
+		ThrelteScene = module.default;
+	} finally {
+		loading = false;
+	}
+});
 </script>
 
 <svelte:head>
@@ -17,27 +33,14 @@ const Scene = import("$lib/components/HeroScene.svelte").then(m => m.default);
 	</div>
 
 	<div class="scene-container">
-		<svelte:boundary>
-			{#snippet pending()}
-				<div class="scene-loading">
-					<div class="spinner"></div>
-					<p>Loading 3D scene...</p>
-				</div>
-			{/snippet}
-
-			{#snippet failed(error)}
-				<div class="scene-error">
-					<p>Failed to load 3D scene</p>
-					<p class="error-detail">{error.message}</p>
-				</div>
-			{/snippet}
-
-			{@const CanvasComponent = await Canvas}
-			{@const SceneComponent = await Scene}
-			<CanvasComponent>
-				<SceneComponent />
-			</CanvasComponent>
-		</svelte:boundary>
+		{#if loading}
+			<div class="scene-loading">
+				<div class="spinner"></div>
+				<p>Loading 3D scene...</p>
+			</div>
+		{:else if ThrelteScene}
+			<ThrelteScene />
+		{/if}
 	</div>
 
 	<div class="scene-info">
