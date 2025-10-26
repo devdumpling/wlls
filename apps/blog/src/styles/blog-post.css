@@ -114,3 +114,23 @@ article.blog-post strong {
 article.blog-post em {
 	font-style: italic;
 }
+
+article.blog-post img {
+	max-width: 100%;
+	height: auto;
+	margin: 1rem 0;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+}
+
+article.blog-post figure {
+	margin: 3rem 0;
+}
+
+article.blog-post figcaption {
+	margin-top: 1rem;
+	font-size: 0.9375rem;
+	color: var(--muted-foreground);
+	text-align: center;
+	font-style: italic;
+}

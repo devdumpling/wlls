@@ -1,0 +1,18 @@
+---
+title: "Blog Paralysis"
+description: "A decade of rewriting the same blog."
+topic: "Engineering"
+date: "2025-10-24"
+---
+
+December 24, 2024 I decided to rewrite my blog... again. Why was I doing this on Christmas Eve with a 2 month old baby? Good question, but the commit history doesn't lie.
+
+![Dev Commit History on December 24, 2024](/images/commit.png)
+
+Questionable decision making skills on my behalf. At any rate, I was at it again. What spurned it on this time? I don't even hardly remember. I know I really wanted to give Astro a fair shot at something, and my prior "blog" had languished into the abyss of forgotten projects.
+
+I had been reading a *lot* of Alex Russell and related web performance content as well, so probably was inspired by that. He's right, of course, there's really no need to have clientside react running on a static blog of all things. Bit heavy-handed.
+
+I digress. Or actually, this entire post is going to be digressions until we *maybe* arrive at a life lesson, so buckle up.
+
+Out of this amorphous desire to rebuild the simplest possible developer project one can (but somehow this time it will be better and I'll actually write in it), [alexwells.dev](https://alexwells.dev) was born.
