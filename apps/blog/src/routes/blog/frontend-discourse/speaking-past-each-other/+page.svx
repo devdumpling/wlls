@@ -1,0 +1,6 @@
+---
+title: "Speaking Past Each Other"
+description: "TBD"
+topic: "Engineering"
+date: "Oct 25 2025"
+---
