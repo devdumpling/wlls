@@ -5,6 +5,10 @@ date: "Nov 14, 2025"
 description: "Brief thoughts on the cycle of discourse around new technology, and the danger of reductionism on both sides"
 ---
 
+<script>
+import DiscussOn from '$lib/components/DiscussOn.svelte';
+</script>
+
 It's funny to me how often a new technology will come out and one of the immediate responses will be **"Ah, X did this years ago."**
 
 A few examples from my own experience:
@@ -53,3 +57,8 @@ But I do wonder how often we speak past each other or miss opportunities to prog
 ----
 
 P.S. I recognize the irony in calling out particular comments here in a post that is, at some level, pushing against polarizing discourse. The examples aren't intended to call out any particular individuals here, rather provide my perspective as someone who spends too much time reading people's opinions of software.
+
+<DiscussOn links={[
+	{ platform: 'Hacker News', url: 'https://news.ycombinator.com/item?id=45927978' },
+	{ platform: 'Bluesky', url: 'https://bsky.app/profile/wlls.dev/post/3m5m27qanlc2t' }
+]} />
