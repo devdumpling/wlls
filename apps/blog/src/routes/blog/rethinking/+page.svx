@@ -1,0 +1,55 @@
+---
+title: "X Did This Years Ago"
+topic: "Engineering"
+date: "Nov 14, 2025"
+description: "Brief thoughts on the cycle of discourse around new technology, and the danger of reductionism on both sides"
+---
+
+It's funny to me how often a new technology will come out and one of the immediate responses will be **"Ah, X did this years ago."**
+
+A few examples from my own experience:
+
+**Next.js** implements React server components, enabling a Reactish primitive for handoff between components rendered on a server and a client in React. In Next's implementation, the initial load these server components results in components rendered to HTML, and then future loads receive updates via a serialized representation of the server-rendered components.
+
+The immediate reaction to this was, "Ah, PHP did this years ago!" and people aghast at the alleged naivete of contemporary framework authors "rediscovering" server-side rendering. The reaction was prolific enough that Vercel even adopted it as a meme at the following Next conf where RSC and the app router became mainstays in the metaframework.
+
+> From a [2023 post on Next App Router](https://news.ycombinator.com/item?id=36440575): "This new routing approach with fetching data everywhere will end up like old PHP mess and then they will discover controllers again :)"
+
+**Marko 6** implements resumability, an alternative to hydration, and a common reaction is "Ah, Phoenix did this years ago with morphdom" (ironic given they both depend on morphdom to accomplish similar outcomes).
+
+> Not verbatim, [but same vibe](https://news.ycombinator.com/item?id=45858905): "Dear front end devs
+Please chill w making new languages and frameworks that re-solve solved problems. The internet is working fine as it is."
+
+**Zero** and other sync engines implement server-authoritative reactive queries, allowing one to build apps as if all the data was local while still keeping an external server as the source of truth, and the reaction is "Ah, so it's Elixir/Phoenix!"
+
+This one is from a conversation with a former coworker. Aside, the more of these I write, the more I realize that everything ultimately gets compared to .NET, PHP, or Erlang/Elm at some level...
+
+Perhaps at this point one could say, "Well yes, that's the web ecosystem for you," but it's easy to find examples outside of my immediate area of expertise.
+
+**Docker** implements containerization with portability... "Oh, like FreeBSD jails?"
+
+**GraphQL** implements client-driven query composition for introspection and type-safety..."Ah! You mean like SOAP had query languages for APIs?"
+
+**Microservices** implement distributed system architecture with independent deployment boundaries... "My guy have you even heard of service-oriented architectures?!"
+
+The list goes on.
+
+And while it'd be disingenuous of me to argue that these sort of reactions represent any sort of discursive truth on their particular subject matters, I think we can learn something from this pattern.
+
+Because in all of these cases there is more to the story. Each comparison is useful in helping bridge mental representations for a prior attempt at solving a particular problem to a new attempt, but too often this is the end of the discussion. I think this sort of reductionism is both unproductive for newer generations learning _how_ to solve problems (regardless of the efficacy of the solution) and dismissive of the rethinking cycles that go into iterating on hard problems.
+
+In each case, they flatten context, constraints,and ecosystem evolution. And while that sort of compression has its place, I think as Software Engineers we should avoid being too dogmatic in our comparisons, for they rob us of proper discussions on the tradeoffs new solutions propose.
+
+I'd be remiss not to mention the opposite side of this as well, that those iterating on prior solutions fail to take seriously the prior solutions or fully understand their tradeoffs. I experienced this myself in the past couple years when, after shilling the triumphs of modern React metaframeworks (e.g. Next.js), I was dismissive of criticisms of the end-user experience on marginal (slower) devices. I was quick to deny the absurd javascript bundle sizes of "modern apps" as skill issues and bad engineering, rather than understand competing paradigms (progressive enhancement, MPAs, etc.).
+
+> Aside, I recommend [Alex Russell's writing on this](https://infrequently.org/2024/11/if-not-react-then-what/) if you're curious. Although I think he falls into the same trap of being overly-prescriptive/dogmatic. If you're reading this Alex, I think we have a lot of work to do on finding common ground with frameworkists to break down these problems.
+
+It took me seeing my *own* solutions fail before I recognized my biases, and that seems to be a common theme to these sort of "rethinking" problems.
+
+These days I try to be wary of getting too attached to any one framework, stack, or technology, even if that tool truly **is** the right one for the job. I don't have any inspiring takeaway conclusion for you here. This post is more reflection than anything.
+
+But I do wonder how often we speak past each other or miss opportunities to progress when we fail to appreciate these "rediscovery" or "evolutionary" or whatever you want to call them moments in software development.
+
+----
+
+P.S. I recognize the irony in calling out particular comments here in a post that is, at some level, pushing against polarizing discourse. The examples aren't intended to call out any particular individuals here, rather provide my perspective as someone who spends too much time reading people's opinions of software.
