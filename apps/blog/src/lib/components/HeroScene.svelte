@@ -1,6 +1,5 @@
 <script lang="ts">
 import { T, useTask } from "@threlte/core";
-import * as THREE from "three";
 
 let rotation = $state(0);
 let time = $state(0);
