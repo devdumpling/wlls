@@ -19,23 +19,23 @@ I don't know what became of it.
 
 Late 90s we moved away from the city and into suburbia, where I screened until college.
 
-Throughout those days, my family ran the gamut of blocky, ugly CRTs.
+Throughout then, my family ran the gamut of blocky, ugly CRTs.
 
 There was the tiny CRT, whose screen couldn't have been much larger than your standard laptop, which for some reason I most fondly remember sitting atop the kitchen countertop, hosting a PS1 that I didn't have a memory card for (or at least, not initially). Since there was no memory card, I couldn't save. That meant that I would literally leave the PS1 on all the time to try and get through games. A lot of tears were shed one day when the power cut out.
 
 There was the "parents CRT", which claimed a dusty corner of my parents' bedroom and played either The News or whatever Soap opera my mom decided to leave on over night.
 
-And I'm sure there were other random CRTs that floated in and out of our house, taking up refuge in one room or another for a time. These were all less memorable, however, than *the CRT*.
+And there were other random CRTs that floated in and out of our house, taking refuge in one room or another for a time. These were all less memorable, however, than *the CRT*.
 
-I lived on a split-level house, and the lower level was definitively "the kids" part of the house, shared between me and my three siblings. On that level, there was a room that housed the main event, *the CRT*. This was unlike the other screens that came and went in my house as I grew up. No, this was a staple. A tank-like, magnificent beast that my Dad practically praised. The screen itself was probably no larger than your average family TV of the early 2000s, however this TV was from the sweet time when TVs were expected to be such an unchanging mainstay of your home that they were built to match your furniture.
+I lived on a split-level house, and the lower level was definitively "the kids" part of the house, shared between me and my three siblings. On that level, there was a room that housed the main event, *the CRT*. This was unlike the other screens that came and went in my house as I grew up. No, this was a staple. A tank-like, magnificent beast that my Dad praised. The screen itself was probably no larger than your average family TV of the early 2000s, however this TV was from the sweet time when TVs were expected to be such an unchanging mainstay of your home that they were built to match your furniture.
 
-To wit, it was encased in Oak faux-cabinetry, which I'm sure matched the wood panelling of some houses, but it looked horrible in ours. And yet, it was the central figurehead downstairs. Collectively, between my three siblings and I, that TV racked up *thousands* of hours of screen time. It carried us from Mario Kart on the SNES to Halo 3 on the Xbox 360 to beyond. In the nearly two decades that we lived in that house (though I left at 18, my younger siblings lived there until we sold it in 2017), that TV never broke. Sure, it would do increasingly odd things. Sometimes you'd have to slap it to get the picture to stabilize, and as it aged it would take upward of a minute to turn on. But it never really failed.
+To wit, it was encased in Oak faux-cabinetry, which I'm sure matched the wood panelling of some houses, but looked horrible in ours. And yet, it was the central figurehead downstairs. Collectively, between my three siblings and I, that TV racked up *thousands* of hours of screen time. It carried us from Mario Kart on the SNES to Halo 3 on the Xbox 360 to beyond. In the nearly two decades that we lived in that house (though I left at 18, my younger siblings lived there until we sold it in 2017), that TV never broke. Sure, it would do increasingly odd things. Sometimes you'd have to slap it to get the picture to stabilize, and as it aged it would take upward of a minute to turn on. But it never really failed.
 
 Even as we got newer TVs and non-CRTs, and even as we moved from primarily a household of consoles to a PC-dominated one, that old chonker was still the undeniable king of screens in that house.
 
 ## Adolescence, PC monitors
 
-As any good child of the 90s, my interest eventually turned to PCs. My earliest memories of PCs were with my dad, running DOS programs off floppies on whatever insane hardware my Dad managed to bring home. By the time I was around 10 (2003), he would take me to the local library with him, where he volunteered/worked for a brief period. I would run off to the computer lab and spend my days playing Neopets, Runescape, and eventually Maplestory. It was a bit dodgy, given that you were only supposed to be on any one computer for an hour at a time. I don't think the staff there liked me very much, as I would constantly abuse the local network to move files around to reduce the amount of time I needed to spend reinstalling games.
+As any good 90s kid, my interest eventually turned to PCs. My earliest memories of PCs were with my dad, running DOS programs off floppies on whatever alien hardware my Dad managed to bring home. By the time I was around 10 (2003), he would take me to the local library with him, where he volunteered/worked for a brief period. I would run off to the computer lab and spend my days playing Neopets, Runescape, and eventually Maplestory. It was a bit dodgy, given that you were only supposed to be on any one computer for an hour at a time. I don't think the staff there liked me very much, as I would constantly abuse the local network to move files around to reduce the amount of time I needed to spend reinstalling games.
 
 This would last some time until we finally purchased a more powerful home PC. I wish I knew the exact model, but I'm sure it was a Dell Dimension something with a Pentium 4. Powerful enough for everything I ever wanted, from my budding programming interest to World of Warcraft.
 
@@ -45,4 +45,26 @@ As I got into high school, we gained a second PC, plus school-issued laptops (De
 
 ## Early College 2011, Macbook Pro 17"
 
-Somehow I made it to college.
+Somehow I made it to college. Even more baffling to me, was that the finance office handed me a 2 grand check cut from my student loans to buy a laptop. It was the most money I'd ever held or seen at that time, and I immediately spent all of it on a late 2011-edition 17" Macbook Pro.
+
+That machine was a *beast*, and also my first Mac (I'd used Macs before, but never owned one). The 17" screen felt huge compared to other laptops, but I absolutely loved it. It barely fit into my backpack, but I could easily fit a couple terminal panes side by side or sprawl out various documents as I took notes in class. I genuinely loved that laptop, though it got ridiculously hot and the fans sounded like a small helicopter at times.
+
+I was fortunate to also land a job at my Campus' CIT on literally day one of college (thank you Mom for encouraging me to simply go in and ask for a job day one). Somehow, I landed one of the coveted back of house jobs, which meant rather than working the "Help Desk", I got to bunker down in the fluorescent-lit library basement and fix computers and printers.
+
+This was rewarding in two key ways. First, I got hands-on experience with hardware over 4 years, debugging thousands of printers, desktops, and laptops across campus. Though I only worked there part time, I cannot overstate how influential (though I wouldn't recognize it then) this has been on my career.
+
+Second, and more relevant to this anthology, is that I regularly received hand-me-downs, particularly old monitors. I constantly was swapping in and out various unusual LCDs. I remember at one point I _hung 19" LCD monitors_ in my dorm room from fishing wire (rated 100lb+) so that I could have a "Matrix-style" floating display setup. Terribly impractical, and probably didn't help my romantic prospects, but also cool as fuck.
+
+## Late College, various
+
+At some point junior year I broke my Macbook Pro. Despite working in an Apple-licensed hardware shop, it was quickly deemed irreparable, and I of course didn't have Apple Care (my financial aid check only went so far).
+
+Unable to buy a new laptop, my boss awarded me a 15" Thinkpad we had laying around, which I threw Ubuntu on and made work. The screen, while 1080p, wasn't much compared to the glossy 17" that I had before. It also was incapable of playing Dota 2, which I was slowly becoming obsessed with. I managed to score yet another hand-me-down though late Junior year, a 24" 2009 iMac. Its Intel Core 2 Duo managed to run Dota 2 on minimum settings better than my Thinkpad, and had the advantage of me not needing to grab a copy of Windows.
+
+It was fine, but I grew unhappy with the performance. I worked full-time at CIT that summer, rather than going home to family. My job spotted my housing, too, which meant I was able to pocket most of my earnings. By Fall of 2014, I had enough squirreled away to build my first Desktop PC.
+
+Most of the parts were "whatever was good enough to support my GPU". I managed to find an AMD Radeon R9 280, which at the time was a very good card, for around $2-300, I believe. Along with it, I picked up a Spectre 27" 1440p monitor from a shady Korean website for $299, which despite being quite a gamble, ended up being a solid purchase.
+
+I eventually bought a second one as well from the same Korean site.
+
+Senior year I sat these in my off-campus house on a desk that barely held both of them at once. My best friends/housemates (and my ex-girlfriend) thought the entire scene was absurd, but it was also very on brand for me by that time. I leaned into it.
