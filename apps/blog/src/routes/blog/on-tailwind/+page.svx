@@ -7,6 +7,7 @@ description: "How I think about CSS authorship in 2025"
 
 <script>
 import DiscussOn from '$lib/components/DiscussOn.svelte';
+import Aside from '$lib/components/Aside.svelte';
 </script>
 
 Every few months or so I get asked (or nerd-sniped) into a discussion on [tailwindcss](https://tailwindcss.com/).
@@ -26,11 +27,13 @@ With that out of the way, I can express why _I personally_ like Tailwind, and wh
 
 Then with any luck, the next time this debate crops up, I can link to this post and go back to shipping UI in whatever I'm enjoying at that moment.
 
-### Brief aside
+<Aside title="Brief aside on terminology">
 
 Throughout the rest of this I will use `tailwind` to refer to not only tailwind, but all "utility-first" CSS frameworks as a category. Likewise, I will refer to vanilla approaches as just `vanilla CSS`, including but not limited to derivates like SCSS, CSS modules, and the like where you're writing mostly valid CSS (e.g. could copy paste it into a browser and it would work).
 
 There's some nuance in here, I agree, but I think it's largely irrelevant to the macro points I'll make. If it makes you feel better, you can keep your "But what about SCSS" pitchfork readied.
+
+</Aside>
 
 ## The case for tailwind
 
@@ -125,7 +128,7 @@ Again, all of this isn't to say you can't achieve this in other systems. You can
 
 There are other benefits (colocation, purging, IDE tooling) that have been well-documented elsewhere. I'm focusing on what I think is underappreciated.
 
-## Why not tailwind
+## The case against tailwind
 
 Now, in any discussion of tailwind, once you've gotten all of the ceremony out of the way, people tend to **dislike** (at least) two things:
 
@@ -138,7 +141,7 @@ In fact, I used to resent tailwind (in the v2 era, which was when I first spent 
 
 > "Every bone in my body tells me to hate Tailwind... but the practicality, consistency, and performance of it is pretty unmatched at scale within an org... it takes all the guess-work + onboarding off of the table."
 
-Prior to my current job, I was a lead on a "Frontend Platform" team. Before we switched to tailwind, we were a styled-components shop. It had all kinds of problems (performance chief among them, IMO). We decided to bakeoff a bunch of solutions, and landed on tailwind... _despite all of us agreeing it was ugly at first._
+Prior to my current job, I was a lead on a "Frontend Platform" team. Before we switched to tailwind, we were a styled-components shop. Styled-components, for all that it was good at, had its share of problems (performance chief among them, IMO). We decided to bakeoff a bunch of solutions, and landed on tailwind... _despite all of us agreeing it was ugly at first._
 
 Within a few weeks of using it daily, this concern faded. It was still there, but it wasn't as bad as we anticipated.
 
@@ -189,7 +192,7 @@ Nothing spectacular here, but you can imagine this being returned in a response 
 ["$","div",null,{"className":"flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md","children":[["$","img",null,{"src":"/product.jpg","alt":"Widget","className":"aspect-square w-full rounded-md object-cover"}],["$","div",null,{"className":"flex flex-col gap-1","children":[["$","h3",null,{"className":"text-sm font-medium text-gray-900","children":"Widget"}],["$","p",null,{"className":"text-lg font-semibold text-gray-900","children":"$19.99"}]]}]]}]
 ```
 
-Ignoring that there may be improvements on the RSC payload format, this is a ton of waste for something that could have been a single `.product-card` class reference, shrinking the payload dramatically.
+Ignoring pending improvements on the RSC payload format, the payload wastes a ton of bytes on what could have been a single `.product-card` class reference, shrinking payload dramatically.
 
 It's not catastrophic (and it's better than a full page, notably), but it adds up, especially on slower connections if you're aiming for sub-100ms partial updates.
 
@@ -201,7 +204,7 @@ Yes, given enough time I'm sure these inefficiencies can be compiled away. Just 
 
 And that brings me back to the beginning of all of this.
 
-## conclusions
+## Conclusions
 
 I hope this was helpful to anyone who wonders "why do all of these people use tailwind?" Or perhaps it reaffirmed your faith in vanilla CSS. For what it's worth, I advocate writing both. The folks I've worked with who are most effective with tailwind are already CSS wizards in their own right.
 
