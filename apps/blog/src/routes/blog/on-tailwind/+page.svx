@@ -8,6 +8,8 @@ description: "How I think about CSS authorship in 2025"
 <script>
 import DiscussOn from '$lib/components/DiscussOn.svelte';
 import Aside from '$lib/components/Aside.svelte';
+import Footnote from '$lib/components/Footnote.svelte';
+import FootnoteRef from '$lib/components/FootnoteRef.svelte';
 </script>
 
 Every few months or so I get asked (or nerd-sniped) into a discussion on [tailwindcss](https://tailwindcss.com/).
@@ -208,11 +210,13 @@ And that brings me back to the beginning of all of this.
 
 I hope this was helpful to anyone who wonders "why do all of these people use tailwind?" Or perhaps it reaffirmed your faith in vanilla CSS. For what it's worth, I advocate writing both. The folks I've worked with who are most effective with tailwind are already CSS wizards in their own right.
 
-To reiterate, you can do a bang up job in just about anything these days<sup>*</sup>. What's more important is setting project/team/org-wide agreements on when escape hatches are allowed, and how they will be maintained if so... Tailwind just happens to make that agreement easier to reach.
+To reiterate, you can do a bang up job in just about anything these days<FootnoteRef id="1" />. What's more important is setting project/team/org-wide agreements on when escape hatches are allowed, and how they will be maintained if so... Tailwind just happens to make that agreement easier to reach.
 
-<sup>*</sup> except for [CSS-in-JS that's evaluated at runtime](https://dev.to/srmagura/why-were-breaking-up-wiht-css-in-js-4g9b). Please understand the drawbacks and consider alternatives.
+<Footnote id="1">
+  Except for <a href="https://dev.to/srmagura/why-were-breaking-up-wiht-css-in-js-4g9b">CSS-in-JS that's evaluated at runtime</a>. Please understand the drawbacks and consider alternatives.
+</Footnote>
 
 <DiscussOn links={[
-	{ platform: 'Hacker News', url: 'https://news.ycombinator.com/item?id=45927978' },
-	{ platform: 'Bluesky', url: 'https://bsky.app/profile/wlls.dev/post/3m5m27qanlc2t' }
+	{ platform: 'Hacker News', url: 'https://news.ycombinator.com/item?id=46062805' },
+	{ platform: 'Bluesky', url: 'https://bsky.app/profile/wlls.dev/post/3m6ku23nlgs2o' }
 ]} />
