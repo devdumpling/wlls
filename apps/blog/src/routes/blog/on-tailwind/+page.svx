@@ -1,0 +1,215 @@
+---
+title: "On Tailwind"
+topic: "Engineering"
+date: "Nov 26, 2025"
+description: "How I think about CSS authorship in 2025"
+---
+
+<script>
+import DiscussOn from '$lib/components/DiscussOn.svelte';
+</script>
+
+Every few months or so I get asked (or nerd-sniped) into a discussion on [tailwindcss](https://tailwindcss.com/).
+
+These typically take one of two forms:
+
+1. Someone singing the praises of tailwind, usually in hyperbole
+2. Someone throwing shade at tailwind, also usually hyperbole
+
+I don't want to make generalizations, and so will avoid the urge to dissect the metacommentary. I will limit myself to this:
+
+**It's 2025. You can make _most_ style authoring models work.. and fail.**
+
+I've seen robust, exceptionally well-thought-out systems in both utility-first _and_ vanilla CSS codebases. Equally, I've seen horrific, inconsistent messes of tokens, overrides, and stylesheet spaghetti in both. I think any attempted "objective" claims that one authoring model in `$CURRENT_YEAR` is de facto superior is yak shaving at best and self-limiting at worst. I know we all love a good shave, but there really is no substitute for good engineering and setting clear standards for _your project/codebase/org_.
+
+With that out of the way, I can express why _I personally_ like Tailwind, and where I think it succeeds. Then, I can talk about where I think it fails.
+
+Then with any luck, the next time this debate crops up, I can link to this post and go back to shipping UI in whatever I'm enjoying at that moment.
+
+### Brief aside
+
+Throughout the rest of this I will use `tailwind` to refer to not only tailwind, but all "utility-first" CSS frameworks as a category. Likewise, I will refer to vanilla approaches as just `vanilla CSS`, including but not limited to derivates like SCSS, CSS modules, and the like where you're writing mostly valid CSS (e.g. could copy paste it into a browser and it would work).
+
+There's some nuance in here, I agree, but I think it's largely irrelevant to the macro points I'll make. If it makes you feel better, you can keep your "But what about SCSS" pitchfork readied.
+
+## The case for tailwind
+
+When people describe what they like about tailwind, they often use words like:
+
+- simple
+- practical
+- efficient
+
+While I think you can make a case for any of these, they feel shallow. Modern CSS can be simple, practical, and efficient, too. Long gone are the days of `table` hacks and arcane `float` whackamole.
+
+I like tailwind because I like *constraints*, and it supplies reasonable ones.
+
+### Bit of history
+
+CSS, like much of the modern web, is wonderfully backward compatible. You can grab a copy of a site like Craigslist from the internet archive from 20 years ago, and the HTML and CSS in it still works. There might be a weird thing here or there, but it will layout largely identically to how it did on your Dell Dimension Pentium 4 that was in your basement in 2005.
+
+This is a blessing, and I know of no other global platform that is both still widely used and _that backward compatible_ (let's agree to avoid the ECMAscript elephant in the room for this essay).
+
+But that backward compatability hasn't come for free. One of the prices we've paid is that there are a ridiculous number of ways to author your styles, depending on your stack of choice, experience level, performance budgets, and programming preferences.
+
+Over the years, this burden/blessing of choice resulted in various CSS "frameworks" (a catch-all for patterns, pre/postprocessors, and build pipelines) to help one author CSS _"correctly"_ (for some opinionated definition of correct).
+
+In the mid 2000s we had early frameworks, grids, and "download my cool CSS stylesheet"s:
+
+- Blueprint CSS
+- Bootstrap and other kitchen-sink styles
+
+Then came the preprocessors and pattern attempts:
+
+- Sass/SCSS, LESS, Stylus
+- OOCSS, ITCSS (a la Harry Roberts' "inverted triangle")
+- Atomic CSS (a predecessor to utility-first)
+
+Then the dark ages... CSS-in-JS:
+
+- CSS Modules, styled-components, Emotion
+- Chakra, Mantine (component libraries)
+
+Finally, utility-first and zero-runtime / hybrid approaches
+
+- TailwindCSS, UnoCSS, PandaCSS
+- vanilla-extract, Linaria, styleX
+
+And of course, native, normal vanilla CSS putting in work
+
+- CSS nesting, `@layer`, container queries, has, and all the other goodies we _wish_ we had a decade ago
+
+If you've been developing on the web for some or most of this time, you're probably a bit seasick of the industry oscillating between abstraction and platform primitives. I digress.
+
+If you *haven't* been paying close attention, though, it's easy to see this list and immediately jump to the base conclusion _"Wow, web development is so unstable."_
+
+And I get that impulse, and can empathize. To a certain degree, I also agree. But I'd ask you to _not_ oversimplify the situation just yet.
+
+The reality is that there were real pain points to authoring CSS over the years, and while we've had no shortage of (arguably) incomplete attempts to mend that pain, there's been no panacea. Depending on when you started developing on the web, any of these solutions may have rung a chord with you. You may have thought, perhaps on the high of leaving one job and starting another, "Ah! Finally, I can ditch `$PRIOR_TECH`", only to eventually step on whatever LEGOs were lurking on the floor at your new job's CSS-solution of choice.
+
+Or perhaps you've never really had to deal with certain classes (pun intended) of these problems, because you've managed to stay away from the frontend, or you've never had to agonize over a product design going against _their own design system_ because "it's good marketing" or whatever.
+
+### Scale
+
+And so we've had a number of solutions with varying degrees of success.
+
+Depending on what you're building, most of these could probably work _pretty good_. But the problem is that invariably a project/team/org/business will grow large enough that their initial styling solution needs to adapt, sometimes violently.
+
+What seems like an edge case at first warps into a whole new awkward mess. Some technical leaders stubbornly crack down and say, "No! You can only do `X`", which works great on paper until there's a deadline and suddenly a ton of friction between a Design System team and the Marketing VP who (understandably) can't see what's wrong with injecting some CSS from your CMS to override a coveted landing page that will allegedly generate a million extra dollars this quarter.
+
+Frustrated with this, you go back to the drawing board to modify your existing solution to handle whatever.
+
+I've seen this play out time and time again (and many times that "modification" ends up looking _awfully similar_ to a utility-first framework... but I'm getting ahead of myself).
+
+And I'm not the only one. Tailwind Labs talks about this "unmaintainable spiderweb of fucking bullshit" in their [2023 Keynote](https://www.youtube.com/watch?v=CLkxRnRQtDE).
+
+> "The most reusable components are those with class names that are independent of the content."
+
+This is a quote from [Nicolas Gallagher](https://nicolasgallagher.com/about-html-semantics-front-end-architecture/), referenced in the above talk, and in my experience hits the nail squarely on the head.
+
+This premise got (and still gets) a ton of backlash as there was a prevailing idea that HTML should be pure and not have presentational information. I feel like this viewpoint has largely flipped, but still relevant to note.
+
+### bringing it back
+
+I think tailwind gets the "reusable" part right, but more importantly, it gets it right with **GENERALLY SPEAKING** one way to do things. Constraints!
+
+And I don't mean one way to visually style something, I mean one way to _author_ styles. If you know CSS, you can learn tailwind in an afternoon. I can onboard to any tailwind or utility-first project and both read _and write_ styles without consulting a style guide.
+
+Sure, there may be project-specific utility conventions, like `text-primary` or what have you, but this is usually all very easy to pull out of a theme `css` file (or better yet, get automatically from the tailwind LSP).
+
+At my previous job, we would also constrain the tokens that were allowed with our tailwind config, such that it was impossible to use tokens that weren't defined. You can still escape hatch with [arbitrary values](https://tailwindcss.com/docs/adding-custom-styles#using-arbitrary-values), but these are easy to spot and lint warn or error on.
+
+Again, all of this isn't to say you can't achieve this in other systems. You can, and I think there's arguments to be made that the theoretical "ceiling" of CSS authoring might be higher in a custom, vanilla-first setup. But tailwind makes this sort of consistency easy and predictable.
+
+### other benefits
+
+There are other benefits (colocation, purging, IDE tooling) that have been well-documented elsewhere. I'm focusing on what I think is underappreciated.
+
+## Why not tailwind
+
+Now, in any discussion of tailwind, once you've gotten all of the ceremony out of the way, people tend to **dislike** (at least) two things:
+
+- class soup polluting DOM
+- "it's not CSS"
+
+And I agree with both.
+
+In fact, I used to resent tailwind (in the v2 era, which was when I first spent any significant time with it). My current boss/Director said,
+
+> "Every bone in my body tells me to hate Tailwind... but the practicality, consistency, and performance of it is pretty unmatched at scale within an org... it takes all the guess-work + onboarding off of the table."
+
+Prior to my current job, I was a lead on a "Frontend Platform" team. Before we switched to tailwind, we were a styled-components shop. It had all kinds of problems (performance chief among them, IMO). We decided to bakeoff a bunch of solutions, and landed on tailwind... _despite all of us agreeing it was ugly at first._
+
+Within a few weeks of using it daily, this concern faded. It was still there, but it wasn't as bad as we anticipated.
+
+We were able to mitigate some minor pain points (like variants, class soup) with tools like [cva](https://cva.style/docs) and `cn`-like utils.
+
+In my opinion, these are "okay" solutions, but they do not solve what I believe is a more fundamental limitation of tailwind.
+
+### partials
+
+The biggest non-yak-shavy limitation I've hit with tailwind is also one of its strengths: **it's colocated with your markup**.
+
+You might be sitting there thinking, "Ah-ha! I knew it! All my homies *hate* single file components" or something to that effect.
+
+But it's not really a problem of coherence. Whatever your preferences on colocation, the fact is that since we colocate the styles with our markup, that means we're sending them down the wire in our HTML. In practice, I don't think this has a "huge" impact on first load times, since the tailwind purging process is pretty good at making sure you aren't sending classes you aren't using (or at least, can be configured as such).
+
+The problem is partials. As frameworks and tooling gradually continue to move more toward HTML partials-like solutions for DOM updates (react server components, phoenix liveview, htmx, svelte's serialized RPC format, whatever Remix 3 is doing, etc.), that means that we're often sending patches of HTML or serialized HTML over the wire.
+
+The end result is lightweight navigations and DOM updates (usable in both SPAs and MPAs), since you only need to send what has changed over the wire. In theory, this should mean the more highly optimized these patches can be, the more performant these soft-navigations can be (since we need to parse and apply each patch--YMMV depending on framework/implementation).
+
+And in this we find our conundrum. If I want to send the result of an RPC over the wire *and* that result is mostly long strings of CSS utilities, that ends up being a lot of bloat in what should ideally be a thin payload.
+
+**Let's look at a quick example.**
+
+Here's a typical React component in tailwind.
+
+```tsx
+// A typical product card component
+function ProductCard({ name, price, image }: Props) {
+  return (
+    <div className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md">
+      <img
+        src={image}
+        alt={name}
+        className="aspect-square w-full rounded-md object-cover"
+      />
+      <div className="flex flex-col gap-1">
+        <h3 className="text-sm font-medium text-gray-900">{name}</h3>
+        <p className="text-lg font-semibold text-gray-900">{price}</p>
+      </div>
+    </div>
+  );
+}
+```
+
+Nothing spectacular here, but you can imagine this being returned in a response streamed in from a back and forth response with, idk, a chatbot. The context is less important than what we might receive over the wire, e.g. an RSC payload that looks something like...
+
+```json
+["$","div",null,{"className":"flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md","children":[["$","img",null,{"src":"/product.jpg","alt":"Widget","className":"aspect-square w-full rounded-md object-cover"}],["$","div",null,{"className":"flex flex-col gap-1","children":[["$","h3",null,{"className":"text-sm font-medium text-gray-900","children":"Widget"}],["$","p",null,{"className":"text-lg font-semibold text-gray-900","children":"$19.99"}]]}]]}]
+```
+
+Ignoring that there may be improvements on the RSC payload format, this is a ton of waste for something that could have been a single `.product-card` class reference, shrinking the payload dramatically.
+
+It's not catastrophic (and it's better than a full page, notably), but it adds up, especially on slower connections if you're aiming for sub-100ms partial updates.
+
+> Note: I know people like to hate on React Server Components. But this example plays out the same in other partial implementations, unless you have a compiler or otherwise are doing static analysis, which brings me to...
+
+### but compilers
+
+Yes, given enough time I'm sure these inefficiencies can be compiled away. Just another thing to add to our build pipeline, nbd. There's also an argument to be made that this isn't uniquely a tailwind problem, as even if you weren't including your styles in your components, you'd still need a way to style the resulting partial. Still, it feels like the most "tangible" limitation I've hit with tailwind that isn't simply preference.
+
+And that brings me back to the beginning of all of this.
+
+## conclusions
+
+I hope this was helpful to anyone who wonders "why do all of these people use tailwind?" Or perhaps it reaffirmed your faith in vanilla CSS. For what it's worth, I advocate writing both. The folks I've worked with who are most effective with tailwind are already CSS wizards in their own right.
+
+To reiterate, you can do a bang up job in just about anything these days<sup>*</sup>. What's more important is setting project/team/org-wide agreements on when escape hatches are allowed, and how they will be maintained if so... Tailwind just happens to make that agreement easier to reach.
+
+<sup>*</sup> except for [CSS-in-JS that's evaluated at runtime](https://dev.to/srmagura/why-were-breaking-up-wiht-css-in-js-4g9b). Please understand the drawbacks and consider alternatives.
+
+<DiscussOn links={[
+	{ platform: 'Hacker News', url: 'https://news.ycombinator.com/item?id=45927978' },
+	{ platform: 'Bluesky', url: 'https://bsky.app/profile/wlls.dev/post/3m5m27qanlc2t' }
+]} />
