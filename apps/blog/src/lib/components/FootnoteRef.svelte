@@ -1,9 +1,9 @@
 <script lang="ts">
-	interface Props {
-		id: string | number;
-	}
+interface Props {
+	id: string | number;
+}
 
-	let { id }: Props = $props();
+let { id }: Props = $props();
 </script>
 
 <sup class="footnote-ref">

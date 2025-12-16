@@ -1,12 +1,12 @@
 <script lang="ts">
-	import type { Snippet } from "svelte";
+import type { Snippet } from "svelte";
 
-	interface Props {
-		id: string | number;
-		children: Snippet;
-	}
+interface Props {
+	id: string | number;
+	children: Snippet;
+}
 
-	let { id, children }: Props = $props();
+let { id, children }: Props = $props();
 </script>
 
 <aside class="footnote" id="footnote-{id}">

@@ -50,7 +50,7 @@ const config = {
 								light: "kanagawa-lotus",
 								dark: "kanagawa-wave",
 							},
-						})
+						}),
 					);
 					return `{@html \`${html}\`}`;
 				},

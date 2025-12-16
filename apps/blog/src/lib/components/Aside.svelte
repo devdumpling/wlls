@@ -1,13 +1,13 @@
 <script lang="ts">
-	import type { Snippet } from "svelte";
+import type { Snippet } from "svelte";
 
-	interface Props {
-		title?: string;
-		open?: boolean;
-		children: Snippet;
-	}
+interface Props {
+	title?: string;
+	open?: boolean;
+	children: Snippet;
+}
 
-	let { title = "Aside", open = false, children }: Props = $props();
+let { title = "Aside", open = false, children }: Props = $props();
 </script>
 
 <aside class="aside">

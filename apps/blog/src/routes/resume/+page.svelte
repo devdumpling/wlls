@@ -1,16 +1,19 @@
 <script lang="ts">
-	function handlePrint() {
-		window.print();
-	}
+import RoleDetail from "$lib/components/RoleDetail.svelte";
+
+function handlePrint() {
+	window.print();
+}
 </script>
 
 <svelte:head>
 	<style>
 		@media print {
-			/* Hide site chrome */
+			/* Hide site chrome and web-only elements */
 			nav,
 			.skip-link,
-			.download-button {
+			.download-button,
+			.screen-only {
 				display: none !important;
 			}
 
@@ -105,6 +108,14 @@
 					plan members)
 				</li>
 			</ul>
+			<RoleDetail title="The story">
+				<p>
+					Joined Amino Health, a Healthtech startup focused on care navigation, to lead a complete frontend rebuild and redesign. The legacy stack was a Flask/Django backend serving client-side React 16—every page load meant downloading megabytes of JavaScript before anything rendered.
+				</p>
+				<p>
+					Within months, Capital Rx acquired Amino (and shortly followed a Series F $400M raise, $3.25B valuation). Scope expanded from rebuilding one app to unifying frontend across all consumer-facing products under the new Judi Care brand, serving 54M+ plan members.
+				</p>
+			</RoleDetail>
 		</div>
 
 		<div class="experience-item">
@@ -154,6 +165,14 @@
 				  Hosted internal engineering podcast, fostering community and knowledge sharing
 				</li>
 			</ul>
+			<RoleDetail title="The story">
+				<p>
+					Joined to own a small CMS and lead a Design System team. Scope expanded quickly as I started fixing long-standing pain points—dead code slowing builds, CI pipelines that took hours, a tangled monolith that made teams step on each other. The Design System team had a reputation as gatekeepers. I focused on changing that through open communication (hosted internal podcast, open Slack huddles, Frontend Guild, workshops) and genuine partnership on other teams' problems.
+				</p>
+				<p>
+					The trust I built across teams led naturally to a management role. After nine months, I chose to return to IC—I wanted to focus on craft and building a platform that amplified every frontend engineer at the company. That's what I did: tooling, documentation, and infrastructure that helped other teams build faster and dream bigger.
+				</p>
+			</RoleDetail>
 		</div>
 
 		<div class="experience-item">
@@ -553,6 +572,14 @@
 	}
 
 	.badge {
+		font-family:
+			"SF Mono",
+			Monaco,
+			"Cascadia Code",
+			"Roboto Mono",
+			Consolas,
+			"Courier New",
+			monospace;
 		font-size: 0.6875rem;
 		padding: 0.125rem 0.5rem;
 		background: color-mix(in oklch, var(--foreground) 5%, transparent);
