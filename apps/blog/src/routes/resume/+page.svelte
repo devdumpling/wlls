@@ -591,11 +591,11 @@ function handlePrint() {
 	/* Responsive adjustments */
 	@media (max-width: 640px) {
 		.resume {
-			padding: 3rem 1rem 2rem;
+			padding: 4rem 1rem 2rem;
 		}
 
 		.download-button {
-			top: 3rem;
+			top: 4rem;
 			right: 1rem;
 		}
 
