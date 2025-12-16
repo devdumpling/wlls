@@ -222,7 +222,7 @@
 			</div>
 			<div>
 				<span class="toolkit-label">Tooling</span>
-				<span>Turborepo, pnpm, Biome, Playwright, Vitest, Sentry, Grafana, Figma</span>
+				<span>Turborepo, pnpm, Biome, Playwright, Vite, Sentry, Grafana, Figma</span>
 			</div>
 			<div>
 				<span class="toolkit-label">Data</span>
@@ -231,6 +231,62 @@
 			<div>
 				<span class="toolkit-label">Platforms</span>
 				<span>AWS, GCP, Cloudflare</span>
+			</div>
+		</div>
+	</section>
+
+	<section class="projects screen-only">
+		<h2>Projects</h2>
+		<div class="projects-grid">
+			<div class="project">
+				<h3><a href="https://github.com/devdumpling/snowglobe">Snowglobe</a></h3>
+				<p>Interactive Year in Review template with real-time presence (live cursors, pixelated avatars), photo clusters, guestbook, and easter eggs. Deduped cursor broadcasts every 50ms and spring-based animations keep it smooth.</p>
+				<div class="badges">
+					<span class="badge">SvelteKit</span>
+					<span class="badge">TypeScript</span>
+					<span class="badge">Gleam</span>
+					<span class="badge">BEAM</span>
+					<span class="badge">WebSockets</span>
+					<span class="badge">Postgres</span>
+				</div>
+			</div>
+			<div class="project">
+				<h3><a href="https://github.com/devdumpling/beacon">Beacon</a></h3>
+				<p>Privacy-focused analytics for healthcare. Tiny client SDK (&lt;1kb gzipped) running in a web worker off the main thread. Self-host friendly, designed for FedRAMP/HIPAA. Pre-alpha.</p>
+				<div class="badges">
+					<span class="badge">SvelteKit</span>
+					<span class="badge">TypeScript</span>
+					<span class="badge">Gleam</span>
+					<span class="badge">BEAM</span>
+					<span class="badge">Zero</span>
+					<span class="badge">Postgres</span>
+				</div>
+			</div>
+			<div class="project">
+				<h3><a href="https://github.com/wellwright-labs/pulse">Pulse</a></h3>
+				<p>CLI for structured self-experiments on your workflow. Define hypotheses, work in time-boxed blocks, collect subjective and objective data. Born from wanting actual data on AI-assisted coding instead of anecdotes.</p>
+				<div class="badges">
+					<span class="badge">TypeScript</span>
+					<span class="badge">Deno</span>
+					<span class="badge">SQLite</span>
+				</div>
+			</div>
+			<div class="project">
+				<h3><a href="https://github.com/wellwright-labs/lume">Lume</a></h3>
+				<p>Tooling for interactive fiction. Composable, event-sourced stories that can be traced and tested. Early stage.</p>
+				<div class="badges">
+					<span class="badge">TypeScript</span>
+				</div>
+			</div>
+			<div class="project">
+				<h3><a href="https://github.com/devdumpling/wlls">wlls.dev</a></h3>
+				<p>This site. High interactivity and modern tooling without performance waste.</p>
+				<div class="badges">
+					<span class="badge">SvelteKit</span>
+					<span class="badge">TypeScript</span>
+					<span class="badge">mdsvex</span>
+					<span class="badge">Cloudflare</span>
+				</div>
 			</div>
 		</div>
 	</section>
@@ -452,6 +508,57 @@
 		color: var(--muted-foreground);
 		min-width: 5.5rem;
 		flex-shrink: 0;
+	}
+
+	/* Projects (web only) */
+	.projects {
+		margin-bottom: 3rem;
+	}
+
+	.projects-grid {
+		display: grid;
+		gap: 1.5rem;
+	}
+
+	.project h3 {
+		font-size: 1rem;
+		font-weight: 500;
+		margin: 0 0 0.375rem;
+	}
+
+	.project h3 a {
+		color: var(--foreground);
+		text-decoration: none;
+		border-bottom: 1px dashed var(--border);
+		transition: color 0.2s, border-color 0.2s;
+	}
+
+	.project h3 a:hover {
+		color: var(--accent);
+		border-bottom-color: var(--accent);
+	}
+
+	.project p {
+		font-size: 0.875rem;
+		line-height: 1.6;
+		color: var(--muted-foreground);
+		margin: 0;
+	}
+
+	.badges {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.375rem;
+		margin-top: 0.5rem;
+	}
+
+	.badge {
+		font-size: 0.6875rem;
+		padding: 0.125rem 0.5rem;
+		background: color-mix(in oklch, var(--foreground) 5%, transparent);
+		border-radius: 3px;
+		color: var(--muted-foreground);
+		letter-spacing: 0.01em;
 	}
 
 	/* Responsive adjustments */
