@@ -31,9 +31,35 @@ function handlePrint() {
 				color: black !important;
 			}
 
-			/* Optimize page breaks */
-			.experience-item {
+			/* Keep section headers with their content */
+			h2 {
+				break-after: avoid;
+				page-break-after: avoid;
+			}
+
+			/* Keep company header + first role together */
+			.experience-header {
+				break-after: avoid;
+				page-break-after: avoid;
+			}
+
+			/* Keep role title with at least first few bullets */
+			.role {
+				break-after: avoid;
+				page-break-after: avoid;
+			}
+
+			/* Condensed items are small enough to keep together */
+			.experience-item.condensed {
 				break-inside: avoid;
+				page-break-inside: avoid;
+			}
+
+			/* Keep education and toolkit sections together */
+			.education,
+			.toolkit {
+				break-inside: avoid;
+				page-break-inside: avoid;
 			}
 
 			/* Tighter margins for print */
