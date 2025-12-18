@@ -18,21 +18,19 @@ export default defineConfig({
 		rollupOptions: {
 			output: {
 				manualChunks: (id) => {
-					// Split Three.js and related packages into separate chunks
+					// Split heavy libraries into separate chunks for lazy loading
 					if (id.includes("three")) {
 						return "three";
 					}
 					if (id.includes("@threlte")) {
 						return "threlte";
 					}
-					// Split TypeGPU into separate chunk for GPU pages
 					if (id.includes("typegpu")) {
 						return "typegpu";
 					}
-					// Split node_modules into vendor chunk
-					if (id.includes("node_modules")) {
-						return "vendor";
-					}
+					// Don't manually chunk shiki - let Vite handle it
+					// Manual chunking was causing the preload helper to bundle with shiki,
+					// which made the 9MB chunk load on every page
 				},
 			},
 		},

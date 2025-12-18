@@ -1,2 +1,16 @@
 // TypeGPU utilities and primitives
-export * from "./core";
+// Explicit exports for tree shaking (no wildcards)
+export {
+	isWebGPUSupported,
+	getWebGPUUnsupportedReason,
+	acquireGPU,
+	releaseGPU,
+	initGPUFromDevice,
+	getOrCreateRoot,
+	getPreferredFormat,
+	configureCanvas,
+	resizeCanvasToDisplaySize,
+	getCurrentTexture,
+	type CanvasConfig,
+	type ConfiguredCanvas,
+} from "./core";

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { isWebGPUSupported } from "$lib/gpu";
+	// Inline WebGPU check to avoid importing $lib/gpu which pulls in typegpu
+	const isWebGPUSupported = () =>
+		typeof navigator !== "undefined" && "gpu" in navigator;
 
 	const demos = [
 		{
