@@ -1,5 +1,17 @@
 <script lang="ts">
-import ThrelteDemo from "$lib/components/ThrelteDemo.svelte";
+import { onMount } from "svelte";
+import type { ComponentType } from "svelte";
+
+// Dynamic import to prevent Three.js from being included in SSR bundle
+// Three.js uses setTimeout in global scope, which is not allowed in Cloudflare Workers
+let ThrelteDemo: ComponentType | null = $state(null);
+let loading = $state(true);
+
+onMount(async () => {
+	const module = await import("$lib/components/ThrelteDemo.svelte");
+	ThrelteDemo = module.default;
+	loading = false;
+});
 </script>
 
 <svelte:head>
@@ -13,7 +25,11 @@ import ThrelteDemo from "$lib/components/ThrelteDemo.svelte";
 		Svelte.
 	</p>
 
-	<ThrelteDemo />
+	{#if loading}
+		<div class="loading">Loading 3D scene...</div>
+	{:else if ThrelteDemo}
+		<ThrelteDemo />
+	{/if}
 
 	<div class="info">
 		<h2>About this scene</h2>
@@ -58,5 +74,15 @@ import ThrelteDemo from "$lib/components/ThrelteDemo.svelte";
 
 	.info {
 		margin-top: 3rem;
+	}
+
+	.loading {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 400px;
+		color: var(--muted-foreground);
+		background: oklch(0.1 0.01 106);
+		border-radius: 0.5rem;
 	}
 </style>

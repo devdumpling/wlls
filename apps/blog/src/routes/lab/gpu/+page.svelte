@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from "svelte";
+
 	// Inline WebGPU check to avoid importing $lib/gpu which pulls in typegpu
 	const isWebGPUSupported = () =>
 		typeof navigator !== "undefined" && "gpu" in navigator;
@@ -12,10 +14,14 @@
 		},
 	];
 
+	// Track both whether we've checked and whether it's supported
+	// This prevents the warning from flashing during SSR/hydration
+	let checked = $state(false);
 	let supported = $state(false);
 
-	$effect(() => {
+	onMount(() => {
 		supported = isWebGPUSupported();
+		checked = true;
 	});
 </script>
 
@@ -31,7 +37,7 @@
 			visual effects running directly on your graphics card.
 		</p>
 
-		{#if !supported}
+		{#if checked && !supported}
 			<div class="warning">
 				<svg
 					width="20"

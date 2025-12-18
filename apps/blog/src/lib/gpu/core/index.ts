@@ -4,6 +4,7 @@ export {
 	getWebGPUUnsupportedReason,
 	acquireGPU,
 	releaseGPU,
+	destroyGPU,
 	initGPUFromDevice,
 	getOrCreateRoot,
 	getPreferredFormat,

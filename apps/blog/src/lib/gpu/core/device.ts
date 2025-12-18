@@ -21,12 +21,69 @@ export function getWebGPUUnsupportedReason(): string {
 }
 
 /**
- * Shared GPU root singleton with reference counting.
- * Prevents multiple GPU contexts from exhausting the adapter.
+ * GPU state stored on window to survive HMR.
+ * Without this, module-level variables reset on HMR but the GPU device
+ * remains held by the browser, causing adapter exhaustion.
  */
-let sharedRoot: TgpuRoot | null = null;
-let sharedRootRefCount = 0;
-let sharedRootPromise: Promise<TgpuRoot | null> | null = null;
+interface GPUState {
+	root: TgpuRoot | null;
+	refCount: number;
+	promise: Promise<TgpuRoot | null> | null;
+	/** Track if device was lost (e.g., GPU hang, driver crash) */
+	deviceLost: boolean;
+}
+
+declare global {
+	interface Window {
+		__TYPEGPU_STATE__?: GPUState;
+	}
+}
+
+function getGPUState(): GPUState {
+	if (typeof window === "undefined") {
+		// SSR - return a dummy state that will never be used
+		return { root: null, refCount: 0, promise: null, deviceLost: false };
+	}
+	if (!window.__TYPEGPU_STATE__) {
+		window.__TYPEGPU_STATE__ = {
+			root: null,
+			refCount: 0,
+			promise: null,
+			deviceLost: false,
+		};
+	}
+	return window.__TYPEGPU_STATE__;
+}
+
+/**
+ * Clean up GPU resources. Called before HMR or when explicitly needed.
+ */
+export function destroyGPU(): void {
+	const state = getGPUState();
+	if (state.root) {
+		try {
+			state.root.destroy();
+		} catch {
+			// Device may already be lost/destroyed
+		}
+		state.root = null;
+	}
+	state.refCount = 0;
+	state.promise = null;
+	state.deviceLost = false;
+}
+
+// Clean up on HMR - this runs when the module is about to be replaced
+if (import.meta.hot) {
+	import.meta.hot.dispose(() => {
+		// Don't destroy on HMR - we want to reuse the same device
+		// Just log for debugging
+		console.debug("[TypeGPU] HMR dispose - keeping GPU device");
+	});
+
+	// Accept updates
+	import.meta.hot.accept();
+}
 
 /**
  * Acquire a shared TypeGPU root. Multiple components share the same root.
@@ -37,49 +94,78 @@ export async function acquireGPU(): Promise<TgpuRoot | null> {
 		return null;
 	}
 
+	const state = getGPUState();
+
+	// If device was lost, clean up and try again
+	if (state.deviceLost && state.root) {
+		destroyGPU();
+	}
+
 	// If already initialized, increment ref count and return
-	if (sharedRoot) {
-		sharedRootRefCount++;
-		return sharedRoot;
+	if (state.root) {
+		state.refCount++;
+		return state.root;
 	}
 
 	// If initialization is in progress, wait for it
-	if (sharedRootPromise) {
-		const root = await sharedRootPromise;
-		if (root) sharedRootRefCount++;
+	if (state.promise) {
+		const root = await state.promise;
+		if (root) state.refCount++;
 		return root;
 	}
 
 	// Start initialization
-	sharedRootPromise = (async () => {
+	state.promise = (async () => {
 		try {
 			const root = await tgpu.init();
-			sharedRoot = root;
-			sharedRootRefCount = 1;
+
+			// Listen for device loss
+			root.device.lost.then((info) => {
+				console.warn("[TypeGPU] Device lost:", info.message);
+				state.deviceLost = true;
+			});
+
+			state.root = root;
+			state.refCount = 1;
 			return root;
 		} catch (error) {
 			console.error("Failed to initialize WebGPU:", error);
 			return null;
 		} finally {
-			sharedRootPromise = null;
+			state.promise = null;
 		}
 	})();
 
-	return sharedRootPromise;
+	return state.promise;
 }
 
 /**
  * Release a reference to the shared GPU root.
- * When ref count hits 0, the root is destroyed.
+ * When ref count hits 0, the root is destroyed to free the adapter.
  */
 export function releaseGPU(): void {
-	if (sharedRootRefCount > 0) {
-		sharedRootRefCount--;
+	const state = getGPUState();
+
+	if (state.refCount > 0) {
+		state.refCount--;
 	}
 
-	if (sharedRootRefCount === 0 && sharedRoot) {
-		sharedRoot.destroy();
-		sharedRoot = null;
+	// Only destroy when no components are using it
+	// This allows the device to be reused on HMR
+	if (state.refCount === 0 && state.root) {
+		// In development, don't destroy immediately - wait a tick
+		// This allows HMR to reconnect before we clean up
+		if (import.meta.hot) {
+			setTimeout(() => {
+				const currentState = getGPUState();
+				if (currentState.refCount === 0 && currentState.root) {
+					console.debug("[TypeGPU] Destroying unused GPU device");
+					destroyGPU();
+				}
+			}, 100);
+		} else {
+			destroyGPU();
+		}
 	}
 }
 
