@@ -22,16 +22,17 @@
 	let loading = $state(true);
 	let paused = $state(false);
 	let generation = $state(0);
-
-	// Colors (oklch for perceptual uniformity)
-	const ALIVE_COLOR = [0.9, 0.55, 0.2, 1.0]; // Orange-gold accent
-	const DEAD_COLOR = [0.15, 0.15, 0.15, 1.0]; // Dark background
+	let fps = $state(0);
 
 	onMount(() => {
 		let root: TgpuRoot | null = null;
 		let animationFrame: number;
 		let lastTick = 0;
 		let destroyed = false;
+
+		// FPS tracking
+		let frameCount = 0;
+		let lastFpsUpdate = 0;
 
 		async function init() {
 			if (!isWebGPUSupported()) {
@@ -301,6 +302,14 @@
 				function frame(time: number) {
 					if (destroyed) return;
 
+					// FPS calculation
+					frameCount++;
+					if (time - lastFpsUpdate >= 1000) {
+						fps = frameCount;
+						frameCount = 0;
+						lastFpsUpdate = time;
+					}
+
 					// Update simulation at tick rate
 					if (!paused && time - lastTick >= tickRate) {
 						const encoder = device.createCommandEncoder();
@@ -414,7 +423,8 @@
 			<button onclick={togglePause} class="control-btn">
 				{paused ? "Play" : "Pause"}
 			</button>
-			<span class="generation">Generation: {generation}</span>
+			<span class="stat">Gen {generation}</span>
+			<span class="stat">{fps} FPS</span>
 		</div>
 	{/if}
 </div>
@@ -520,7 +530,7 @@
 		background: var(--accent);
 	}
 
-	.generation {
+	.stat {
 		font-size: 0.75rem;
 		font-family: monospace;
 		color: var(--muted-foreground);

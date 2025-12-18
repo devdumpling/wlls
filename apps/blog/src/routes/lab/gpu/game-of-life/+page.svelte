@@ -49,16 +49,53 @@
 			parallel. A 256x256 grid means 65,536 cells are processed simultaneously
 			on your GPU each frame.
 		</p>
+
+		<h3>The Compute Shader</h3>
 		<p>
-			The implementation uses double-buffering (ping-pong pattern) to avoid
-			race conditions when reading neighbor states while writing new states.
+			Unlike traditional CPU code that processes one cell at a time, a <strong>compute shader</strong>
+			runs the same code across thousands of GPU threads simultaneously. Each thread handles
+			one cell, counting its neighbors and applying Conway's rules.
+		</p>
+		<p>
+			The shader is organized into <strong>workgroups</strong> of 8x8 threads (64 threads per group).
+			For a 256x256 grid, we dispatch 32x32 = 1,024 workgroups, giving us the full 65,536 threads
+			needed to process every cell in parallel.
+		</p>
+
+		<h3>Double Buffering</h3>
+		<p>
+			Here's a subtle problem: if all threads read and write to the same buffer,
+			we get <strong>race conditions</strong>. Thread A might read a neighbor's state
+			before Thread B has finished updating it, causing incorrect results.
+		</p>
+		<p>
+			The solution is <strong>ping-pong buffering</strong>: we maintain two cell state buffers.
+			All threads read from Buffer A and write to Buffer B. Next frame, they read from B
+			and write to A. The buffers alternate, ensuring reads never conflict with writes.
+		</p>
+
+		<h3>Instanced Rendering</h3>
+		<p>
+			Drawing 65,536 individual quads would be slow. Instead, we use <strong>instancing</strong>:
+			the GPU draws a single quad template 65,536 times, with each instance positioned based
+			on its <code>instance_index</code>. The vertex shader calculates cell position, and the
+			fragment shader reads cell state from the storage buffer to determine color.
+		</p>
+
+		<h3>WebGPU vs WebGL</h3>
+		<p>
+			WebGL (based on OpenGL ES) lacks compute shaders entirely. To run Game of Life on WebGL,
+			you'd hack it through fragment shaders rendering to textures—awkward and limited.
+			WebGPU provides first-class compute support, enabling true GPGPU (General-Purpose GPU)
+			computing in the browser.
 		</p>
 
 		<h3>Tech Stack</h3>
 		<ul>
-			<li><strong>TypeGPU</strong> - Type-safe WebGPU toolkit</li>
-			<li><strong>Compute shaders</strong> - WGSL for parallel cell updates</li>
-			<li><strong>Instanced rendering</strong> - One draw call for all cells</li>
+			<li><strong>TypeGPU</strong> - Type-safe WebGPU toolkit for device initialization</li>
+			<li><strong>WGSL</strong> - WebGPU Shading Language for compute and render shaders</li>
+			<li><strong>Storage buffers</strong> - GPU memory for cell state (read/write from shaders)</li>
+			<li><strong>Uniform buffers</strong> - GPU memory for constants like grid dimensions</li>
 		</ul>
 	</div>
 </section>
@@ -154,6 +191,14 @@
 
 	.demo-info li strong {
 		color: var(--foreground);
+	}
+
+	.demo-info code {
+		font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, monospace;
+		font-size: 0.875em;
+		padding: 0.125rem 0.375rem;
+		background: var(--border);
+		border-radius: 0.25rem;
 	}
 
 	@media (min-width: 768px) {

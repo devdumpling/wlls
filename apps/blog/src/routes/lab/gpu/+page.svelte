@@ -8,24 +8,6 @@
 			href: "/lab/gpu/game-of-life",
 			status: "live" as const,
 		},
-		{
-			title: "Boids",
-			description: "Flocking simulation with thousands of particles",
-			href: "/lab/gpu/boids",
-			status: "coming" as const,
-		},
-		{
-			title: "Fluid Simulation",
-			description: "Stable fluids algorithm on the GPU",
-			href: "/lab/gpu/fluid",
-			status: "coming" as const,
-		},
-		{
-			title: "Ray Marching",
-			description: "SDF ray marching with procedural shapes",
-			href: "/lab/gpu/raymarching",
-			status: "coming" as const,
-		},
 	];
 
 	let supported = $state(false);
@@ -92,8 +74,9 @@
 			These demos use <a
 				href="https://docs.swmansion.com/TypeGPU/"
 				target="_blank">TypeGPU</a
-			>, a type-safe WebGPU toolkit that makes GPU programming more accessible.
-			Shaders are written in TypeScript and compiled to WGSL at build time.
+			> for device initialization and type-safe WebGPU development. The goal is
+			to explore GPU computing through original experiments—not just ports of
+			existing examples.
 		</p>
 		<p class="tech-note">
 			WebGPU is the successor to WebGL, providing low-level access to modern GPU
