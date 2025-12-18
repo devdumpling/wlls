@@ -73,15 +73,9 @@ export function destroyGPU(): void {
 	state.deviceLost = false;
 }
 
-// Clean up on HMR - this runs when the module is about to be replaced
+// Preserve GPU device across HMR updates
 if (import.meta.hot) {
-	import.meta.hot.dispose(() => {
-		// Don't destroy on HMR - we want to reuse the same device
-		// Just log for debugging
-		console.debug("[TypeGPU] HMR dispose - keeping GPU device");
-	});
-
-	// Accept updates
+	import.meta.hot.dispose(() => {});
 	import.meta.hot.accept();
 }
 
@@ -151,15 +145,12 @@ export function releaseGPU(): void {
 	}
 
 	// Only destroy when no components are using it
-	// This allows the device to be reused on HMR
 	if (state.refCount === 0 && state.root) {
-		// In development, don't destroy immediately - wait a tick
-		// This allows HMR to reconnect before we clean up
+		// In development, delay cleanup to allow HMR to reconnect
 		if (import.meta.hot) {
 			setTimeout(() => {
 				const currentState = getGPUState();
 				if (currentState.refCount === 0 && currentState.root) {
-					console.debug("[TypeGPU] Destroying unused GPU device");
 					destroyGPU();
 				}
 			}, 100);

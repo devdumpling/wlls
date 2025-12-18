@@ -12,11 +12,7 @@ export default defineConfig({
 		},
 	},
 	build: {
-		// Three.js is ~700KB minified - this is expected for 3D graphics libraries
-		// We lazy load it via dynamic imports to avoid impacting main bundle
+		// Large libraries (Three.js, shiki) are lazy-loaded via dynamic imports
 		chunkSizeWarningLimit: 800,
-		// Don't use manualChunks for three/threlte/shiki - it causes shared Svelte
-		// utilities to be bundled with those libraries, forcing every page to load them.
-		// Dynamic imports already ensure proper code splitting.
 	},
 });
