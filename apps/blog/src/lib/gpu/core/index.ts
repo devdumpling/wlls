@@ -2,7 +2,8 @@
 export {
 	isWebGPUSupported,
 	getWebGPUUnsupportedReason,
-	initGPU,
+	acquireGPU,
+	releaseGPU,
 	initGPUFromDevice,
 	getOrCreateRoot,
 	getPreferredFormat,

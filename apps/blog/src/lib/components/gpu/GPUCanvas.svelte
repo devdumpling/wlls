@@ -4,7 +4,8 @@
 	import {
 		isWebGPUSupported,
 		getWebGPUUnsupportedReason,
-		initGPU,
+		acquireGPU,
+		releaseGPU,
 		configureCanvas,
 		resizeCanvasToDisplaySize,
 		type ConfiguredCanvas,
@@ -61,13 +62,21 @@
 			}
 
 			// Initialize GPU
-			root = await initGPU();
-			if (!root) {
+			const newRoot = await acquireGPU();
+			if (!newRoot) {
 				supported = false;
 				error = "Failed to initialize WebGPU device";
 				loading = false;
 				return;
 			}
+
+			// Check if component was destroyed during async init
+			if (destroyed) {
+				releaseGPU();
+				return;
+			}
+
+			root = newRoot;
 
 			// Configure canvas
 			try {
@@ -127,7 +136,9 @@
 			cancelAnimationFrame(animationFrame);
 			window.removeEventListener("resize", handleResize);
 			onDestroy?.();
-			root?.destroy();
+			if (root) {
+				releaseGPU();
+			}
 		};
 	});
 </script>

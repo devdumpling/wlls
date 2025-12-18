@@ -11,11 +11,14 @@
 	 * Compare with GameOfLife.svelte (raw WebGPU) to see the difference.
 	 */
 	import { onMount } from "svelte";
-	import tgpu, { type TgpuRoot } from "typegpu";
+	import { type TgpuRoot } from "typegpu";
+	import tgpu from "typegpu";
 	import * as d from "typegpu/data";
 	import {
 		isWebGPUSupported,
 		getWebGPUUnsupportedReason,
+		acquireGPU,
+		releaseGPU,
 		getPreferredFormat,
 	} from "$lib/gpu";
 
@@ -55,9 +58,20 @@
 				// ============================================================
 				// STEP 1: Initialize TypeGPU Root
 				// ============================================================
-				// TypeGPU handles the adapter/device dance for us.
-				// The root is our gateway to all GPU operations.
-				root = await tgpu.init();
+				// Use shared GPU root to prevent adapter exhaustion.
+				// Multiple components share the same root via reference counting.
+				const newRoot = await acquireGPU();
+				if (!newRoot) {
+					throw new Error("Failed to initialize GPU");
+				}
+
+				// Check if component was destroyed during async init
+				if (destroyed) {
+					releaseGPU();
+					return;
+				}
+
+				root = newRoot;
 				const device = root.device;
 
 				// Configure canvas (still raw WebGPU - TypeGPU doesn't wrap this)
@@ -353,7 +367,9 @@
 			destroyed = true;
 			cancelAnimationFrame(animationFrame);
 			window.removeEventListener("resize", handleResize);
-			root?.destroy();
+			if (root) {
+				releaseGPU();
+			}
 		};
 	});
 

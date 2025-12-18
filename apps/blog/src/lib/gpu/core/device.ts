@@ -21,20 +21,65 @@ export function getWebGPUUnsupportedReason(): string {
 }
 
 /**
- * Initialize a TypeGPU root with default settings
- * Returns null if WebGPU is not supported
+ * Shared GPU root singleton with reference counting.
+ * Prevents multiple GPU contexts from exhausting the adapter.
  */
-export async function initGPU(): Promise<TgpuRoot | null> {
+let sharedRoot: TgpuRoot | null = null;
+let sharedRootRefCount = 0;
+let sharedRootPromise: Promise<TgpuRoot | null> | null = null;
+
+/**
+ * Acquire a shared TypeGPU root. Multiple components share the same root.
+ * Call releaseGPU() when done to decrement the reference count.
+ */
+export async function acquireGPU(): Promise<TgpuRoot | null> {
 	if (!isWebGPUSupported()) {
 		return null;
 	}
 
-	try {
-		const root = await tgpu.init();
+	// If already initialized, increment ref count and return
+	if (sharedRoot) {
+		sharedRootRefCount++;
+		return sharedRoot;
+	}
+
+	// If initialization is in progress, wait for it
+	if (sharedRootPromise) {
+		const root = await sharedRootPromise;
+		if (root) sharedRootRefCount++;
 		return root;
-	} catch (error) {
-		console.error("Failed to initialize WebGPU:", error);
-		return null;
+	}
+
+	// Start initialization
+	sharedRootPromise = (async () => {
+		try {
+			const root = await tgpu.init();
+			sharedRoot = root;
+			sharedRootRefCount = 1;
+			return root;
+		} catch (error) {
+			console.error("Failed to initialize WebGPU:", error);
+			return null;
+		} finally {
+			sharedRootPromise = null;
+		}
+	})();
+
+	return sharedRootPromise;
+}
+
+/**
+ * Release a reference to the shared GPU root.
+ * When ref count hits 0, the root is destroyed.
+ */
+export function releaseGPU(): void {
+	if (sharedRootRefCount > 0) {
+		sharedRootRefCount--;
+	}
+
+	if (sharedRootRefCount === 0 && sharedRoot) {
+		sharedRoot.destroy();
+		sharedRoot = null;
 	}
 }
 

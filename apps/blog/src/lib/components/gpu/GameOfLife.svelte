@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { onMount } from "svelte";
-	import tgpu, { type TgpuRoot } from "typegpu";
+	import { type TgpuRoot } from "typegpu";
 	import {
 		isWebGPUSupported,
 		getWebGPUUnsupportedReason,
-		initGPU,
+		acquireGPU,
+		releaseGPU,
 		getPreferredFormat,
 	} from "$lib/gpu";
 
@@ -43,11 +44,18 @@
 			}
 
 			try {
-				root = await initGPU();
-				if (!root) {
+				const newRoot = await acquireGPU();
+				if (!newRoot) {
 					throw new Error("Failed to initialize GPU");
 				}
 
+				// Check if component was destroyed during async init
+				if (destroyed) {
+					releaseGPU();
+					return;
+				}
+
+				root = newRoot;
 				const device = root.device;
 
 				// Configure canvas
@@ -374,7 +382,9 @@
 			destroyed = true;
 			cancelAnimationFrame(animationFrame);
 			window.removeEventListener("resize", handleResize);
-			root?.destroy();
+			if (root) {
+				releaseGPU();
+			}
 		};
 	});
 

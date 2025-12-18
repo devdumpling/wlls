@@ -9,7 +9,6 @@
 	let { code, lang = "typescript" }: Props = $props();
 
 	let highlighted = $state<string | null>(null);
-	let container: HTMLElement;
 
 	onMount(async () => {
 		try {
@@ -34,7 +33,7 @@
 	});
 </script>
 
-<div class="code-block" bind:this={container}>
+<div class="code-block">
 	{#if highlighted}
 		{@html highlighted}
 	{:else}
