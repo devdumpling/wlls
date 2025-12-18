@@ -1,9 +1,10 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import { defineConfig } from "vite";
 import devtoolsJson from "vite-plugin-devtools-json";
+import typegpu from "unplugin-typegpu/vite";
 
 export default defineConfig({
-	plugins: [sveltekit(), devtoolsJson()],
+	plugins: [sveltekit(), typegpu(), devtoolsJson()],
 	server: {
 		fs: {
 			// Allow serving files from the workspace root (for Deno's node_modules)
@@ -23,6 +24,10 @@ export default defineConfig({
 					}
 					if (id.includes("@threlte")) {
 						return "threlte";
+					}
+					// Split TypeGPU into separate chunk for GPU pages
+					if (id.includes("typegpu")) {
+						return "typegpu";
 					}
 					// Split node_modules into vendor chunk
 					if (id.includes("node_modules")) {
