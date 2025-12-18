@@ -13,26 +13,10 @@ export default defineConfig({
 	},
 	build: {
 		// Three.js is ~700KB minified - this is expected for 3D graphics libraries
-		// We lazy load it on the /lab page to avoid impacting main bundle
+		// We lazy load it via dynamic imports to avoid impacting main bundle
 		chunkSizeWarningLimit: 800,
-		rollupOptions: {
-			output: {
-				manualChunks: (id) => {
-					// Split heavy libraries into separate chunks for lazy loading
-					if (id.includes("three")) {
-						return "three";
-					}
-					if (id.includes("@threlte")) {
-						return "threlte";
-					}
-					if (id.includes("typegpu")) {
-						return "typegpu";
-					}
-					// Don't manually chunk shiki - let Vite handle it
-					// Manual chunking was causing the preload helper to bundle with shiki,
-					// which made the 9MB chunk load on every page
-				},
-			},
-		},
+		// Don't use manualChunks for three/threlte/shiki - it causes shared Svelte
+		// utilities to be bundled with those libraries, forcing every page to load them.
+		// Dynamic imports already ensure proper code splitting.
 	},
 });
