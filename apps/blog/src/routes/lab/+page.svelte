@@ -1,67 +1,50 @@
 <script lang="ts">
-import { onMount } from "svelte";
-
-// NOTE: Using onMount pattern instead of experimental async (<svelte:boundary> + await)
-// because Threlte's context API is incompatible with async boundaries as of Svelte 5.3.
-// When components load through <svelte:boundary>, they lose the reactive context that
-// Threlte's useTask depends on, breaking animations.
-// TODO: Check if Threlte has updated to work with experimental async boundaries
-// See: https://svelte.dev/docs/svelte/svelte-boundary
-let ThrelteScene: any = null;
-let loading = true;
-
-onMount(async () => {
-	try {
-		const module = await import("$lib/components/ThrelteScene.svelte");
-		ThrelteScene = module.default;
-	} finally {
-		loading = false;
-	}
-});
+	const experiments = [
+		{
+			title: "GPU Lab",
+			description: "WebGPU compute shaders, simulations, and visual effects running directly on your graphics card.",
+			href: "/lab/gpu",
+			tech: "WebGPU + TypeGPU",
+		},
+		{
+			title: "3D Lab",
+			description: "WebGL experiments with Threlte and Three.js. Wireframe geometries, particles, and abstract structures.",
+			href: "/lab/3d",
+			tech: "Threlte + Three.js",
+		},
+	];
 </script>
 
 <svelte:head>
 	<title>Lab - wlls.dev</title>
 </svelte:head>
 
-<section class="lab-page">
+<section class="lab-index">
 	<div class="lab-header">
 		<h1>Lab</h1>
 		<p class="description">
-			Experiments with WebGL, 3D graphics, and interactive visualizations.
+			Experiments with graphics, compute, and interactive visualizations. A place to tinker.
 		</p>
 	</div>
 
-	<div class="scene-container">
-		{#if loading}
-			<div class="scene-loading">
-				<div class="spinner"></div>
-				<p>Loading 3D scene...</p>
-			</div>
-		{:else if ThrelteScene}
-			<ThrelteScene />
-		{/if}
-	</div>
-
-	<div class="scene-info">
-		<h2>3D Scene</h2>
-		<p>
-			Built with <a href="https://threlte.xyz" target="_blank">Threlte</a> and
-			Three.js. Features wireframe dice geometries (d4, d8, d20), flowing
-			particles, and abstract branch structures.
-		</p>
-		<p class="tech-note">
-			This scene uses ~190KB of gzipped JavaScript. That's why it lives here
-			instead of the landing page.
-		</p>
+	<div class="experiments-grid">
+		{#each experiments as experiment}
+			<a href={experiment.href} class="experiment-card">
+				<div class="card-content">
+					<h2>{experiment.title}</h2>
+					<p>{experiment.description}</p>
+				</div>
+				<span class="tech-badge">{experiment.tech}</span>
+			</a>
+		{/each}
 	</div>
 </section>
 
 <style>
-	.lab-page {
+	.lab-index {
 		max-width: 88rem;
 		margin: 0 auto;
-		padding: 4rem 1.5rem;
+		padding: 8rem 1.5rem;
 	}
 
 	.lab-header {
@@ -82,75 +65,56 @@ onMount(async () => {
 		margin: 0;
 	}
 
-	.scene-container {
-		width: 100%;
-		height: 600px;
-		border-radius: 0.5rem;
-		overflow: hidden;
-		margin-bottom: 3rem;
-		border: 1px solid var(--border);
+	.experiments-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+		gap: 1.5rem;
 	}
 
-	.scene-info {
-		max-width: 42rem;
-	}
-
-	h2 {
-		font-size: 1.5rem;
-		font-weight: 300;
-		margin: 0 0 1rem 0;
-	}
-
-	.scene-info p {
-		color: var(--muted-foreground);
-		line-height: 1.6;
-		margin: 0 0 1rem 0;
-	}
-
-	.tech-note {
-		font-size: 0.875rem;
-		font-family: monospace;
-		color: var(--accent);
-	}
-
-	.scene-info a {
-		color: var(--accent);
-		text-decoration: none;
-		border-bottom: 1px dashed var(--accent);
-	}
-
-	.scene-info a:hover {
-		border-bottom-style: solid;
-	}
-
-	.scene-loading {
-		height: 100%;
+	.experiment-card {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 1rem;
+		justify-content: space-between;
+		padding: 1.75rem;
+		background: var(--background);
+		border: 1px solid var(--border);
+		border-radius: 0.5rem;
+		text-decoration: none;
+		color: inherit;
+		transition:
+			border-color 0.15s,
+			transform 0.15s;
+		min-height: 180px;
+	}
+
+	.experiment-card:hover {
+		border-color: var(--accent);
+		transform: translateY(-2px);
+	}
+
+	.card-content h2 {
+		font-size: 1.5rem;
+		font-weight: 400;
+		margin: 0 0 0.75rem 0;
+	}
+
+	.card-content p {
+		margin: 0;
 		color: var(--muted-foreground);
+		font-size: 0.9375rem;
+		line-height: 1.6;
 	}
 
-	.spinner {
-		width: 40px;
-		height: 40px;
-		border: 3px solid var(--border);
-		border-top-color: var(--accent);
-		border-radius: 50%;
-		animation: spin 1s linear infinite;
-	}
-
-	@keyframes spin {
-		to {
-			transform: rotate(360deg);
-		}
-	}
-
-	@media (min-width: 768px) {
-		.scene-container {
-			height: 800px;
-		}
+	.tech-badge {
+		display: inline-block;
+		font-size: 0.75rem;
+		font-family: monospace;
+		padding: 0.25rem 0.5rem;
+		background: color-mix(in oklch, var(--accent) 10%, transparent);
+		border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
+		border-radius: 0.25rem;
+		color: var(--accent);
+		margin-top: 1rem;
+		align-self: flex-start;
 	}
 </style>

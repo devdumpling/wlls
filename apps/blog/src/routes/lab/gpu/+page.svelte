@@ -31,6 +31,7 @@
 
 <section class="gpu-lab">
 	<div class="lab-header">
+		<a href="/lab" class="back-link">&larr; Lab</a>
 		<h1>GPU Lab</h1>
 		<p class="description">
 			Experiments with WebGPU and TypeGPU. Compute shaders, simulations, and
@@ -102,6 +103,19 @@
 
 	.lab-header {
 		margin-bottom: 4rem;
+	}
+
+	.back-link {
+		display: inline-block;
+		color: var(--muted-foreground);
+		text-decoration: none;
+		font-size: 0.875rem;
+		margin-bottom: 1rem;
+		transition: color 0.15s;
+	}
+
+	.back-link:hover {
+		color: var(--accent);
 	}
 
 	h1 {
