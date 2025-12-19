@@ -1,0 +1,132 @@
+---
+title: "devex: my N=1 Experiment on AI-Assisted Coding"
+topic: "Engineering"
+date: "Dec 19, 2025"
+description: "Building a CLI to run structured self-experiments on developer productivity, starting with AI-assisted coding"
+---
+
+<script>
+import DiscussOn from '$lib/components/DiscussOn.svelte';
+import Aside from '$lib/components/Aside.svelte';
+import Footnote from '$lib/components/Footnote.svelte';
+import FootnoteRef from '$lib/components/FootnoteRef.svelte';
+</script>
+
+A recent study found developers using AI were 19% slower despite _feeling_ 20% faster.<FootnoteRef id={1} />
+
+Meanwhile, on Hacker News:<FootnoteRef id={2} />
+
+> "I'm pretty sure I'm between 10 and 20 times more productive."
+
+> "100x speedup."
+
+> "LLMs do not learn, do not have taste, and write absolutely illogical nonsense."
+
+> "You can't build robust software from scratch with LLMs right now."
+
+Lot of great anecdotes! Not a lot of great _data_.
+
+Over the past few months I've seen just about every possible take on AI-assisted coding. Everything from "AI is going to ruin all software" to "AI is going to take all software-related jobs" to "AI code is all garbage and you should be ashamed" to "AI code is good but actually unmaintainable."
+
+The data I _have seen_ is often hyperbolic and feels... ingenuine? When I see "AI startup founders" talking about how they're 10x more productive than ever before and their team all loves X workflow my eyes glaze over a bit. I admit I am predisposed to hate hyperbolic takes on LinkedIn, period. Likewise, I've seen plenty of the opposite too, people arguing that LLMs are worthless and have cost them time.
+
+Either take might be true? Hard to know.
+
+Developer productivity is infamously difficult to quantify and falls into the "metric black hole" category. This is so that even _attempts_ to measure productivity are often seen as an affront to the integrity of a development team. I tend to agree, at least insofar as most of the attempts I've seen to measure are shaky and misunderstand the less tangible side of software engineering.
+
+<Aside title="On org-wide measurement">
+
+Actually, a former company tried a product called "DX" to attempt to measure developer satisfaction/productivity/etc with infrequent surveys. I remember some passionate responses, and ultimately less-passionate actions taken to improve things. My naive thought here is that such org-wide attempts are doomed to similar consequences, but would love to be proven wrong!
+
+</Aside>
+
+All that said, I remember a comment that I read some weeks ago at this point:
+
+> "I don't get it. Why can't we just measure ourselves? Build an app using AI-assisted tools. Then build something else similar without it. Measure yourself and come to your own opinion, share it if you want."
+
+This comment was buried in a sea of others, but it has stayed with me this whole time.
+
+I keep coming back to it and thinking, "yeah wait what why don't I just record myself building with and without AI?" It's very easy to immediately dismiss this kind of self-experiment. After all, since we don't have time travel, you can't exactly run a true double-blind experiment on yourself. And the results are less helpful if it's on a group of people, as their experience and methodologies may be different.
+
+But that didn't stop me from trying to think of how I could still get some benefit out of this.
+
+A couple weeks ago I finished reading Adam Grant's "Think Again"<FootnoteRef id={3} />, wherein he discusses the importance of "rethinking" and more or less challenging one's own assumptions. He encourages "thinking like a scientist", loosely meaning to remain open-minded, come up with hypotheses, and then run experiments on them to prove your own beliefs to yourself. That summary doesn't fully encapsulate the "why" behind this, but I felt it was particularly prudent when thinking about AI-assisted coding.
+
+---
+
+## experiment
+
+With that in mind, I've decided to challenge myself with a simple experiment to put some empirical data against my personal AI-assisted-coding hypotheses:
+
+```json
+"hypotheses": [
+  "I procrastinate starting less with AI assistance",
+  "I ship more code with AI assistance",
+  "Code quality is slightly lower with AI but still acceptable",
+  "I write more tests and documentation with AI",
+  "I retain less understanding of the codebase with heavy AI use",
+  "Moderate AI use is more fulfilling than no AI or full AI"
+]
+```
+
+Some explanation is owed here, I suppose.
+
+I suspect I will "procrastinate less" with AI because I have observed this behavior already in myself. There's a nice property to pairing/using LLMs as a thinking tool that I've noticed helps me _get started_. It's a lot easier to sit down and start writing casually about my ideas than it is to start writing code. I already knew this about myself, which is why I log extensively while I work, but my logs usually don't talk back to me.
+
+As for "moderate AI is more fulfilling", you can read my thoughts on AI fulfillment in [a prior post on it](/blog/ai-reflections). TLDR: too much AI feels not good. No AI has separate drawbacks. A little _feels_ good, but again that's macro level. Hence, hypothesis.
+
+Over the next few months, I will alternate between 2 week "blocks". In each block, I will have a "condition" (either "No AI", "moderate AI", or "Full AI"). I will record my own progress across various subjective (how I'm feeling, what I shipped, energy, retention, etc) and objective (git metrics, lines changed, releases, bugs/features shipped) dimensions.
+
+In order to facilitate this, I built a CLI called `devex`.
+
+<Aside title="devex in action" open>
+
+![devex demo showing the CLI workflow](/images/posts/devex-demo.gif)
+
+</Aside>
+
+`devex` is a play on my name:
+- dev(on) + experiments
+- dev(on) + experience
+
+Of course "dev" is also short for developer, which is a coincidence I lean into at every dumb opportunity I can. Hence, `devex`.
+
+Building `devex` was, in itself, a bit of a meta-experiment. I let Claude drive more than usual, taking notes as I went along both in the repo and out of it.
+
+<Aside title="On Deno">
+
+This was also a chance for me to lean into Deno a bit more. I considered using bun (or Gleam!) as well. I've used bun for a few projects recently, and generally like it plenty, but I felt like the Deno standard library for building CLIs felt more compelling. Gleam would've been rad but I'm not as comfortable in it yet.
+
+I was able to build the entire CLI with zero dependencies (outside of the standard library ones). It was nice to have everything built in, for once, in a Typescript project. Instead of reaching for cliffy or inquirer to do the more interactive prompts, I simply had Claude roll a minimal version that did only what we needed (the TUI "Select" component).
+
+</Aside>
+
+While `devex` was built for this specific experiment, I made sure to build it in such a way that it can be used agnostically for any type of self-structured experiment, be that workflow or tooling change or what-have-you. You can define custom hypotheses and conditions, configure the blocks and data how you want.
+
+All in all a fun tool to build. If you're interested, check out [the repo on GitHub](https://github.com/wellwright-labs/devex).
+
+---
+
+## what's next
+
+I'm unsure whether 2 weeks will be long enough an amount of time to "context switch" between the different styles, so the first 6 weeks will be a trial period. I'll start with "full AI" as that's what I'm already doing (meaning I will use whatever AI tools I feel like using). For me this currently looks like pairing in Claude Code to plan, scaffold, rubber duck, test, and even ideate. I will sometimes use inline assist as well in Zed (my editor of choice), but often find it to be annoying / disruptive.
+
+I'm trying to keep an open mind with all of this. If there's one thing I've noticed regarding commentary on AI, it's that people have (understandably) _strong_ feelings about it. Given the impact on our lives and the global economy, I def get those feelings. I'm trying to peel back the feelings a bit to get to my own personal conclusions, and open the door to further reflection in years to come.
+
+Even with the limitations of this experiment (and the absurd number of variables I'm not tracking), I hope to see more of this kind of approach. I would love to see fewer anecdotes around LLMs and their use cases and more direct comparisons / introspective analysis. Anyway, I'll write up the results as I progress! Stay tuned.
+
+"Yeah, Science!" - Jesse Pinkman
+
+---
+
+<Footnote id={1}>
+METR's ["Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer Productivity"](https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/) a randomized controlled trial with 16 experienced developers completing 246 real tasks. Worth noting: the study authors themselves caution that AI tools are evolving rapidly and results may differ even months later.
+</Footnote>
+
+<Footnote id={2}>
+These are real quotes from recent Hacker News threads. I'm not attributing them because the point isn't to call anyone out, rather to show the range of takes that exist. Both extremes are well-represented with even a cursory search.
+</Footnote>
+
+<Footnote id={3}>
+Grant, Adam. ["Think Again: The Power of Knowing What You Don't Know"](https://adamgrant.net/book/think-again/) (2021). A good read on intellectual humility and updating your beliefs.
+</Footnote>
