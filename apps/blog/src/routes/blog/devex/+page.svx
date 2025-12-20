@@ -81,7 +81,7 @@ In order to facilitate this, I built a CLI called `devex`.
 
 <Aside title="devex in action" open>
 
-![devex demo showing the CLI workflow](/images/posts/devex-demo.gif)
+<img src="/images/posts/devex-demo.gif" alt="devex demo showing the CLI workflow" loading="lazy" />
 
 </Aside>
 
