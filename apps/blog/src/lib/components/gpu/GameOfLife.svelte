@@ -1,117 +1,117 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import { type TgpuRoot } from "typegpu";
-	import {
-		isWebGPUSupported,
-		getWebGPUUnsupportedReason,
-		acquireGPU,
-		releaseGPU,
-		getPreferredFormat,
-	} from "$lib/gpu";
+import { onMount } from "svelte";
+import { type TgpuRoot } from "typegpu";
+import {
+	acquireGPU,
+	getPreferredFormat,
+	getWebGPUUnsupportedReason,
+	isWebGPUSupported,
+	releaseGPU,
+} from "$lib/gpu";
 
-	interface Props {
-		gridSize?: number;
-		tickRate?: number;
-		class?: string;
-	}
+interface Props {
+	gridSize?: number;
+	tickRate?: number;
+	class?: string;
+}
 
-	let { gridSize = 128, tickRate = 100, class: className = "" }: Props = $props();
+let { gridSize = 128, tickRate = 100, class: className = "" }: Props = $props();
 
-	let canvas: HTMLCanvasElement;
-	let supported = $state(true);
-	let error = $state<string | null>(null);
-	let loading = $state(true);
-	let paused = $state(false);
-	let generation = $state(0);
-	let fps = $state(0);
+let canvas: HTMLCanvasElement;
+let supported = $state(true);
+let error = $state<string | null>(null);
+let loading = $state(true);
+let paused = $state(false);
+let generation = $state(0);
+let fps = $state(0);
 
-	onMount(() => {
-		let root: TgpuRoot | null = null;
-		let animationFrame: number;
-		let lastTick = 0;
-		let destroyed = false;
+onMount(() => {
+	let root: TgpuRoot | null = null;
+	let animationFrame: number;
+	let lastTick = 0;
+	let destroyed = false;
 
-		// FPS tracking
-		let frameCount = 0;
-		let lastFpsUpdate = 0;
+	// FPS tracking
+	let frameCount = 0;
+	let lastFpsUpdate = 0;
 
-		async function init() {
-			if (!isWebGPUSupported()) {
-				supported = false;
-				error = getWebGPUUnsupportedReason();
-				loading = false;
+	async function init() {
+		if (!isWebGPUSupported()) {
+			supported = false;
+			error = getWebGPUUnsupportedReason();
+			loading = false;
+			return;
+		}
+
+		try {
+			const newRoot = await acquireGPU();
+			if (!newRoot) {
+				throw new Error("Failed to initialize GPU");
+			}
+
+			// Check if component was destroyed during async init
+			if (destroyed) {
+				releaseGPU();
 				return;
 			}
 
-			try {
-				const newRoot = await acquireGPU();
-				if (!newRoot) {
-					throw new Error("Failed to initialize GPU");
-				}
+			root = newRoot;
+			const device = root.device;
 
-				// Check if component was destroyed during async init
-				if (destroyed) {
-					releaseGPU();
-					return;
-				}
+			// Configure canvas
+			const context = canvas.getContext("webgpu");
+			if (!context) throw new Error("Failed to get WebGPU context");
 
-				root = newRoot;
-				const device = root.device;
+			const format = getPreferredFormat();
+			context.configure({ device, format, alphaMode: "premultiplied" });
 
-				// Configure canvas
-				const context = canvas.getContext("webgpu");
-				if (!context) throw new Error("Failed to get WebGPU context");
+			// Resize canvas
+			const dpr = window.devicePixelRatio || 1;
+			canvas.width = Math.floor(canvas.clientWidth * dpr);
+			canvas.height = Math.floor(canvas.clientHeight * dpr);
 
-				const format = getPreferredFormat();
-				context.configure({ device, format, alphaMode: "premultiplied" });
+			// Create cell state buffers (ping-pong)
+			const cellCount = gridSize * gridSize;
+			const initialState = new Uint32Array(cellCount);
 
-				// Resize canvas
-				const dpr = window.devicePixelRatio || 1;
-				canvas.width = Math.floor(canvas.clientWidth * dpr);
-				canvas.height = Math.floor(canvas.clientHeight * dpr);
+			// Random initial state with ~15% alive
+			for (let i = 0; i < cellCount; i++) {
+				initialState[i] = Math.random() < 0.15 ? 1 : 0;
+			}
 
-				// Create cell state buffers (ping-pong)
-				const cellCount = gridSize * gridSize;
-				const initialState = new Uint32Array(cellCount);
+			const cellStateA = device.createBuffer({
+				label: "Cell State A",
+				size: cellCount * 4,
+				usage:
+					GPUBufferUsage.STORAGE |
+					GPUBufferUsage.COPY_DST |
+					GPUBufferUsage.COPY_SRC,
+			});
+			device.queue.writeBuffer(cellStateA, 0, initialState);
 
-				// Random initial state with ~15% alive
-				for (let i = 0; i < cellCount; i++) {
-					initialState[i] = Math.random() < 0.15 ? 1 : 0;
-				}
+			const cellStateB = device.createBuffer({
+				label: "Cell State B",
+				size: cellCount * 4,
+				usage:
+					GPUBufferUsage.STORAGE |
+					GPUBufferUsage.COPY_DST |
+					GPUBufferUsage.COPY_SRC,
+			});
 
-				const cellStateA = device.createBuffer({
-					label: "Cell State A",
-					size: cellCount * 4,
-					usage:
-						GPUBufferUsage.STORAGE |
-						GPUBufferUsage.COPY_DST |
-						GPUBufferUsage.COPY_SRC,
-				});
-				device.queue.writeBuffer(cellStateA, 0, initialState);
+			// Uniform buffer for grid size
+			const uniformBuffer = device.createBuffer({
+				label: "Grid Uniforms",
+				size: 8, // 2x u32
+				usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+			});
+			device.queue.writeBuffer(
+				uniformBuffer,
+				0,
+				new Uint32Array([gridSize, gridSize]),
+			);
 
-				const cellStateB = device.createBuffer({
-					label: "Cell State B",
-					size: cellCount * 4,
-					usage:
-						GPUBufferUsage.STORAGE |
-						GPUBufferUsage.COPY_DST |
-						GPUBufferUsage.COPY_SRC,
-				});
-
-				// Uniform buffer for grid size
-				const uniformBuffer = device.createBuffer({
-					label: "Grid Uniforms",
-					size: 8, // 2x u32
-					usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-				});
-				device.queue.writeBuffer(
-					uniformBuffer,
-					0,
-					new Uint32Array([gridSize, gridSize]),
-				);
-
-				// Compute shader for simulation
-				const computeShaderCode = /* wgsl */ `
+			// Compute shader for simulation
+			const computeShaderCode = /* wgsl */ `
 					struct Uniforms {
 						width: u32,
 						height: u32,
@@ -163,8 +163,8 @@
 					}
 				`;
 
-				// Render shader for visualization
-				const renderShaderCode = /* wgsl */ `
+			// Render shader for visualization
+			const renderShaderCode = /* wgsl */ `
 					struct Uniforms {
 						width: u32,
 						height: u32,
@@ -213,184 +213,203 @@
 					}
 				`;
 
-				// Create compute pipeline
-				const computeShaderModule = device.createShaderModule({
-					label: "Game of Life Compute",
-					code: computeShaderCode,
-				});
+			// Create compute pipeline
+			const computeShaderModule = device.createShaderModule({
+				label: "Game of Life Compute",
+				code: computeShaderCode,
+			});
 
-				const computeBindGroupLayout = device.createBindGroupLayout({
+			const computeBindGroupLayout = device.createBindGroupLayout({
+				entries: [
+					{
+						binding: 0,
+						visibility: GPUShaderStage.COMPUTE,
+						buffer: { type: "uniform" },
+					},
+					{
+						binding: 1,
+						visibility: GPUShaderStage.COMPUTE,
+						buffer: { type: "read-only-storage" },
+					},
+					{
+						binding: 2,
+						visibility: GPUShaderStage.COMPUTE,
+						buffer: { type: "storage" },
+					},
+				],
+			});
+
+			const computePipeline = device.createComputePipeline({
+				label: "Game of Life Compute Pipeline",
+				layout: device.createPipelineLayout({
+					bindGroupLayouts: [computeBindGroupLayout],
+				}),
+				compute: {
+					module: computeShaderModule,
+					entryPoint: "main",
+				},
+			});
+
+			// Create render pipeline
+			const renderShaderModule = device.createShaderModule({
+				label: "Game of Life Render",
+				code: renderShaderCode,
+			});
+
+			const renderBindGroupLayout = device.createBindGroupLayout({
+				entries: [
+					{
+						binding: 0,
+						visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+						buffer: { type: "uniform" },
+					},
+					{
+						binding: 1,
+						visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT,
+						buffer: { type: "read-only-storage" },
+					},
+				],
+			});
+
+			const renderPipeline = device.createRenderPipeline({
+				label: "Game of Life Render Pipeline",
+				layout: device.createPipelineLayout({
+					bindGroupLayouts: [renderBindGroupLayout],
+				}),
+				vertex: {
+					module: renderShaderModule,
+					entryPoint: "vertexMain",
+				},
+				fragment: {
+					module: renderShaderModule,
+					entryPoint: "fragmentMain",
+					targets: [{ format }],
+				},
+			});
+
+			// Create bind groups for ping-pong
+			const computeBindGroups = [
+				device.createBindGroup({
+					layout: computeBindGroupLayout,
 					entries: [
-						{ binding: 0, visibility: GPUShaderStage.COMPUTE, buffer: { type: "uniform" } },
-						{ binding: 1, visibility: GPUShaderStage.COMPUTE, buffer: { type: "read-only-storage" } },
-						{ binding: 2, visibility: GPUShaderStage.COMPUTE, buffer: { type: "storage" } },
+						{ binding: 0, resource: { buffer: uniformBuffer } },
+						{ binding: 1, resource: { buffer: cellStateA } },
+						{ binding: 2, resource: { buffer: cellStateB } },
 					],
-				});
-
-				const computePipeline = device.createComputePipeline({
-					label: "Game of Life Compute Pipeline",
-					layout: device.createPipelineLayout({
-						bindGroupLayouts: [computeBindGroupLayout],
-					}),
-					compute: {
-						module: computeShaderModule,
-						entryPoint: "main",
-					},
-				});
-
-				// Create render pipeline
-				const renderShaderModule = device.createShaderModule({
-					label: "Game of Life Render",
-					code: renderShaderCode,
-				});
-
-				const renderBindGroupLayout = device.createBindGroupLayout({
+				}),
+				device.createBindGroup({
+					layout: computeBindGroupLayout,
 					entries: [
-						{ binding: 0, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "uniform" } },
-						{ binding: 1, visibility: GPUShaderStage.VERTEX | GPUShaderStage.FRAGMENT, buffer: { type: "read-only-storage" } },
+						{ binding: 0, resource: { buffer: uniformBuffer } },
+						{ binding: 1, resource: { buffer: cellStateB } },
+						{ binding: 2, resource: { buffer: cellStateA } },
 					],
-				});
+				}),
+			];
 
-				const renderPipeline = device.createRenderPipeline({
-					label: "Game of Life Render Pipeline",
-					layout: device.createPipelineLayout({
-						bindGroupLayouts: [renderBindGroupLayout],
-					}),
-					vertex: {
-						module: renderShaderModule,
-						entryPoint: "vertexMain",
-					},
-					fragment: {
-						module: renderShaderModule,
-						entryPoint: "fragmentMain",
-						targets: [{ format }],
-					},
-				});
+			const renderBindGroups = [
+				device.createBindGroup({
+					layout: renderBindGroupLayout,
+					entries: [
+						{ binding: 0, resource: { buffer: uniformBuffer } },
+						{ binding: 1, resource: { buffer: cellStateA } },
+					],
+				}),
+				device.createBindGroup({
+					layout: renderBindGroupLayout,
+					entries: [
+						{ binding: 0, resource: { buffer: uniformBuffer } },
+						{ binding: 1, resource: { buffer: cellStateB } },
+					],
+				}),
+			];
 
-				// Create bind groups for ping-pong
-				const computeBindGroups = [
-					device.createBindGroup({
-						layout: computeBindGroupLayout,
-						entries: [
-							{ binding: 0, resource: { buffer: uniformBuffer } },
-							{ binding: 1, resource: { buffer: cellStateA } },
-							{ binding: 2, resource: { buffer: cellStateB } },
-						],
-					}),
-					device.createBindGroup({
-						layout: computeBindGroupLayout,
-						entries: [
-							{ binding: 0, resource: { buffer: uniformBuffer } },
-							{ binding: 1, resource: { buffer: cellStateB } },
-							{ binding: 2, resource: { buffer: cellStateA } },
-						],
-					}),
-				];
+			let step = 0;
+			const workgroupCount = Math.ceil(gridSize / 8);
 
-				const renderBindGroups = [
-					device.createBindGroup({
-						layout: renderBindGroupLayout,
-						entries: [
-							{ binding: 0, resource: { buffer: uniformBuffer } },
-							{ binding: 1, resource: { buffer: cellStateA } },
-						],
-					}),
-					device.createBindGroup({
-						layout: renderBindGroupLayout,
-						entries: [
-							{ binding: 0, resource: { buffer: uniformBuffer } },
-							{ binding: 1, resource: { buffer: cellStateB } },
-						],
-					}),
-				];
+			function frame(time: number) {
+				if (destroyed) return;
 
-				let step = 0;
-				const workgroupCount = Math.ceil(gridSize / 8);
+				// FPS calculation
+				frameCount++;
+				if (time - lastFpsUpdate >= 1000) {
+					fps = frameCount;
+					frameCount = 0;
+					lastFpsUpdate = time;
+				}
 
-				function frame(time: number) {
-					if (destroyed) return;
-
-					// FPS calculation
-					frameCount++;
-					if (time - lastFpsUpdate >= 1000) {
-						fps = frameCount;
-						frameCount = 0;
-						lastFpsUpdate = time;
-					}
-
-					// Update simulation at tick rate
-					if (!paused && time - lastTick >= tickRate) {
-						const encoder = device.createCommandEncoder();
-
-						// Compute pass
-						const computePass = encoder.beginComputePass();
-						computePass.setPipeline(computePipeline);
-						computePass.setBindGroup(0, computeBindGroups[step % 2]);
-						computePass.dispatchWorkgroups(workgroupCount, workgroupCount);
-						computePass.end();
-
-						device.queue.submit([encoder.finish()]);
-
-						step++;
-						generation = step;
-						lastTick = time;
-					}
-
-					// Render pass (always render, even when paused)
+				// Update simulation at tick rate
+				if (!paused && time - lastTick >= tickRate) {
 					const encoder = device.createCommandEncoder();
-					const renderPass = encoder.beginRenderPass({
-						colorAttachments: [
-							{
-								view: context.getCurrentTexture().createView(),
-								loadOp: "clear",
-								storeOp: "store",
-								clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1 },
-							},
-						],
-					});
 
-					renderPass.setPipeline(renderPipeline);
-					renderPass.setBindGroup(0, renderBindGroups[step % 2]);
-					renderPass.draw(6, cellCount);
-					renderPass.end();
+					// Compute pass
+					const computePass = encoder.beginComputePass();
+					computePass.setPipeline(computePipeline);
+					computePass.setBindGroup(0, computeBindGroups[step % 2]);
+					computePass.dispatchWorkgroups(workgroupCount, workgroupCount);
+					computePass.end();
 
 					device.queue.submit([encoder.finish()]);
 
-					animationFrame = requestAnimationFrame(frame);
+					step++;
+					generation = step;
+					lastTick = time;
 				}
 
-				loading = false;
+				// Render pass (always render, even when paused)
+				const encoder = device.createCommandEncoder();
+				const renderPass = encoder.beginRenderPass({
+					colorAttachments: [
+						{
+							view: context.getCurrentTexture().createView(),
+							loadOp: "clear",
+							storeOp: "store",
+							clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1 },
+						},
+					],
+				});
+
+				renderPass.setPipeline(renderPipeline);
+				renderPass.setBindGroup(0, renderBindGroups[step % 2]);
+				renderPass.draw(6, cellCount);
+				renderPass.end();
+
+				device.queue.submit([encoder.finish()]);
+
 				animationFrame = requestAnimationFrame(frame);
-
-			} catch (err) {
-				error = err instanceof Error ? err.message : "Failed to initialize";
-				loading = false;
 			}
+
+			loading = false;
+			animationFrame = requestAnimationFrame(frame);
+		} catch (err) {
+			error = err instanceof Error ? err.message : "Failed to initialize";
+			loading = false;
 		}
-
-		function handleResize() {
-			if (!canvas) return;
-			const dpr = window.devicePixelRatio || 1;
-			canvas.width = Math.floor(canvas.clientWidth * dpr);
-			canvas.height = Math.floor(canvas.clientHeight * dpr);
-		}
-
-		init();
-		window.addEventListener("resize", handleResize);
-
-		return () => {
-			destroyed = true;
-			cancelAnimationFrame(animationFrame);
-			window.removeEventListener("resize", handleResize);
-			if (root) {
-				releaseGPU();
-			}
-		};
-	});
-
-	function togglePause() {
-		paused = !paused;
 	}
+
+	function handleResize() {
+		if (!canvas) return;
+		const dpr = window.devicePixelRatio || 1;
+		canvas.width = Math.floor(canvas.clientWidth * dpr);
+		canvas.height = Math.floor(canvas.clientHeight * dpr);
+	}
+
+	init();
+	window.addEventListener("resize", handleResize);
+
+	return () => {
+		destroyed = true;
+		cancelAnimationFrame(animationFrame);
+		window.removeEventListener("resize", handleResize);
+		if (root) {
+			releaseGPU();
+		}
+	};
+});
+
+function togglePause() {
+	paused = !paused;
+}
 </script>
 
 <div class="game-of-life {className}">

@@ -1,18 +1,20 @@
 <script lang="ts">
-	const experiments = [
-		{
-			title: "GPU Lab",
-			description: "WebGPU compute shaders, simulations, and visual effects running directly on your graphics card.",
-			href: "/lab/gpu",
-			tech: "WebGPU + TypeGPU",
-		},
-		{
-			title: "3D Lab",
-			description: "WebGL experiments with Threlte and Three.js. Wireframe geometries, particles, and abstract structures.",
-			href: "/lab/3d",
-			tech: "Threlte + Three.js",
-		},
-	];
+const experiments = [
+	{
+		title: "GPU Lab",
+		description:
+			"WebGPU compute shaders, simulations, and visual effects running directly on your graphics card.",
+		href: "/lab/gpu",
+		tech: "WebGPU + TypeGPU",
+	},
+	{
+		title: "3D Lab",
+		description:
+			"WebGL experiments with Threlte and Three.js. Wireframe geometries, particles, and abstract structures.",
+		href: "/lab/3d",
+		tech: "Threlte + Three.js",
+	},
+];
 </script>
 
 <svelte:head>

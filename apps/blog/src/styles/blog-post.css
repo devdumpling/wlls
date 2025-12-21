@@ -91,15 +91,19 @@ article.blog-post pre code {
 
 /* Shiki dual-theme support
    Light theme colors are set as inline styles by Shiki.
-   Dark theme colors are in --shiki-dark and --shiki-dark-bg CSS variables. */
+   Dark theme colors are in --shiki-dark and --shiki-dark-bg CSS variables.
+   !important is required to override Shiki's inline styles. */
 @media (prefers-color-scheme: dark) {
 	article.blog-post pre.shiki,
 	article.blog-post pre.shiki span {
+		/* biome-ignore lint/complexity/noImportantStyles: Override Shiki inline styles */
 		color: var(--shiki-dark) !important;
+		/* biome-ignore lint/complexity/noImportantStyles: Override Shiki inline styles */
 		background-color: transparent !important;
 	}
 
 	article.blog-post pre.shiki {
+		/* biome-ignore lint/complexity/noImportantStyles: Override Shiki inline styles */
 		background-color: var(--shiki-dark-bg) !important;
 	}
 }

@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import adapter from "@sveltejs/adapter-cloudflare";
 import { vitePreprocess } from "@sveltejs/vite-plugin-svelte";
-import { mdsvex, escapeSvelte } from "mdsvex";
+import { escapeSvelte, mdsvex } from "mdsvex";
 import rehypeSlug from "rehype-slug";
 import { createHighlighter } from "shiki";
 

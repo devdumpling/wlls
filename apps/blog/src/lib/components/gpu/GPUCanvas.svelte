@@ -1,146 +1,146 @@
 <script lang="ts">
-	import { onMount, setContext } from "svelte";
-	import type { TgpuRoot } from "typegpu";
-	import {
-		isWebGPUSupported,
-		getWebGPUUnsupportedReason,
-		acquireGPU,
-		releaseGPU,
-		configureCanvas,
-		resizeCanvasToDisplaySize,
-		type ConfiguredCanvas,
-	} from "$lib/gpu";
+import { onMount, setContext } from "svelte";
+import type { TgpuRoot } from "typegpu";
+import {
+	acquireGPU,
+	type ConfiguredCanvas,
+	configureCanvas,
+	getWebGPUUnsupportedReason,
+	isWebGPUSupported,
+	releaseGPU,
+	resizeCanvasToDisplaySize,
+} from "$lib/gpu";
 
-	interface Props {
-		onReady?: (ctx: GPUContext) => void;
-		onFrame?: (ctx: GPUContext, time: number) => void;
-		onResize?: (ctx: GPUContext) => void;
-		onDestroy?: () => void;
-		class?: string;
-	}
+interface Props {
+	onReady?: (ctx: GPUContext) => void;
+	onFrame?: (ctx: GPUContext, time: number) => void;
+	onResize?: (ctx: GPUContext) => void;
+	onDestroy?: () => void;
+	class?: string;
+}
 
-	export interface GPUContext {
-		root: TgpuRoot;
-		canvas: ConfiguredCanvas;
-		width: number;
-		height: number;
-	}
+export interface GPUContext {
+	root: TgpuRoot;
+	canvas: ConfiguredCanvas;
+	width: number;
+	height: number;
+}
 
-	let {
-		onReady,
-		onFrame,
-		onResize,
-		onDestroy,
-		class: className = "",
-	}: Props = $props();
+let {
+	onReady,
+	onFrame,
+	onResize,
+	onDestroy,
+	class: className = "",
+}: Props = $props();
 
-	let canvas: HTMLCanvasElement;
-	let supported = $state(true);
-	let error = $state<string | null>(null);
-	let loading = $state(true);
+let canvas: HTMLCanvasElement;
+let supported = $state(true);
+let error = $state<string | null>(null);
+let loading = $state(true);
 
-	// Set context for child components
-	let gpuContext = $state<GPUContext | null>(null);
-	setContext("gpu", {
-		get context() {
-			return gpuContext;
-		},
-	});
+// Set context for child components
+let gpuContext = $state<GPUContext | null>(null);
+setContext("gpu", {
+	get context() {
+		return gpuContext;
+	},
+});
 
-	onMount(() => {
-		let root: TgpuRoot | null = null;
-		let animationFrame: number;
-		let destroyed = false;
+onMount(() => {
+	let root: TgpuRoot | null = null;
+	let animationFrame: number;
+	let destroyed = false;
 
-		async function init() {
-			// Check support
-			if (!isWebGPUSupported()) {
-				supported = false;
-				error = getWebGPUUnsupportedReason();
-				loading = false;
-				return;
-			}
+	async function init() {
+		// Check support
+		if (!isWebGPUSupported()) {
+			supported = false;
+			error = getWebGPUUnsupportedReason();
+			loading = false;
+			return;
+		}
 
-			// Initialize GPU
-			const newRoot = await acquireGPU();
-			if (!newRoot) {
-				supported = false;
-				error = "Failed to initialize WebGPU device";
-				loading = false;
-				return;
-			}
+		// Initialize GPU
+		const newRoot = await acquireGPU();
+		if (!newRoot) {
+			supported = false;
+			error = "Failed to initialize WebGPU device";
+			loading = false;
+			return;
+		}
 
-			// Check if component was destroyed during async init
-			if (destroyed) {
-				releaseGPU();
-				return;
-			}
+		// Check if component was destroyed during async init
+		if (destroyed) {
+			releaseGPU();
+			return;
+		}
 
-			root = newRoot;
+		root = newRoot;
 
-			// Configure canvas
-			try {
-				resizeCanvasToDisplaySize(canvas);
-				const configuredCanvas = configureCanvas({ canvas, root });
+		// Configure canvas
+		try {
+			resizeCanvasToDisplaySize(canvas);
+			const configuredCanvas = configureCanvas({ canvas, root });
 
-				gpuContext = {
-					root,
-					canvas: configuredCanvas,
-					width: canvas.width,
-					height: canvas.height,
-				};
+			gpuContext = {
+				root,
+				canvas: configuredCanvas,
+				width: canvas.width,
+				height: canvas.height,
+			};
 
-				loading = false;
+			loading = false;
 
-				// Notify ready
-				onReady?.(gpuContext);
+			// Notify ready
+			onReady?.(gpuContext);
 
-				// Start render loop if onFrame provided
-				if (onFrame) {
-					function loop(time: number) {
-						if (destroyed || !gpuContext) return;
+			// Start render loop if onFrame provided
+			if (onFrame) {
+				function loop(time: number) {
+					if (destroyed || !gpuContext) return;
 
-						// Check for resize
-						if (resizeCanvasToDisplaySize(canvas)) {
-							gpuContext.width = canvas.width;
-							gpuContext.height = canvas.height;
-							onResize?.(gpuContext);
-						}
-
-						onFrame?.(gpuContext, time);
-						animationFrame = requestAnimationFrame(loop);
+					// Check for resize
+					if (resizeCanvasToDisplaySize(canvas)) {
+						gpuContext.width = canvas.width;
+						gpuContext.height = canvas.height;
+						onResize?.(gpuContext);
 					}
+
+					onFrame?.(gpuContext, time);
 					animationFrame = requestAnimationFrame(loop);
 				}
-			} catch (err) {
-				error = err instanceof Error ? err.message : "Failed to configure canvas";
-				loading = false;
+				animationFrame = requestAnimationFrame(loop);
 			}
+		} catch (err) {
+			error = err instanceof Error ? err.message : "Failed to configure canvas";
+			loading = false;
 		}
+	}
 
-		// Handle window resize
-		function handleResize() {
-			if (!gpuContext) return;
-			if (resizeCanvasToDisplaySize(canvas)) {
-				gpuContext.width = canvas.width;
-				gpuContext.height = canvas.height;
-				onResize?.(gpuContext);
-			}
+	// Handle window resize
+	function handleResize() {
+		if (!gpuContext) return;
+		if (resizeCanvasToDisplaySize(canvas)) {
+			gpuContext.width = canvas.width;
+			gpuContext.height = canvas.height;
+			onResize?.(gpuContext);
 		}
+	}
 
-		init();
-		window.addEventListener("resize", handleResize);
+	init();
+	window.addEventListener("resize", handleResize);
 
-		return () => {
-			destroyed = true;
-			cancelAnimationFrame(animationFrame);
-			window.removeEventListener("resize", handleResize);
-			onDestroy?.();
-			if (root) {
-				releaseGPU();
-			}
-		};
-	});
+	return () => {
+		destroyed = true;
+		cancelAnimationFrame(animationFrame);
+		window.removeEventListener("resize", handleResize);
+		onDestroy?.();
+		if (root) {
+			releaseGPU();
+		}
+	};
+});
 </script>
 
 <div class="gpu-canvas-container {className}">

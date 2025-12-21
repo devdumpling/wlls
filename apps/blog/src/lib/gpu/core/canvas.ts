@@ -58,8 +58,6 @@ export function resizeCanvasToDisplaySize(canvas: HTMLCanvasElement): boolean {
 /**
  * Get the current texture from a canvas context for rendering
  */
-export function getCurrentTexture(
-	context: GPUCanvasContext,
-): GPUTexture {
+export function getCurrentTexture(context: GPUCanvasContext): GPUTexture {
 	return context.getCurrentTexture();
 }

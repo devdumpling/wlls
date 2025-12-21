@@ -1,28 +1,28 @@
 <script lang="ts">
-	import { onMount } from "svelte";
+import { onMount } from "svelte";
 
-	// Inline WebGPU check to avoid importing $lib/gpu which pulls in typegpu
-	const isWebGPUSupported = () =>
-		typeof navigator !== "undefined" && "gpu" in navigator;
+// Inline WebGPU check to avoid importing $lib/gpu which pulls in typegpu
+const isWebGPUSupported = () =>
+	typeof navigator !== "undefined" && "gpu" in navigator;
 
-	const demos = [
-		{
-			title: "Game of Life",
-			description: "Conway's cellular automaton running on GPU compute shaders",
-			href: "/lab/gpu/game-of-life",
-			status: "live" as const,
-		},
-	];
+const demos = [
+	{
+		title: "Game of Life",
+		description: "Conway's cellular automaton running on GPU compute shaders",
+		href: "/lab/gpu/game-of-life",
+		status: "live" as const,
+	},
+];
 
-	// Track both whether we've checked and whether it's supported
-	// This prevents the warning from flashing during SSR/hydration
-	let checked = $state(false);
-	let supported = $state(false);
+// Track both whether we've checked and whether it's supported
+// This prevents the warning from flashing during SSR/hydration
+let checked = $state(false);
+let supported = $state(false);
 
-	onMount(() => {
-		supported = isWebGPUSupported();
-		checked = true;
-	});
+onMount(() => {
+	supported = isWebGPUSupported();
+	checked = true;
+});
 </script>
 
 <svelte:head>

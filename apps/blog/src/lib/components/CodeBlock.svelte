@@ -1,36 +1,36 @@
 <script lang="ts">
-	import { onMount } from "svelte";
+import { onMount } from "svelte";
 
-	interface Props {
-		code: string;
-		lang?: string;
+interface Props {
+	code: string;
+	lang?: string;
+}
+
+let { code, lang = "typescript" }: Props = $props();
+
+let highlighted = $state<string | null>(null);
+
+onMount(async () => {
+	try {
+		// Dynamically import shiki to keep initial bundle small
+		const { createHighlighter } = await import("shiki");
+
+		const highlighter = await createHighlighter({
+			themes: ["kanagawa-wave", "kanagawa-lotus"],
+			langs: [lang],
+		});
+
+		highlighted = highlighter.codeToHtml(code.trim(), {
+			lang,
+			themes: {
+				light: "kanagawa-lotus",
+				dark: "kanagawa-wave",
+			},
+		});
+	} catch (err) {
+		console.warn("Shiki failed to load, showing plain code:", err);
 	}
-
-	let { code, lang = "typescript" }: Props = $props();
-
-	let highlighted = $state<string | null>(null);
-
-	onMount(async () => {
-		try {
-			// Dynamically import shiki to keep initial bundle small
-			const { createHighlighter } = await import("shiki");
-
-			const highlighter = await createHighlighter({
-				themes: ["kanagawa-wave", "kanagawa-lotus"],
-				langs: [lang],
-			});
-
-			highlighted = highlighter.codeToHtml(code.trim(), {
-				lang,
-				themes: {
-					light: "kanagawa-lotus",
-					dark: "kanagawa-wave",
-				},
-			});
-		} catch (err) {
-			console.warn("Shiki failed to load, showing plain code:", err);
-		}
-	});
+});
 </script>
 
 <div class="code-block">

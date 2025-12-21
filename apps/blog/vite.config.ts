@@ -1,7 +1,7 @@
 import { sveltekit } from "@sveltejs/kit/vite";
+import typegpu from "unplugin-typegpu/vite";
 import { defineConfig } from "vite";
 import devtoolsJson from "vite-plugin-devtools-json";
-import typegpu from "unplugin-typegpu/vite";
 
 export default defineConfig({
 	plugins: [sveltekit(), typegpu(), devtoolsJson()],

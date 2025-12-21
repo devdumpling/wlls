@@ -35,7 +35,9 @@ const STABLE_COLOR_2 = "oklch(0.72 0.12 25)"; // Salmon
 let populationHistory: number[] = [];
 
 onMount(() => {
-	ctx = canvas.getContext("2d")!;
+	const context = canvas.getContext("2d");
+	if (!context) return;
+	ctx = context;
 	resizeCanvas();
 	initializeCells();
 

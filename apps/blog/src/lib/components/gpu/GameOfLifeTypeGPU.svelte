@@ -1,195 +1,190 @@
 <script lang="ts">
-	/**
-	 * Game of Life - TypeGPU Version
-	 *
-	 * This implementation uses TypeGPU's higher-level APIs:
-	 * - Type-safe buffers with automatic serialization
-	 * - Typed bind group layouts
-	 * - TypeScript shader functions with 'use gpu' directive
-	 * - Declarative pipeline creation
-	 *
-	 * Compare with GameOfLife.svelte (raw WebGPU) to see the difference.
-	 */
-	import { onMount } from "svelte";
-	import { type TgpuRoot } from "typegpu";
-	import tgpu from "typegpu";
-	import * as d from "typegpu/data";
-	import {
-		isWebGPUSupported,
-		getWebGPUUnsupportedReason,
-		acquireGPU,
-		releaseGPU,
-		getPreferredFormat,
-	} from "$lib/gpu";
+/**
+ * Game of Life - TypeGPU Version
+ *
+ * This implementation uses TypeGPU's higher-level APIs:
+ * - Type-safe buffers with automatic serialization
+ * - Typed bind group layouts
+ * - TypeScript shader functions with 'use gpu' directive
+ * - Declarative pipeline creation
+ *
+ * Compare with GameOfLife.svelte (raw WebGPU) to see the difference.
+ */
+import { onMount } from "svelte";
+import tgpu, { type TgpuRoot } from "typegpu";
+import * as d from "typegpu/data";
+import {
+	acquireGPU,
+	getPreferredFormat,
+	getWebGPUUnsupportedReason,
+	isWebGPUSupported,
+	releaseGPU,
+} from "$lib/gpu";
 
-	interface Props {
-		gridSize?: number;
-		tickRate?: number;
-		class?: string;
-	}
+interface Props {
+	gridSize?: number;
+	tickRate?: number;
+	class?: string;
+}
 
-	let { gridSize = 128, tickRate = 100, class: className = "" }: Props = $props();
+let { gridSize = 128, tickRate = 100, class: className = "" }: Props = $props();
 
-	let canvas: HTMLCanvasElement;
-	let supported = $state(true);
-	let error = $state<string | null>(null);
-	let loading = $state(true);
-	let paused = $state(false);
-	let generation = $state(0);
-	let fps = $state(0);
+let canvas: HTMLCanvasElement;
+let supported = $state(true);
+let error = $state<string | null>(null);
+let loading = $state(true);
+let paused = $state(false);
+let generation = $state(0);
+let fps = $state(0);
 
-	onMount(() => {
-		let root: TgpuRoot | null = null;
-		let animationFrame: number;
-		let lastTick = 0;
-		let destroyed = false;
-		let frameCount = 0;
-		let lastFpsUpdate = 0;
+onMount(() => {
+	let root: TgpuRoot | null = null;
+	let animationFrame: number;
+	let lastTick = 0;
+	let destroyed = false;
+	let frameCount = 0;
+	let lastFpsUpdate = 0;
 
-		async function init() {
-			if (!isWebGPUSupported()) {
-				supported = false;
-				error = getWebGPUUnsupportedReason();
-				loading = false;
+	async function init() {
+		if (!isWebGPUSupported()) {
+			supported = false;
+			error = getWebGPUUnsupportedReason();
+			loading = false;
+			return;
+		}
+
+		try {
+			// ============================================================
+			// STEP 1: Initialize TypeGPU Root
+			// ============================================================
+			// Use shared GPU root to prevent adapter exhaustion.
+			// Multiple components share the same root via reference counting.
+			const newRoot = await acquireGPU();
+			if (!newRoot) {
+				throw new Error("Failed to initialize GPU");
+			}
+
+			// Check if component was destroyed during async init
+			if (destroyed) {
+				releaseGPU();
 				return;
 			}
 
-			try {
-				// ============================================================
-				// STEP 1: Initialize TypeGPU Root
-				// ============================================================
-				// Use shared GPU root to prevent adapter exhaustion.
-				// Multiple components share the same root via reference counting.
-				const newRoot = await acquireGPU();
-				if (!newRoot) {
-					throw new Error("Failed to initialize GPU");
-				}
+			root = newRoot;
+			const device = root.device;
 
-				// Check if component was destroyed during async init
-				if (destroyed) {
-					releaseGPU();
-					return;
-				}
+			// Configure canvas (still raw WebGPU - TypeGPU doesn't wrap this)
+			const context = canvas.getContext("webgpu");
+			if (!context) throw new Error("Failed to get WebGPU context");
 
-				root = newRoot;
-				const device = root.device;
+			const format = getPreferredFormat();
+			context.configure({ device, format, alphaMode: "premultiplied" });
 
-				// Configure canvas (still raw WebGPU - TypeGPU doesn't wrap this)
-				const context = canvas.getContext("webgpu");
-				if (!context) throw new Error("Failed to get WebGPU context");
+			const dpr = window.devicePixelRatio || 1;
+			canvas.width = Math.floor(canvas.clientWidth * dpr);
+			canvas.height = Math.floor(canvas.clientHeight * dpr);
 
-				const format = getPreferredFormat();
-				context.configure({ device, format, alphaMode: "premultiplied" });
+			// ============================================================
+			// STEP 2: Define Data Types with TypeGPU Schemas
+			// ============================================================
+			// Instead of manually calculating byte sizes and alignments,
+			// we define our data structure declaratively.
 
-				const dpr = window.devicePixelRatio || 1;
-				canvas.width = Math.floor(canvas.clientWidth * dpr);
-				canvas.height = Math.floor(canvas.clientHeight * dpr);
+			// Grid uniforms - TypeGPU handles the struct layout
+			const GridUniforms = d.struct({
+				width: d.u32,
+				height: d.u32,
+			});
 
-				// ============================================================
-				// STEP 2: Define Data Types with TypeGPU Schemas
-				// ============================================================
-				// Instead of manually calculating byte sizes and alignments,
-				// we define our data structure declaratively.
+			// Cell state is just an array of u32 (0 = dead, 1 = alive)
+			const cellCount = gridSize * gridSize;
+			const CellStateArray = d.arrayOf(d.u32, cellCount);
 
-				// Grid uniforms - TypeGPU handles the struct layout
-				const GridUniforms = d.struct({
-					width: d.u32,
-					height: d.u32,
-				});
+			// ============================================================
+			// STEP 3: Create Typed Buffers
+			// ============================================================
+			// TypeGPU buffers know their type and handle serialization.
+			// No more manual Uint32Array creation and writeBuffer calls.
 
-				// Cell state is just an array of u32 (0 = dead, 1 = alive)
-				const cellCount = gridSize * gridSize;
-				const CellStateArray = d.arrayOf(d.u32, cellCount);
+			// Uniform buffer - note the type-safe initial value
+			const uniformBuffer = root
+				.createBuffer(GridUniforms, { width: gridSize, height: gridSize })
+				.$usage("uniform");
 
-				// ============================================================
-				// STEP 3: Create Typed Buffers
-				// ============================================================
-				// TypeGPU buffers know their type and handle serialization.
-				// No more manual Uint32Array creation and writeBuffer calls.
+			// Create initial random state
+			const initialState: number[] = [];
+			for (let i = 0; i < cellCount; i++) {
+				initialState.push(Math.random() < 0.15 ? 1 : 0);
+			}
 
-				// Uniform buffer - note the type-safe initial value
-				const uniformBuffer = root
-					.createBuffer(GridUniforms, { width: gridSize, height: gridSize })
-					.$usage("uniform");
+			// Cell state buffers for ping-pong
+			// The .$usage() method is chainable and type-safe
+			const cellStateA = root
+				.createBuffer(CellStateArray, initialState)
+				.$usage("storage");
 
-				// Create initial random state
-				const initialState: number[] = [];
-				for (let i = 0; i < cellCount; i++) {
-					initialState.push(Math.random() < 0.15 ? 1 : 0);
-				}
+			const cellStateB = root.createBuffer(CellStateArray).$usage("storage");
 
-				// Cell state buffers for ping-pong
-				// The .$usage() method is chainable and type-safe
-				const cellStateA = root
-					.createBuffer(CellStateArray, initialState)
-					.$usage("storage");
+			// ============================================================
+			// STEP 4: Define Bind Group Layouts
+			// ============================================================
+			// TypeGPU layouts are declarative and type-checked.
+			// The keys become the variable names in shaders.
 
-				const cellStateB = root
-					.createBuffer(CellStateArray)
-					.$usage("storage");
+			const computeLayout = tgpu.bindGroupLayout({
+				uniforms: { uniform: GridUniforms },
+				cellStateIn: { storage: CellStateArray, access: "readonly" },
+				cellStateOut: { storage: CellStateArray, access: "mutable" },
+			});
 
-				// ============================================================
-				// STEP 4: Define Bind Group Layouts
-				// ============================================================
-				// TypeGPU layouts are declarative and type-checked.
-				// The keys become the variable names in shaders.
+			const renderLayout = tgpu.bindGroupLayout({
+				uniforms: { uniform: GridUniforms },
+				cellState: { storage: CellStateArray, access: "readonly" },
+			});
 
-				const computeLayout = tgpu.bindGroupLayout({
-					uniforms: { uniform: GridUniforms },
-					cellStateIn: { storage: CellStateArray, access: "readonly" },
-					cellStateOut: { storage: CellStateArray, access: "mutable" },
-				});
+			// ============================================================
+			// STEP 5: Create Bind Groups
+			// ============================================================
+			// Bind groups connect our buffers to the layout slots.
+			// TypeGPU validates that buffer types match layout expectations.
 
-				const renderLayout = tgpu.bindGroupLayout({
-					uniforms: { uniform: GridUniforms },
-					cellState: { storage: CellStateArray, access: "readonly" },
-				});
+			const computeBindGroups = [
+				root.createBindGroup(computeLayout, {
+					uniforms: uniformBuffer,
+					cellStateIn: cellStateA,
+					cellStateOut: cellStateB,
+				}),
+				root.createBindGroup(computeLayout, {
+					uniforms: uniformBuffer,
+					cellStateIn: cellStateB,
+					cellStateOut: cellStateA,
+				}),
+			];
 
-				// ============================================================
-				// STEP 5: Create Bind Groups
-				// ============================================================
-				// Bind groups connect our buffers to the layout slots.
-				// TypeGPU validates that buffer types match layout expectations.
+			const renderBindGroups = [
+				root.createBindGroup(renderLayout, {
+					uniforms: uniformBuffer,
+					cellState: cellStateA,
+				}),
+				root.createBindGroup(renderLayout, {
+					uniforms: uniformBuffer,
+					cellState: cellStateB,
+				}),
+			];
 
-				const computeBindGroups = [
-					root.createBindGroup(computeLayout, {
-						uniforms: uniformBuffer,
-						cellStateIn: cellStateA,
-						cellStateOut: cellStateB,
-					}),
-					root.createBindGroup(computeLayout, {
-						uniforms: uniformBuffer,
-						cellStateIn: cellStateB,
-						cellStateOut: cellStateA,
-					}),
-				];
+			// ============================================================
+			// STEP 6: Define Compute Shader
+			// ============================================================
+			// Here we use TypeGPU's computeFn with WGSL template.
+			// The $uses() method injects our bind group layout.
+			//
+			// NOTE: We could also use 'use gpu' TypeScript functions here,
+			// but WGSL templates are more explicit for learning.
 
-				const renderBindGroups = [
-					root.createBindGroup(renderLayout, {
-						uniforms: uniformBuffer,
-						cellState: cellStateA,
-					}),
-					root.createBindGroup(renderLayout, {
-						uniforms: uniformBuffer,
-						cellState: cellStateB,
-					}),
-				];
-
-				// ============================================================
-				// STEP 6: Define Compute Shader
-				// ============================================================
-				// Here we use TypeGPU's computeFn with WGSL template.
-				// The $uses() method injects our bind group layout.
-				//
-				// NOTE: We could also use 'use gpu' TypeScript functions here,
-				// but WGSL templates are more explicit for learning.
-
-				const computeMain = tgpu["~unstable"]
-					.computeFn({
-						workgroupSize: [8, 8, 1],
-						in: { gid: d.builtin.globalInvocationId },
-					})
-					/* wgsl */ `{
+			const computeMain = tgpu["~unstable"].computeFn({
+				workgroupSize: [8, 8, 1],
+				in: { gid: d.builtin.globalInvocationId },
+			})`/* wgsl */ {
 						let x = in.gid.x;
 						let y = in.gid.y;
 
@@ -229,26 +224,27 @@
 						} else {
 							cellStateOut[idx] = 0;
 						}
-					}`
-					.$uses({ uniforms: computeLayout.bound.uniforms, cellStateIn: computeLayout.bound.cellStateIn, cellStateOut: computeLayout.bound.cellStateOut });
+					}`.$uses({
+				uniforms: computeLayout.bound.uniforms,
+				cellStateIn: computeLayout.bound.cellStateIn,
+				cellStateOut: computeLayout.bound.cellStateOut,
+			});
 
-				// ============================================================
-				// STEP 7: Define Render Shaders
-				// ============================================================
-				// Vertex and fragment shaders for instanced quad rendering.
+			// ============================================================
+			// STEP 7: Define Render Shaders
+			// ============================================================
+			// Vertex and fragment shaders for instanced quad rendering.
 
-				const vertexMain = tgpu["~unstable"]
-					.vertexFn({
-						in: {
-							vertexIndex: d.builtin.vertexIndex,
-							instanceIndex: d.builtin.instanceIndex,
-						},
-						out: {
-							position: d.builtin.position,
-							cell: d.vec2f,
-						},
-					})
-					/* wgsl */ `{
+			const vertexMain = tgpu["~unstable"].vertexFn({
+				in: {
+					vertexIndex: d.builtin.vertexIndex,
+					instanceIndex: d.builtin.instanceIndex,
+				},
+				out: {
+					position: d.builtin.position,
+					cell: d.vec2f,
+				},
+			})`/* wgsl */ {
 						let i = f32(in.instanceIndex);
 						let cellCoord = vec2f(i % f32(uniforms.width), floor(i / f32(uniforms.width)));
 
@@ -266,15 +262,12 @@
 						// TypeGPU uses Out() constructor to return vertex outputs
 						// Arguments match order in 'out' definition: position, then cell
 						return Out(vec4f(vertPos.x, -vertPos.y, 0, 1), cellCoord);
-					}`
-					.$uses({ uniforms: renderLayout.bound.uniforms });
+					}`.$uses({ uniforms: renderLayout.bound.uniforms });
 
-				const fragmentMain = tgpu["~unstable"]
-					.fragmentFn({
-						in: { cell: d.vec2f },
-						out: d.location(0, d.vec4f),
-					})
-					/* wgsl */ `{
+			const fragmentMain = tgpu["~unstable"].fragmentFn({
+				in: { cell: d.vec2f },
+				out: d.location(0, d.vec4f),
+			})`/* wgsl */ {
 						let idx = u32(in.cell.y) * uniforms.width + u32(in.cell.x);
 						let alive = cellState[idx];
 
@@ -283,99 +276,100 @@
 						} else {
 							return vec4f(0.1, 0.1, 0.1, 1.0); // Dark background
 						}
-					}`
-					.$uses({ uniforms: renderLayout.bound.uniforms, cellState: renderLayout.bound.cellState });
+					}`.$uses({
+				uniforms: renderLayout.bound.uniforms,
+				cellState: renderLayout.bound.cellState,
+			});
 
-				// ============================================================
-				// STEP 8: Create Pipelines
-				// ============================================================
-				// TypeGPU's pipeline builder validates shader compatibility.
+			// ============================================================
+			// STEP 8: Create Pipelines
+			// ============================================================
+			// TypeGPU's pipeline builder validates shader compatibility.
 
-				const computePipeline = root["~unstable"]
-					.withCompute(computeMain)
-					.createPipeline();
+			const computePipeline = root["~unstable"]
+				.withCompute(computeMain)
+				.createPipeline();
 
-				const renderPipeline = root["~unstable"]
-					.withVertex(vertexMain, {})
-					.withFragment(fragmentMain, { format })
-					.createPipeline();
+			const renderPipeline = root["~unstable"]
+				.withVertex(vertexMain, {})
+				.withFragment(fragmentMain, { format })
+				.createPipeline();
 
-				// ============================================================
-				// STEP 9: Animation Loop
-				// ============================================================
-				let step = 0;
-				const workgroupCount = Math.ceil(gridSize / 8);
+			// ============================================================
+			// STEP 9: Animation Loop
+			// ============================================================
+			let step = 0;
+			const workgroupCount = Math.ceil(gridSize / 8);
 
-				function frame(time: number) {
-					if (destroyed) return;
+			function frame(time: number) {
+				if (destroyed) return;
 
-					// FPS calculation
-					frameCount++;
-					if (time - lastFpsUpdate >= 1000) {
-						fps = frameCount;
-						frameCount = 0;
-						lastFpsUpdate = time;
-					}
-
-					// Run simulation at tick rate
-					if (!paused && time - lastTick >= tickRate) {
-						// TypeGPU pipeline execution - much cleaner!
-						computePipeline
-							.with(computeLayout, computeBindGroups[step % 2])
-							.dispatchWorkgroups(workgroupCount, workgroupCount);
-
-						step++;
-						generation = step;
-						lastTick = time;
-					}
-
-					// Render (always, even when paused)
-					renderPipeline
-						.with(renderLayout, renderBindGroups[step % 2])
-						.withColorAttachment({
-							view: context.getCurrentTexture().createView(),
-							loadOp: "clear",
-							storeOp: "store",
-							clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1 },
-						})
-						.draw(6, cellCount);
-
-					animationFrame = requestAnimationFrame(frame);
+				// FPS calculation
+				frameCount++;
+				if (time - lastFpsUpdate >= 1000) {
+					fps = frameCount;
+					frameCount = 0;
+					lastFpsUpdate = time;
 				}
 
-				loading = false;
+				// Run simulation at tick rate
+				if (!paused && time - lastTick >= tickRate) {
+					// TypeGPU pipeline execution - much cleaner!
+					computePipeline
+						.with(computeLayout, computeBindGroups[step % 2])
+						.dispatchWorkgroups(workgroupCount, workgroupCount);
+
+					step++;
+					generation = step;
+					lastTick = time;
+				}
+
+				// Render (always, even when paused)
+				renderPipeline
+					.with(renderLayout, renderBindGroups[step % 2])
+					.withColorAttachment({
+						view: context.getCurrentTexture().createView(),
+						loadOp: "clear",
+						storeOp: "store",
+						clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1 },
+					})
+					.draw(6, cellCount);
+
 				animationFrame = requestAnimationFrame(frame);
-
-			} catch (err) {
-				console.error("TypeGPU init error:", err);
-				error = err instanceof Error ? err.message : "Failed to initialize";
-				loading = false;
 			}
+
+			loading = false;
+			animationFrame = requestAnimationFrame(frame);
+		} catch (err) {
+			console.error("TypeGPU init error:", err);
+			error = err instanceof Error ? err.message : "Failed to initialize";
+			loading = false;
 		}
-
-		function handleResize() {
-			if (!canvas) return;
-			const dpr = window.devicePixelRatio || 1;
-			canvas.width = Math.floor(canvas.clientWidth * dpr);
-			canvas.height = Math.floor(canvas.clientHeight * dpr);
-		}
-
-		init();
-		window.addEventListener("resize", handleResize);
-
-		return () => {
-			destroyed = true;
-			cancelAnimationFrame(animationFrame);
-			window.removeEventListener("resize", handleResize);
-			if (root) {
-				releaseGPU();
-			}
-		};
-	});
-
-	function togglePause() {
-		paused = !paused;
 	}
+
+	function handleResize() {
+		if (!canvas) return;
+		const dpr = window.devicePixelRatio || 1;
+		canvas.width = Math.floor(canvas.clientWidth * dpr);
+		canvas.height = Math.floor(canvas.clientHeight * dpr);
+	}
+
+	init();
+	window.addEventListener("resize", handleResize);
+
+	return () => {
+		destroyed = true;
+		cancelAnimationFrame(animationFrame);
+		window.removeEventListener("resize", handleResize);
+		if (root) {
+			releaseGPU();
+		}
+	};
+});
+
+function togglePause() {
+	paused = !paused;
+}
 </script>
 
 <div class="game-of-life {className}">

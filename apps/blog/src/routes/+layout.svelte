@@ -103,8 +103,7 @@ onNavigate((navigation) => {
 		const oldCrumbs = oldCrumbLinks.map((link) => link.textContent || "");
 
 		// Determine navigation direction by comparing destination with current
-		const targetPath =
-			(navigation as any).to?.url?.pathname || window.location.pathname;
+		const targetPath = navigation.to?.url?.pathname || window.location.pathname;
 		const targetSegments = targetPath.split("/").filter(Boolean);
 		const willGoUp = targetSegments.length < oldCrumbs.length;
 

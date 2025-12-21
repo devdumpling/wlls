@@ -1,4 +1,5 @@
 <script lang="ts">
+import type { Component } from "svelte";
 import { onMount } from "svelte";
 
 // NOTE: Using onMount pattern instead of experimental async (<svelte:boundary> + await)
@@ -7,7 +8,7 @@ import { onMount } from "svelte";
 // Threlte's useTask depends on, breaking animations.
 // TODO: Check if Threlte has updated to work with experimental async boundaries
 // See: https://svelte.dev/docs/svelte/svelte-boundary
-let ThrelteScene: any = null;
+let ThrelteScene: Component | null = null;
 let loading = true;
 
 onMount(async () => {

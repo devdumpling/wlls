@@ -1,6 +1,6 @@
 <script lang="ts">
-import { onMount } from "svelte";
 import type { ComponentType } from "svelte";
+import { onMount } from "svelte";
 
 // Dynamic import to prevent Three.js from being included in SSR bundle
 // Three.js uses setTimeout in global scope, which is not allowed in Cloudflare Workers

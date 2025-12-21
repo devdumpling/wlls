@@ -1,32 +1,32 @@
 <script lang="ts">
-	import { onMount } from "svelte";
-	import type { ComponentType } from "svelte";
-	import CodeBlock from "$lib/components/CodeBlock.svelte";
+import type { ComponentType } from "svelte";
+import { onMount } from "svelte";
+import CodeBlock from "$lib/components/CodeBlock.svelte";
 
-	type Implementation = "raw" | "typegpu";
+type Implementation = "raw" | "typegpu";
 
-	let implementation = $state<Implementation>("typegpu");
-	let GameOfLifeRaw: ComponentType | null = $state(null);
-	let GameOfLifeTypeGPU: ComponentType | null = $state(null);
-	let loading = $state(true);
+let implementation = $state<Implementation>("typegpu");
+let GameOfLifeRaw: ComponentType | null = $state(null);
+let GameOfLifeTypeGPU: ComponentType | null = $state(null);
+let loading = $state(true);
 
-	// Dynamic imports to keep bundles small
-	onMount(async () => {
-		try {
-			const [rawModule, typegpuModule] = await Promise.all([
-				import("$lib/components/gpu/GameOfLife.svelte"),
-				import("$lib/components/gpu/GameOfLifeTypeGPU.svelte"),
-			]);
-			GameOfLifeRaw = rawModule.default;
-			GameOfLifeTypeGPU = typegpuModule.default;
-		} finally {
-			loading = false;
-		}
-	});
-
-	function setImplementation(impl: Implementation) {
-		implementation = impl;
+// Dynamic imports to keep bundles small
+onMount(async () => {
+	try {
+		const [rawModule, typegpuModule] = await Promise.all([
+			import("$lib/components/gpu/GameOfLife.svelte"),
+			import("$lib/components/gpu/GameOfLifeTypeGPU.svelte"),
+		]);
+		GameOfLifeRaw = rawModule.default;
+		GameOfLifeTypeGPU = typegpuModule.default;
+	} finally {
+		loading = false;
 	}
+});
+
+function setImplementation(impl: Implementation) {
+	implementation = impl;
+}
 </script>
 
 <svelte:head>
