@@ -1,18 +1,13 @@
 import { Marked, render, Renderer, strip } from "@deno/gfm";
-import { extractYaml } from "@std/front-matter";
+import {
+  type ContentLayout,
+  parsePageSource,
+  parsePostSource,
+  type PostSource,
+  type PostSummary,
+} from "./frontmatter.ts";
 
-type ContentLayout = "flow" | "book";
-
-interface PostFrontmatter {
-  title: string;
-  description: string;
-  date: string;
-  topic?: string;
-  layout?: ContentLayout;
-}
-
-export interface Post extends PostFrontmatter {
-  slug: string;
+export interface Post extends PostSummary {
   body: string;
   content: RenderedContent;
   minutes: number;
@@ -59,59 +54,29 @@ function escapeHtml(value: string): string {
 }
 
 export function parsePost(source: string, slug: string): Post {
-  const { attrs, body } = extractYaml<Record<string, unknown>>(source);
-  const title = requiredString(attrs, "title", slug);
-  const description = requiredString(attrs, "description", slug);
-  const date = requiredString(attrs, "date", slug);
-  const topic = optionalString(attrs, "topic", slug);
-  const layout = optionalLayout(attrs, slug);
+  return renderPost(parsePostSource(source, slug));
+}
 
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    throw new Error(`Post "${slug}" must use a lowercase kebab-case filename`);
-  }
-
-  const parsedDate = new Date(`${date}T00:00:00Z`);
-  if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-    Number.isNaN(parsedDate.getTime()) ||
-    parsedDate.toISOString().slice(0, 10) !== date
-  ) {
-    throw new Error(`Post "${slug}" has an invalid ISO date: ${date}`);
-  }
-
+export function renderPost(source: PostSource): Post {
+  const { body, ...summary } = source;
   const wordCount = strip(body).trim().split(/\s+/).filter(Boolean).length;
 
   return {
-    slug,
-    title,
-    description,
-    date,
-    topic,
-    layout,
+    ...summary,
     body,
-    content: renderContent(body, layout ?? "flow", slug),
+    content: renderContent(body, source.layout ?? "flow", source.slug),
     minutes: Math.max(1, Math.ceil(wordCount / 225)),
   };
 }
 
 export function parsePage(source: string, name: string): PageContent {
-  const { attrs, body } = extractYaml<Record<string, unknown>>(source);
-  const layout = optionalLayout(attrs, name);
+  const { title, description, layout, body } = parsePageSource(source, name);
 
   return {
-    title: requiredString(attrs, "title", name),
-    description: requiredString(attrs, "description", name),
+    title,
+    description,
     content: renderContent(body, layout ?? "flow", name),
   };
-}
-
-export function formatDate(date: string, style: "full" | "short" = "full"): string {
-  return new Intl.DateTimeFormat("en-US", {
-    day: style === "full" ? "numeric" : undefined,
-    month: "long",
-    timeZone: "UTC",
-    year: "numeric",
-  }).format(new Date(`${date}T00:00:00Z`));
 }
 
 function renderContent(markdown: string, layout: ContentLayout, name: string): RenderedContent {
@@ -190,34 +155,4 @@ function finishBookBlock(
   return block.right === undefined
     ? { kind: "spread", pages: [left] }
     : { kind: "spread", pages: [left, block.right.trim()] };
-}
-
-function requiredString(attrs: Record<string, unknown>, key: string, name: string): string {
-  const value = attrs[key];
-  if (typeof value !== "string" || value.trim() === "") {
-    throw new Error(`Content "${name}" requires a non-empty ${key}`);
-  }
-  return value.trim();
-}
-
-function optionalString(
-  attrs: Record<string, unknown>,
-  key: string,
-  name: string,
-): string | undefined {
-  const value = attrs[key];
-  if (value === undefined) return undefined;
-  if (typeof value !== "string" || value.trim() === "") {
-    throw new Error(`Content "${name}" has an invalid ${key}`);
-  }
-  return value.trim();
-}
-
-function optionalLayout(attrs: Record<string, unknown>, name: string): ContentLayout | undefined {
-  const value = attrs.layout;
-  if (value === undefined) return undefined;
-  if (value !== "flow" && value !== "book") {
-    throw new Error(`Content "${name}" has an invalid layout`);
-  }
-  return value;
 }

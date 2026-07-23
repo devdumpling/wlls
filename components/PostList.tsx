@@ -1,7 +1,7 @@
-import type { Post } from "@/lib/content.ts";
+import type { PostSummary } from "@/lib/content.ts";
 
 interface PostListProps {
-  posts: readonly Post[];
+  posts: readonly PostSummary[];
 }
 
 export function PostList({ posts }: PostListProps) {
@@ -41,10 +41,10 @@ export function PostList({ posts }: PostListProps) {
 interface PostSeason {
   label: string;
   year: number;
-  posts: Post[];
+  posts: PostSummary[];
 }
 
-function groupBySeason(posts: readonly Post[]): PostSeason[] {
+function groupBySeason(posts: readonly PostSummary[]): PostSeason[] {
   const seasons = new Map<string, PostSeason>();
 
   for (const post of posts) {

@@ -6,12 +6,18 @@ export const app = new App<State>();
 app.use(async (ctx) => {
   const response = await ctx.next();
   const contentType = response.headers.get("content-type") ?? "";
+  const isCacheableDocument = contentType.startsWith("text/html") ||
+    contentType.startsWith("application/xml") ||
+    contentType.startsWith("application/rss+xml");
 
-  if (ctx.req.method === "GET" && ctx.url.pathname.startsWith("/fonts/")) {
+  if (
+    (ctx.req.method === "GET" || ctx.req.method === "HEAD") &&
+    ctx.url.pathname.startsWith("/fonts/")
+  ) {
     response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
   } else if (
-    ctx.req.method === "GET" &&
-    (contentType.includes("text/html") || contentType.includes("xml"))
+    (ctx.req.method === "GET" || ctx.req.method === "HEAD") &&
+    isCacheableDocument
   ) {
     response.headers.set(
       "Cache-Control",

@@ -8,8 +8,8 @@ import { absoluteUrl, site } from "@/lib/site.ts";
 import { define } from "@/utils.ts";
 
 export const handler = define.handlers({
-  GET(ctx) {
-    const post = getPost(ctx.params.slug);
+  async GET(ctx) {
+    const post = await getPost(ctx.params.slug);
     return page({ post, path: ctx.url.pathname }, { status: post ? 200 : 404 });
   },
 });

@@ -1,7 +1,7 @@
-import type { Post } from "./markdown.ts";
+import type { PostSummary } from "./frontmatter.ts";
 import { absoluteUrl, site } from "./site.ts";
 
-export function createRss(posts: readonly Post[]): string {
+export function createRss(posts: readonly PostSummary[]): string {
   const lastBuildDate = posts[0]
     ? new Date(`${posts[0].date}T00:00:00Z`).toUTCString()
     : new Date(0).toUTCString();
@@ -28,7 +28,7 @@ export function createRss(posts: readonly Post[]): string {
 </rss>`;
 }
 
-export function createSitemap(posts: readonly Post[]): string {
+export function createSitemap(posts: readonly PostSummary[]): string {
   const pages = ["/", "/about", "/resume"];
   const urls = [
     ...pages.map((path) => `<url><loc>${absoluteUrl(path)}</loc></url>`),
