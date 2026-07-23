@@ -5,7 +5,7 @@ import { define } from "@/utils.ts";
 
 export default define.page(function Home() {
   return (
-    <div class="page-shell home-page">
+    <div class="page-shell">
       <PageMeta path="/" />
       <h1 class="visually-hidden">Writing</h1>
       <PostList posts={getPosts()} />

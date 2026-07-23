@@ -1,0 +1,86 @@
+@layer components {
+  .eyebrow {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .post-seasons {
+    display: grid;
+    gap: clamp(4rem, 8vw, 7rem);
+  }
+
+  .post-season {
+    inline-size: min(100%, 48rem);
+  }
+
+  .post-season--end {
+    margin-inline-start: auto;
+    text-align: end;
+  }
+
+  .post-season > h2 {
+    margin-block-end: 1.75rem;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .post-list {
+    display: grid;
+    gap: clamp(1.75rem, 3.5vw, 2.75rem);
+    padding: 0;
+    list-style: none;
+  }
+
+  .post-list__link {
+    display: block;
+    text-decoration: none;
+  }
+
+  .post-list__link:hover h3 {
+    color: var(--accent);
+  }
+
+  .post-list__link h3 {
+    font-size: clamp(1.35rem, 1.15rem + 0.75vw, 1.9rem);
+    font-weight: 520;
+    letter-spacing: -0.02em;
+    transition: color 120ms ease-out;
+  }
+
+  .post-list__link > p {
+    max-inline-size: 62ch;
+    margin-block-start: 0.55rem;
+    color: var(--ink-soft);
+  }
+
+  .post-season--end .post-list__link > p {
+    margin-inline-start: auto;
+  }
+
+  .error-page h1 {
+    max-inline-size: 18ch;
+    margin-block: 0.65rem 1.5rem;
+    font-size: clamp(2.7rem, 7vw, 5.8rem);
+    font-weight: 520;
+    letter-spacing: -0.045em;
+  }
+
+  .error-page > p {
+    max-inline-size: 56ch;
+    color: var(--ink-soft);
+    font-size: clamp(1.1rem, 1rem + 0.45vw, 1.35rem);
+  }
+
+  .error-page > a {
+    display: inline-block;
+    margin-block-start: 2rem;
+  }
+}

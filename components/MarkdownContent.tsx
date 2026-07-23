@@ -24,10 +24,7 @@ export function MarkdownContent({ content, id = "book-content" }: MarkdownConten
             />
           )
           : (
-            <div
-              class={`book-spread${block.pages.length === 1 ? " book-spread--single" : ""}`}
-              data-book-spread
-            >
+            <div class="book-spread" data-book-spread>
               {block.pages.map((html, pageIndex) => (
                 <div
                   class="book-page"

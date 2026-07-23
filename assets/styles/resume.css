@@ -1,0 +1,204 @@
+@layer resume {
+  .resume {
+    position: relative;
+    inline-size: min(100% - 2 * var(--page-gutter), 52rem);
+    margin-inline: auto;
+    padding-block: clamp(2.25rem, 5vw, 4.5rem) clamp(5rem, 9vw, 8rem);
+    font-family: var(--sans);
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .resume-actions {
+    position: absolute;
+    inset-block-start: clamp(2.25rem, 5vw, 4.5rem);
+    inset-inline-end: 0;
+  }
+
+  .print-button {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--rule);
+    border-radius: 0.2rem;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 0.75rem;
+  }
+
+  .print-button:hover {
+    border-color: var(--ink);
+    color: var(--ink);
+  }
+
+  .resume-header {
+    margin-block-end: 2.5rem;
+  }
+
+  .resume-header h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    font-weight: 520;
+    letter-spacing: -0.035em;
+  }
+
+  .resume-title {
+    margin-block: 0.2rem 0.8rem;
+    color: var(--ink-soft);
+    font-size: 1rem;
+  }
+
+  .resume-contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .resume-section + .resume-section {
+    margin-block-start: 2.5rem;
+  }
+
+  .resume-section > h2 {
+    position: relative;
+    margin-block-end: 1.2rem;
+    padding-block-end: 0.4rem;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .resume-section > h2::after {
+    content: "";
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: 0;
+  }
+
+  .experience-item + .experience-item {
+    margin-block-start: 2rem;
+  }
+
+  .experience-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+  }
+
+  .experience-heading h3 {
+    font-size: 1.05rem;
+    font-weight: 650;
+  }
+
+  .experience-heading > span,
+  .role span {
+    flex-shrink: 0;
+    color: var(--ink-soft);
+    font-size: 0.74rem;
+  }
+
+  .role {
+    margin-block: 0.2rem 0.45rem;
+    font-weight: 540;
+  }
+
+  .experience-item ul {
+    padding-inline-start: 1.2rem;
+  }
+
+  .experience-item li + li {
+    margin-block-start: 0.28rem;
+  }
+
+  .experience-item code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+  }
+
+  .condensed > p:last-child {
+    margin-block-start: 0.2rem;
+    color: var(--ink-soft);
+  }
+
+  .role-detail {
+    margin-block-start: 0.75rem;
+    color: var(--ink-soft);
+  }
+
+  .role-detail summary {
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 0.74rem;
+  }
+
+  .role-detail > div {
+    margin-block-start: 0.75rem;
+    padding-inline-start: 1rem;
+    border-inline-start: 2px solid var(--rule);
+    font-family: var(--serif);
+  }
+
+  .role-detail p + p {
+    margin-block-start: 0.75rem;
+  }
+
+  .toolkit dl {
+    display: grid;
+    gap: 0.4rem;
+  }
+
+  .toolkit dl > div {
+    display: grid;
+    grid-template-columns: 6rem 1fr;
+    gap: 0.75rem;
+  }
+
+  .toolkit dt {
+    color: var(--ink-soft);
+  }
+
+  .project-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem 2rem;
+  }
+
+  .project-list h3 {
+    margin-block-end: 0.3rem;
+    font-size: 0.95rem;
+  }
+
+  .project-list p {
+    color: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: 0.9rem;
+  }
+
+  .print-only {
+    display: none;
+  }
+
+  @media (max-width: 40rem) {
+    .resume-actions {
+      position: static;
+      margin-block-end: 2rem;
+    }
+
+    .experience-heading {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+    .toolkit dl > div {
+      grid-template-columns: 1fr;
+      gap: 0.05rem;
+    }
+
+    .project-list {
+      grid-template-columns: 1fr;
+    }
+  }
+}

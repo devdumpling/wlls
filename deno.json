@@ -27,7 +27,6 @@
     "@deno/gfm": "jsr:@deno/gfm@^0.12.0",
     "@fresh/plugin-vite": "jsr:@fresh/plugin-vite@^1.1.2",
     "@std/front-matter": "jsr:@std/front-matter@^1.0.9",
-    "@types/babel__core": "npm:@types/babel__core@^7.20.5",
     "fresh": "jsr:@fresh/core@^2.3.3",
     "preact": "npm:preact@^10.29.1",
     "vite": "npm:vite@^7.1.3"

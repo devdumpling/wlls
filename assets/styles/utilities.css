@@ -1,0 +1,207 @@
+@layer utilities {
+  .site-header::after,
+  .prose hr,
+  .prose .footnotes::before,
+  .article-footer::before,
+  .resume-section > h2::after {
+    block-size: 3px;
+    background: color-mix(in oklch, var(--accent) 22%, transparent);
+    clip-path: polygon(
+      0 30%,
+      12% 55%,
+      27% 35%,
+      43% 60%,
+      58% 38%,
+      74% 57%,
+      88% 32%,
+      100% 52%,
+      100% 78%,
+      88% 60%,
+      74% 80%,
+      58% 58%,
+      43% 82%,
+      27% 56%,
+      12% 78%,
+      0 55%
+    );
+  }
+
+  @supports (
+    border-shape:
+    shape(
+      from 0 50%,
+      curve to 34% 42% with 11% 64% / 23% 30%,
+      curve to 67% 58% with 45% 70% / 56% 32%,
+      curve to 100% 48% with 79% 68% / 91% 34%
+    )
+  ) {
+    .site-header::after,
+    .prose hr,
+    .prose .footnotes::before,
+    .article-footer::before,
+    .resume-section > h2::after {
+      block-size: 8px;
+      border: 1px solid color-mix(in oklch, var(--accent) 24%, transparent);
+      background: transparent;
+      clip-path: none;
+      border-shape: shape(
+        from 0 50%,
+        curve to 34% 42% with 11% 64% / 23% 30%,
+        curve to 67% 58% with 45% 70% / 56% 32%,
+        curve to 100% 48% with 79% 68% / 91% 34%
+      );
+    }
+  }
+
+  .visually-hidden {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    body {
+      background-image: none;
+    }
+
+    .site-header::after,
+    .prose hr,
+    .prose .footnotes::before,
+    .article-footer::before,
+    .resume-section > h2::after {
+      border-color: color-mix(in oklch, var(--accent) 22%, var(--paper));
+      background: color-mix(in oklch, var(--accent) 22%, var(--paper));
+    }
+
+    .book-spread::after {
+      background: repeating-linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--accent) 22%, var(--paper)) 0 2px,
+        var(--paper) 2px 8px
+      );
+    }
+
+    .prose .markdown-alert {
+      background: var(--accent-soft);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @media print {
+    @page {
+      size: letter;
+      margin: 0.65in;
+    }
+
+    :root {
+      --paper: white;
+      --ink: black;
+      --ink-soft: oklch(0.38 0 0);
+      --rule: oklch(0.78 0 0);
+      --code: oklch(0.96 0 0);
+    }
+
+    body {
+      background: white;
+    }
+
+    .site-header,
+    .skip-link,
+    .screen-only,
+    .article-footer {
+      display: none !important;
+    }
+
+    .print-only {
+      display: inline;
+    }
+
+    main {
+      min-block-size: 0;
+    }
+
+    .article,
+    .resume {
+      inline-size: 100%;
+      padding: 0;
+    }
+
+    .prose {
+      max-inline-size: none;
+    }
+
+    .book-prose {
+      display: block;
+    }
+
+    .book-spread,
+    .book-plate {
+      display: block;
+      min-block-size: 0;
+      margin-block: 0 2rem;
+    }
+
+    .book-spread::after {
+      content: none;
+    }
+
+    .book-page + .book-page {
+      margin-block-start: 2rem;
+    }
+
+    .book-plate .markdown-code-title {
+      break-after: avoid;
+    }
+
+    .prose pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .article-header {
+      margin-block-end: 2rem;
+    }
+
+    .article-header h1 {
+      font-size: 2.5rem;
+    }
+
+    .prose h2,
+    .prose h3,
+    .resume h2,
+    .resume h3 {
+      break-after: avoid;
+    }
+
+    .prose pre,
+    .prose blockquote,
+    .experience-item,
+    .education,
+    .toolkit {
+      break-inside: avoid;
+    }
+
+    .prose a[href^="http"]::after {
+      content: " (" attr(href) ")";
+      font-size: 0.8em;
+      overflow-wrap: anywhere;
+    }
+  }
+}
