@@ -175,49 +175,6 @@
     position: absolute;
     inset-block-end: 0;
     inset-inline: 0;
-    block-size: 3px;
-    background: color-mix(in oklch, var(--accent) 22%, transparent);
-    clip-path: polygon(
-      0 30%,
-      12% 55%,
-      27% 35%,
-      43% 60%,
-      58% 38%,
-      74% 57%,
-      88% 32%,
-      100% 52%,
-      100% 78%,
-      88% 60%,
-      74% 80%,
-      58% 58%,
-      43% 82%,
-      27% 56%,
-      12% 78%,
-      0 55%
-    );
-  }
-
-  @supports (
-    border-shape:
-    shape(
-      from 0 50%,
-      curve to 34% 42% with 11% 64% / 23% 30%,
-      curve to 67% 58% with 45% 70% / 56% 32%,
-      curve to 100% 48% with 79% 68% / 91% 34%
-    )
-  ) {
-    .site-header::after {
-      block-size: 8px;
-      border: 1px solid color-mix(in oklch, var(--accent) 24%, transparent);
-      background: transparent;
-      clip-path: none;
-      border-shape: shape(
-        from 0 50%,
-        curve to 34% 42% with 11% 64% / 23% 30%,
-        curve to 67% 58% with 45% 70% / 56% 32%,
-        curve to 100% 48% with 79% 68% / 91% 34%
-      );
-    }
   }
 
   .site-mark {
@@ -546,7 +503,6 @@
     inline-size: 5rem;
     margin-block: 3.5rem;
     border: 0;
-    border-block-start: 1px solid var(--rule);
   }
 
   .prose img {
@@ -655,11 +611,18 @@
   }
 
   .prose .footnotes {
+    position: relative;
     margin-block-start: 4rem;
     padding-block-start: 1.5rem;
-    border-block-start: 1px solid var(--rule);
     color: var(--ink-soft);
     font-size: 0.86em;
+  }
+
+  .prose .footnotes::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
   }
 
   .prose .footnotes h2 {
@@ -698,14 +661,21 @@
   }
 
   .article-footer {
+    position: relative;
     max-inline-size: var(--reading-width);
     margin-inline: auto;
     margin-block-start: 5rem;
     padding-block-start: 1.5rem;
-    border-block-start: 1px solid var(--rule);
     color: var(--ink-soft);
     font-family: var(--sans);
     font-size: 0.85rem;
+  }
+
+  .article-footer::before {
+    content: "";
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline: 0;
   }
 
   .about-page .prose > p:first-child {
@@ -851,14 +821,21 @@
   }
 
   .resume-section > h2 {
+    position: relative;
     margin-block-end: 1.2rem;
     padding-block-end: 0.4rem;
-    border-block-end: 1px solid var(--rule);
     color: var(--accent);
     font-family: var(--mono);
     font-size: 0.7rem;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+  }
+
+  .resume-section > h2::after {
+    content: "";
+    position: absolute;
+    inset-block-end: 0;
+    inset-inline: 0;
   }
 
   .experience-item + .experience-item {
@@ -989,6 +966,61 @@
 }
 
 @layer utilities {
+  .site-header::after,
+  .prose hr,
+  .prose .footnotes::before,
+  .article-footer::before,
+  .resume-section > h2::after {
+    block-size: 3px;
+    border: 0;
+    background: color-mix(in oklch, var(--accent) 22%, transparent);
+    clip-path: polygon(
+      0 30%,
+      12% 55%,
+      27% 35%,
+      43% 60%,
+      58% 38%,
+      74% 57%,
+      88% 32%,
+      100% 52%,
+      100% 78%,
+      88% 60%,
+      74% 80%,
+      58% 58%,
+      43% 82%,
+      27% 56%,
+      12% 78%,
+      0 55%
+    );
+  }
+
+  @supports (
+    border-shape:
+    shape(
+      from 0 50%,
+      curve to 34% 42% with 11% 64% / 23% 30%,
+      curve to 67% 58% with 45% 70% / 56% 32%,
+      curve to 100% 48% with 79% 68% / 91% 34%
+    )
+  ) {
+    .site-header::after,
+    .prose hr,
+    .prose .footnotes::before,
+    .article-footer::before,
+    .resume-section > h2::after {
+      block-size: 8px;
+      border: 1px solid color-mix(in oklch, var(--accent) 24%, transparent);
+      background: transparent;
+      clip-path: none;
+      border-shape: shape(
+        from 0 50%,
+        curve to 34% 42% with 11% 64% / 23% 30%,
+        curve to 67% 58% with 45% 70% / 56% 32%,
+        curve to 100% 48% with 79% 68% / 91% 34%
+      );
+    }
+  }
+
   .visually-hidden {
     position: absolute;
     inline-size: 1px;
@@ -1005,7 +1037,11 @@
       background-image: none;
     }
 
-    .site-header::after {
+    .site-header::after,
+    .prose hr,
+    .prose .footnotes::before,
+    .article-footer::before,
+    .resume-section > h2::after {
       border-color: color-mix(in oklch, var(--accent) 22%, var(--paper));
       background: color-mix(in oklch, var(--accent) 22%, var(--paper));
     }
