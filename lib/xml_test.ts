@@ -22,7 +22,9 @@ Deno.test("createRss escapes content and includes canonical URLs", () => {
 
 Deno.test("createSitemap includes pages and post dates", () => {
   const sitemap = createSitemap([post]);
+  assert(sitemap.includes("<loc>https://wlls.dev/</loc>"));
   assert(sitemap.includes("<loc>https://wlls.dev/about</loc>"));
+  assert(!sitemap.includes("<loc>https://wlls.dev/blog</loc>"));
   assert(sitemap.includes("<lastmod>2026-07-22</lastmod>"));
 });
 

@@ -3,7 +3,6 @@ title: "The Gaming Recluse is Dead"
 topic: "Gaming"
 date: "2020-08-05"
 description: "Retiring a vapid stereotype—gaming culture has evolved far beyond basement-dwelling tropes."
-archive: true
 ---
 
 > **Note:** This is an archived piece from 2020 that pushed back against outdated gaming stereotypes. While progress has been made, the conversation about representation and understanding of gaming culture continues to evolve.

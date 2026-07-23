@@ -3,7 +3,6 @@ title: "What I Learned in 6000 Hours of Dota 2"
 topic: "Gaming"
 date: "2020-06-12"
 description: "Lessons on teamwork, tilt, and finding tranquility in one of gaming's most demanding experiences."
-archive: true
 ---
 
 > **Note:** This is an archived post from 2020. My Dota-playing stopped when I became a Dad in 2021, and my perspective on gaming addiction and healthy hobby balance has evolved. Still, I think it's worth reading for anyone who's ever played Dota or any other game for a long time.

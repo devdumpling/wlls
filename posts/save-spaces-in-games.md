@@ -3,7 +3,6 @@ title: "Save Spaces: Exploring Tranquility in Games"
 topic: "Gaming"
 date: "2020-09-24"
 description: "How games teach us to revel in the calm—and why those peaceful moments matter."
-archive: true
 ---
 
 > **Note:** This is an archived piece from 2020 exploring game design and emotional resonance in interactive media.

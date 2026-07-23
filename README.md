@@ -47,6 +47,26 @@ topic: "Engineering"
 Start writing here.
 ```
 
-The filename becomes the URL at `/blog/my-post`. Dates must use `YYYY-MM-DD`. Set `archive: true` only for writing that belongs in the older archive.
+The filename becomes the URL at `/blog/my-post`. Dates must use `YYYY-MM-DD`. Every post appears on the homepage in reverse chronological order.
 
 Posts support GitHub-flavored Markdown, fenced code, footnotes, alerts, tables, and sanitized inline HTML. Pages that need richer interaction should be explicit Fresh routes or narrowly scoped islands rather than a custom Markdown component format.
+
+### Book layout
+
+Long-form posts can opt into explicitly composed page spreads with `layout: book`. Book posts use invisible comments to preserve ordinary Markdown source:
+
+```markdown
+<!-- spread -->
+
+Left page content.
+
+<!-- page -->
+
+Right page content.
+
+<!-- plate -->
+
+Full-width code, image, or table content.
+```
+
+Every book post must begin with `<!-- spread -->`. A spread may contain one `<!-- page -->`; plates continue until the next spread or plate marker. On narrow, short, zoomed, or overflowing layouts, pages return to normal vertical flow.

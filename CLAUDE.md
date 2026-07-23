@@ -33,7 +33,7 @@ deno task start    # Serve the production build
 
 ## Content Metadata
 
-Posts require `title`, `description`, and an ISO `date` in `YYYY-MM-DD` format. `topic` and `archive` are optional. The content loader fails fast on invalid metadata.
+Posts require `title`, `description`, and an ISO `date` in `YYYY-MM-DD` format. `topic` and `layout` are optional. Use `layout: book` only with explicitly composed spread, page, and plate markers. The content loader fails fast on invalid metadata or marker sequences.
 
 ## Dependencies
 

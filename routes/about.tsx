@@ -1,5 +1,5 @@
-// deno-lint-ignore-file react-no-danger -- @deno/gfm sanitizes the rendered Markdown.
 import aboutSource from "@/content/about.md?raw";
+import { MarkdownContent } from "@/components/MarkdownContent.tsx";
 import { PageMeta } from "@/components/PageMeta.tsx";
 import { parsePage } from "@/lib/markdown.ts";
 import { define } from "@/utils.ts";
@@ -16,7 +16,7 @@ export default define.page(function About() {
           <h1>{about.title}</h1>
           <p class="article-dek">{about.description}</p>
         </header>
-        <div class="prose" dangerouslySetInnerHTML={{ __html: about.html }} />
+        <MarkdownContent content={about.content} id="about-book-content" />
       </article>
     </>
   );

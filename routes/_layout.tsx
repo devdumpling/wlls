@@ -8,9 +8,5 @@ export default define.layout(({ Component, url }) => (
     <main id="main-content">
       <Component />
     </main>
-    <footer class="site-footer">
-      <p>Written and built by Devon Wells.</p>
-      <a href="/rss.xml">RSS</a>
-    </footer>
   </>
 ));

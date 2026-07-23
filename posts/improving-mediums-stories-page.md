@@ -3,7 +3,6 @@ title: "How I Improved Medium's 'Your Stories' Page"
 topic: "Engineering"
 date: "2020-10-24"
 description: "Building a better Medium story management experience with Next.js, complete with search, filtering, and sorting."
-archive: true
 ---
 
 > **Note:** This post is from 2020 and describes Medium's interface and my implementation at that time. Both Medium and the technologies I used have evolved significantly since then. I'm preserving this as a time capsule of a fun weekend project that taught me Next.js fundamentals.

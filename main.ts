@@ -7,7 +7,9 @@ app.use(async (ctx) => {
   const response = await ctx.next();
   const contentType = response.headers.get("content-type") ?? "";
 
-  if (
+  if (ctx.req.method === "GET" && ctx.url.pathname.startsWith("/fonts/")) {
+    response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  } else if (
     ctx.req.method === "GET" &&
     (contentType.includes("text/html") || contentType.includes("xml"))
   ) {

@@ -1,5 +1,6 @@
 // deno-lint-ignore-file react-no-danger -- Markdown is sanitized and JSON-LD is escaped.
 import { page } from "fresh";
+import { MarkdownContent } from "@/components/MarkdownContent.tsx";
 import { NotFound } from "@/components/NotFound.tsx";
 import { PageMeta } from "@/components/PageMeta.tsx";
 import { formatDate, getPost } from "@/lib/content.ts";
@@ -50,9 +51,9 @@ export default define.page<typeof handler>(function Article({ data }) {
           <h1>{post.title}</h1>
           <p class="article-dek">{post.description}</p>
         </header>
-        <div class="prose" dangerouslySetInnerHTML={{ __html: post.html }} />
+        <MarkdownContent content={post.content} />
         <footer class="article-footer">
-          <a href="/blog">Back to all writing</a>
+          <a href="/">Back</a>
         </footer>
       </article>
     </>

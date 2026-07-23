@@ -6,7 +6,14 @@ export default define.page(function App({ Component }) {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta name="color-scheme" content="light dark" />
+        <meta name="color-scheme" content="light" />
+        <link
+          rel="preload"
+          href="/fonts/literata-latin-variable.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         <link rel="icon" href="/favicon.svg" />
         <link rel="alternate" type="application/rss+xml" title="wlls.dev" href="/rss.xml" />
       </head>

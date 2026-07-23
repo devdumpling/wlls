@@ -29,7 +29,7 @@ export function createRss(posts: readonly Post[]): string {
 }
 
 export function createSitemap(posts: readonly Post[]): string {
-  const pages = ["/", "/blog", "/about", "/resume"];
+  const pages = ["/", "/about", "/resume"];
   const urls = [
     ...pages.map((path) => `<url><loc>${absoluteUrl(path)}</loc></url>`),
     ...posts.map((post) =>
