@@ -1,0 +1,144 @@
+@font-face {
+  font-family: "Literata";
+  src: url("/fonts/literata-latin-variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Literata";
+  src: url("/fonts/literata-latin-variable-italic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+@layer reset, tokens, base, layout, components, prose, book, resume, utilities;
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    margin: 0;
+  }
+
+  html {
+    hanging-punctuation: first last;
+  }
+
+  body {
+    min-block-size: 100vh;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer tokens {
+  :root {
+    color-scheme: light;
+    --paper: oklch(0.967 0.014 82);
+    --ink: oklch(0.245 0.022 58);
+    --ink-soft: oklch(0.47 0.027 60);
+    --accent: oklch(0.5 0.12 42);
+    --accent-soft: oklch(0.89 0.045 55);
+    --rule: oklch(0.81 0.025 72);
+    --code: oklch(0.93 0.018 74);
+    --selection: oklch(0.82 0.085 68);
+    --serif: "Literata", Charter, "Bitstream Charter", "Sitka Text", Cambria, serif;
+    --sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+    --reading-width: 66ch;
+    --page-width: 74rem;
+    --page-gutter: clamp(1.25rem, 4vw, 3rem);
+  }
+}
+
+@layer base {
+  html {
+    background: var(--paper);
+    scroll-behavior: smooth;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(circle at 20% 30%, color-mix(in oklch, var(--ink) 2.5%, transparent) 0
+      0.03rem, transparent 0.045rem),
+      radial-gradient(circle at 70% 65%, color-mix(in oklch, var(--accent) 2%, transparent) 0
+      0.025rem, transparent 0.04rem),
+      repeating-linear-gradient(87deg, transparent 0 0.3rem, color-mix(in oklch, var(--ink) 0.7%,
+      transparent) 0.32rem 0.34rem);
+    background-size: 1.45rem 1.8rem, 2.2rem 2.65rem, 0.75rem 100%;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: clamp(1rem, 0.97rem + 0.12vw, 1.075rem);
+    font-optical-sizing: auto;
+    font-synthesis: none;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--selection);
+    color: var(--ink);
+  }
+
+  a {
+    color: inherit;
+    text-decoration-color: color-mix(in oklch, currentColor 45%, transparent);
+    text-decoration-thickness: 0.08em;
+    text-underline-offset: 0.18em;
+  }
+
+  a:hover {
+    color: var(--accent);
+    text-decoration-color: currentColor;
+  }
+
+  :focus-visible {
+    border-radius: 0.15rem;
+    outline: 0.16rem solid var(--accent);
+    outline-offset: 0.2rem;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 600;
+    line-height: 1.12;
+    text-wrap: balance;
+  }
+
+  p,
+  li {
+    text-wrap: pretty;
+  }
+
+  code,
+  pre,
+  time,
+  .eyebrow {
+    font-variant-ligatures: none;
+  }
+}

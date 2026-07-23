@@ -1,0 +1,100 @@
+@layer book {
+  .book-page > * + *,
+  .book-plate > * + * {
+    margin-block-start: 1.4em;
+  }
+
+  .book-prose {
+    display: grid;
+    max-inline-size: var(--reading-width);
+    gap: clamp(5rem, 12vw, 8rem);
+  }
+
+  .book-prose > * + * {
+    margin-block-start: 0;
+  }
+
+  .book-spread,
+  .book-plate {
+    min-inline-size: 0;
+  }
+
+  .book-page + .book-page {
+    margin-block-start: clamp(4rem, 10vw, 7rem);
+  }
+
+  .book-page > :first-child,
+  .book-plate > :first-child {
+    margin-block-start: 0;
+  }
+
+  .prose .book-plate .highlight,
+  .prose .book-plate > pre {
+    margin-block: 0;
+  }
+
+  .book-plate .markdown-code-title {
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--rule);
+    border-block-end: 0;
+    background: color-mix(in oklch, var(--accent-soft) 32%, var(--paper));
+    color: var(--ink-soft);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+  }
+
+  @media (min-height: 44rem) {
+    @container article (min-width: 64rem) {
+      .book-prose {
+        max-inline-size: none;
+        gap: clamp(6rem, 12svh, 9rem);
+      }
+
+      .book-spread {
+        position: relative;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-items: start;
+        align-content: center;
+        gap: clamp(3.5rem, 7cqi, 5.25rem);
+        min-block-size: min(42rem, calc(100svh - 8rem));
+      }
+
+      .book-spread::after {
+        content: "";
+        position: absolute;
+        inset-block: 0;
+        inset-inline-start: 50%;
+        inline-size: 1px;
+        background: repeating-linear-gradient(
+          to bottom,
+          color-mix(in oklch, var(--accent) 22%, transparent) 0 2px,
+          transparent 2px 8px
+        );
+      }
+
+      .book-page + .book-page {
+        margin-block-start: 0;
+      }
+
+      .book-spread[data-overflow] {
+        display: block;
+        max-inline-size: var(--reading-width);
+        min-block-size: 0;
+        margin-inline: auto;
+      }
+
+      .book-spread[data-overflow]::after {
+        content: none;
+      }
+
+      .book-spread[data-overflow] .book-page + .book-page {
+        margin-block-start: clamp(4rem, 10vw, 7rem);
+      }
+
+      .book-plate {
+        inline-size: 100%;
+      }
+    }
+  }
+}
