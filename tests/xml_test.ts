@@ -1,5 +1,5 @@
-import { parsePost } from "./markdown.ts";
-import { createRss, createSitemap } from "./xml.ts";
+import { parsePost } from "../src/markdown.ts";
+import { createRss, createSitemap } from "../src/xml.ts";
 
 const post = parsePost(
   `---

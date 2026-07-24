@@ -1,4 +1,4 @@
-import { parsePage, parsePost } from "./markdown.ts";
+import { parsePage, parsePost } from "../src/markdown.ts";
 
 Deno.test("parsePost validates metadata and renders Markdown", () => {
   const post = parsePost(
@@ -165,6 +165,106 @@ Body
       "invalid-calendar-date",
     )
   );
+});
+
+Deno.test("parsePost rejects invalid slugs and metadata", () => {
+  const valid = `---
+title: Test
+description: Test description
+date: "2026-07-22"
+---
+Body
+`;
+  assertThrows(() => parsePost(valid, "Invalid Slug"));
+  assertThrows(() =>
+    parsePost(
+      `---
+title: Test
+date: "2026-07-22"
+---
+Body
+`,
+      "missing-description",
+    )
+  );
+  assertThrows(() =>
+    parsePost(
+      `---
+title: Test
+description: Test description
+date: "2026-07-22"
+topic: 42
+---
+Body
+`,
+      "invalid-topic",
+    )
+  );
+});
+
+Deno.test("parsePost rejects reserved elements and markerless books", () => {
+  assertThrows(() =>
+    parsePost(
+      `---
+title: Reserved
+description: Test description
+date: "2026-07-22"
+---
+<wlls-break data-kind="spread"></wlls-break>
+`,
+      "reserved-element",
+    )
+  );
+  assertThrows(() =>
+    parsePost(
+      `---
+title: Markerless
+description: Test description
+date: "2026-07-22"
+layout: book
+---
+Body
+`,
+      "markerless-book",
+    )
+  );
+});
+
+Deno.test("parsePost sanitizes unsafe HTML", () => {
+  const post = parsePost(
+    `---
+title: Unsafe
+description: Test description
+date: "2026-07-22"
+---
+<script>alert("unsafe")</script>
+
+<a href="javascript:alert('unsafe')">Unsafe link</a>
+
+<img src="/safe.png" onerror="alert('unsafe')">
+`,
+    "unsafe-html",
+  );
+
+  assert(post.content.kind === "flow");
+  assert(!post.content.html.includes("<script"));
+  assert(!post.content.html.includes("javascript:"));
+  assert(!post.content.html.includes("onerror"));
+});
+
+Deno.test("every authored post validates", async () => {
+  const postsUrl = new URL("../posts/", import.meta.url);
+  const entries: string[] = [];
+
+  for await (const entry of Deno.readDir(postsUrl)) {
+    if (entry.isFile && entry.name.endsWith(".md")) entries.push(entry.name);
+  }
+
+  assertEquals(entries.length, 10);
+  for (const name of entries) {
+    const source = await Deno.readTextFile(new URL(name, postsUrl));
+    parsePost(source, name.slice(0, -3));
+  }
 });
 
 Deno.test("parsePage renders standalone Markdown", () => {

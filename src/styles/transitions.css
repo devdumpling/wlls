@@ -1,0 +1,27 @@
+@media (prefers-reduced-motion: no-preference) {
+  [data-accent-enter] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    view-transition-name: accent-enter;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+  }
+
+  ::view-transition-new(accent-enter):only-child {
+    animation: 300ms cubic-bezier(0.16, 1, 0.3, 1) 40ms both accent-draw-in;
+    mix-blend-mode: normal;
+  }
+
+  @keyframes accent-draw-in {
+    from {
+      opacity: 0;
+      clip-path: inset(0 100% 0 0);
+      transform: translateX(-0.25rem);
+    }
+  }
+}

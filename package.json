@@ -1,0 +1,10 @@
+{
+  "name": "wlls",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "wrangler": "^4.113.0"
+  }
+}

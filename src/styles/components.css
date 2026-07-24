@@ -40,8 +40,35 @@
   }
 
   .post-list__link {
+    position: relative;
     display: block;
     text-decoration: none;
+  }
+
+  .post-list__link .post-transition-mark {
+    position: absolute;
+    inset-block-start: 0.75em;
+    inset-inline-start: -1.15rem;
+    inline-size: 0.65rem;
+    block-size: 0.12rem;
+    border-radius: 999px;
+    background: var(--accent);
+    opacity: 0;
+    transform: scaleX(0.4);
+    transform-origin: right;
+    transition: opacity 120ms ease-out, transform 160ms ease-out;
+  }
+
+  .post-list__link:hover .post-transition-mark,
+  .post-list__link:focus-visible .post-transition-mark,
+  .post-list__link .post-transition-mark[data-accent-enter] {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  .post-season--end .post-transition-mark {
+    inset-inline: auto -1.15rem;
+    transform-origin: left;
   }
 
   .post-list__link:hover h3 {
@@ -63,6 +90,15 @@
 
   .post-season--end .post-list__link > p {
     margin-inline-start: auto;
+  }
+
+  .article-header > .post-transition-mark {
+    display: block;
+    inline-size: 2.5rem;
+    block-size: 0.12rem;
+    margin-block-end: 1.1rem;
+    border-radius: 999px;
+    background: var(--accent);
   }
 
   .error-page h1 {

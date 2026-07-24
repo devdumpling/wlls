@@ -9,3 +9,7 @@ export const site = {
 export function absoluteUrl(path: string): string {
   return new URL(path, site.url).href;
 }
+
+export function serializeJsonLd(value: unknown): string {
+  return JSON.stringify(value).replaceAll("<", "\\u003c");
+}

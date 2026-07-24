@@ -1,6 +1,6 @@
 # Dependencies and build output
 node_modules/
-_fresh/
+build/
 
 # Environment variables
 .env
@@ -8,9 +8,10 @@ _fresh/
 !.env.example
 
 # Tooling
-.vite/
-.deno-deploy/
+.wrangler/
 coverage/
+playwright-report/
+test-results/
 
 # Operating system files
 .DS_Store
