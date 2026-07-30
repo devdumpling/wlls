@@ -22,15 +22,16 @@ interface PageOptions {
 
 interface PostSeason {
   label: string;
-  year: number;
-  alignment: "start" | "end";
   posts: PostSummary[];
 }
 
 export function renderHome(posts: readonly PostSummary[], assets: Assets): string {
   const seasons = groupBySeason(posts);
+  const newestYear = posts[0]?.date.slice(0, 4);
+  const oldestYear = posts.at(-1)?.date.slice(0, 4);
+  const yearRange = oldestYear === newestYear ? newestYear : `${oldestYear}—${newestYear}`;
   const list = seasons.map((season) => `
-    <section class="post-season post-season--${season.alignment}">
+    <section class="post-season">
       <h2>${escapeHtml(season.label)}</h2>
       <ol class="post-list">
         ${
@@ -51,9 +52,15 @@ export function renderHome(posts: readonly PostSummary[], assets: Assets): strin
   return renderDocument({
     assets,
     path: "/",
-    main: `<div class="page-shell">
+    main: `<div class="page-shell home-shell">
       <h1 class="visually-hidden">Writing</h1>
       <div class="post-seasons">${list}</div>
+      <aside class="archive-index" aria-label="Archive summary">
+        <p class="archive-index__count"><strong>${posts.length}</strong><span>${
+      posts.length === 1 ? "entry" : "entries"
+    }</span></p>
+        <p class="archive-index__range">${yearRange}</p>
+      </aside>
     </div>`,
   });
 }
@@ -123,7 +130,7 @@ export function renderResume(assets: Assets): string {
     description: "Devon Wells, principal software engineer.",
     main: `<article class="resume">
       <div class="screen-only resume-actions">
-        <button class="print-button" type="button" data-print>Print or save as PDF</button>
+        <button class="print-button" type="button" data-print hidden>Print or save as PDF</button>
       </div>
       <header class="resume-header">
         <h1>Devon Wells</h1>
@@ -328,7 +335,7 @@ function renderDocument({
   <body>
     <a class="skip-link" href="#main-content">Skip to content</a>
     ${renderNavigation(path)}
-    <main id="main-content">${main}</main>
+    <main id="main-content" tabindex="-1">${main}</main>
     <script type="module" src="${assets.js}"></script>
   </body>
 </html>`;
@@ -363,8 +370,7 @@ function renderMarkdownContent(content: RenderedContent): string {
 }
 
 function groupBySeason(posts: readonly PostSummary[]): PostSeason[] {
-  const seasons = new Map<string, Omit<PostSeason, "alignment">>();
-  const alignments = new Map<number, "start" | "end">();
+  const seasons = new Map<string, PostSeason>();
 
   for (const post of posts) {
     const dateYear = Number(post.date.slice(0, 4));
@@ -381,15 +387,10 @@ function groupBySeason(posts: readonly PostSummary[]): PostSeason[] {
     const label = `${name} ${year}`;
     const season = seasons.get(label);
     if (season) season.posts.push(post);
-    else seasons.set(label, { label, year, posts: [post] });
+    else seasons.set(label, { label, posts: [post] });
   }
 
-  return [...seasons.values()].map((season) => {
-    if (!alignments.has(season.year)) {
-      alignments.set(season.year, alignments.size % 2 === 0 ? "start" : "end");
-    }
-    return { ...season, alignment: alignments.get(season.year)! };
-  });
+  return [...seasons.values()];
 }
 
 function renderExperience(company: string, dates: string, role: string, items: string[]): string {

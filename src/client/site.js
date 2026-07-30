@@ -153,11 +153,10 @@ function loadDocument(url) {
   requestUrl.hash = "";
   const key = requestUrl.href;
   const now = performance.now();
-  let cached = documentCache.get(key);
-  if (cached && now - cached.created > documentCacheTtl) {
-    documentCache.delete(key);
-    cached = null;
+  for (const [cachedUrl, entry] of documentCache) {
+    if (now - entry.created > documentCacheTtl) documentCache.delete(cachedUrl);
   }
+  let cached = documentCache.get(key);
   if (!cached) {
     const request = fetch(key, { headers: { Accept: "text/html" } })
       .then(async (response) => {
@@ -240,13 +239,13 @@ function findPost(root, pathname) {
 function focusMain() {
   const main = document.querySelector("main#main-content");
   if (!(main instanceof HTMLElement)) return;
-  main.tabIndex = -1;
   main.focus({ preventScroll: true });
-  main.addEventListener("blur", () => main.removeAttribute("tabindex"), { once: true });
 }
 
 function mountPage() {
   cleanupPage = mountBookLayout(document.querySelector("[data-book-layout]"));
+  const printButton = document.querySelector("[data-print]");
+  if (printButton instanceof HTMLButtonElement) printButton.hidden = false;
 }
 
 function mountBookLayout(root) {

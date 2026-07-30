@@ -1,5 +1,3 @@
-import { buildSite } from "../src/build.ts";
-
 const buildDirectory = new URL("../build/", import.meta.url);
 const watchPaths = ["posts", "content", "src", "static"].map((path) =>
   new URL(`../${path}/`, import.meta.url).pathname
@@ -13,8 +11,9 @@ export async function serveSite(options: { liveReload?: boolean } = {}): Promise
   const hostname = stringArgument("--host", "127.0.0.1");
 
   if (liveReload) {
+    const { buildSite } = await import("../src/build.ts");
     await buildSite();
-    void watchAndBuild();
+    void watchAndBuild(buildSite).catch((error) => console.error(error));
   }
 
   const server = Deno.serve({ hostname, port, onListen() {} }, async (request) => {
@@ -63,7 +62,7 @@ export async function serveSite(options: { liveReload?: boolean } = {}): Promise
   await server.finished;
 }
 
-async function watchAndBuild(): Promise<void> {
+async function watchAndBuild(buildSite: () => Promise<void>): Promise<void> {
   const watcher = Deno.watchFs(watchPaths);
   let timer: number | undefined;
   let building = false;

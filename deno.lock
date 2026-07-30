@@ -765,13 +765,9 @@
   "workspace": {
     "dependencies": [
       "jsr:@deno/gfm@0.12",
-      "jsr:@std/front-matter@^1.0.9"
-    ],
-    "packageJson": {
-      "dependencies": [
-        "npm:@playwright/test@^1.61.1",
-        "npm:wrangler@^4.113.0"
-      ]
-    }
+      "jsr:@std/front-matter@^1.0.9",
+      "npm:@playwright/test@^1.61.1",
+      "npm:wrangler@^4.113.0"
+    ]
   }
 }

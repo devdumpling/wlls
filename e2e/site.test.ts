@@ -21,6 +21,18 @@ test("prerenders every public page and article", async ({ page }) => {
   }
 });
 
+test("keeps the writing index left aligned", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".post-season")).not.toHaveCount(0);
+  expect(
+    await page.locator(".post-season").evaluateAll((sections) =>
+      sections.every((section) => getComputedStyle(section).textAlign === "start")
+    ),
+  ).toBe(true);
+  await expect(page.getByLabel("Archive summary")).toContainText("10entries");
+  await expect(page.getByLabel("Archive summary")).toContainText("2020—2026");
+});
+
 test("preloads article data and navigates without replacing the document", async ({ page }) => {
   await page.goto("/");
   await expect.poll(() => page.evaluate(() => document.documentElement.dataset.navigation)).toBe(
@@ -188,7 +200,18 @@ test("keeps articles readable without JavaScript", async ({ browser }) => {
   expect(response?.status()).toBe(200);
   await expect(page.locator("h1")).toHaveText("AI Reflections: Fatigue");
   await expect(page.locator(".prose p").first()).toBeVisible();
+
+  await page.goto("/resume");
+  await expect(page.getByRole("button", { name: "Print or save as PDF" })).toBeHidden();
   await context.close();
+});
+
+test("moves focus through the skip link", async ({ page }) => {
+  await page.goto("/");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("main")).toBeFocused();
 });
 
 test("serves crawler files and real 404 responses", async ({ page }) => {

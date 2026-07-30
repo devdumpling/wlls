@@ -21,7 +21,7 @@ Personal site and blog. Writing about software, games, craft, and whatever else 
 
 ```bash
 deno install --allow-scripts=npm:workerd
-./node_modules/.bin/playwright install chromium
+deno run -A @playwright/test install chromium
 deno task dev
 ```
 

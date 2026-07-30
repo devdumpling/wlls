@@ -14,12 +14,7 @@
   }
 
   .post-season {
-    inline-size: min(100%, 48rem);
-  }
-
-  .post-season--end {
-    margin-inline-start: auto;
-    text-align: end;
+    inline-size: 100%;
   }
 
   .post-season > h2 {
@@ -66,11 +61,6 @@
     transform: scaleX(1);
   }
 
-  .post-season--end .post-transition-mark {
-    inset-inline: auto -1.15rem;
-    transform-origin: left;
-  }
-
   .post-list__link:hover h3 {
     color: var(--accent);
   }
@@ -88,10 +78,6 @@
     color: var(--ink-soft);
   }
 
-  .post-season--end .post-list__link > p {
-    margin-inline-start: auto;
-  }
-
   .article-header > .post-transition-mark {
     display: block;
     inline-size: 2.5rem;
@@ -99,6 +85,55 @@
     margin-block-end: 1.1rem;
     border-radius: 999px;
     background: var(--accent);
+  }
+
+  .home-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 48rem) minmax(8rem, 1fr);
+    align-items: start;
+    gap: clamp(3rem, 7vw, 7rem);
+  }
+
+  .archive-index {
+    position: sticky;
+    inset-block-start: 3rem;
+    display: grid;
+    gap: 0.85rem;
+    padding-block-start: 1rem;
+    border-block-start: 0.12rem solid var(--accent);
+    color: var(--ink-soft);
+    font-family: var(--mono);
+  }
+
+  .archive-index__count {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+
+  .archive-index__count strong {
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: clamp(2.75rem, 5vw, 4.5rem);
+    font-weight: 400;
+    line-height: 0.9;
+  }
+
+  .archive-index__count span,
+  .archive-index__range {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 64rem) {
+    .home-shell {
+      display: block;
+    }
+
+    .archive-index {
+      display: none;
+    }
   }
 
   .error-page h1 {
