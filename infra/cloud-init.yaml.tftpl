@@ -54,6 +54,7 @@ runcmd:
   - sysctl --system
   - |
       set -eu
+      export HOME=/root
       curl --proto '=https' --tlsv1.2 --silent --show-error --location \
         https://releases.nixos.org/nix/nix-2.34.3/install -o /tmp/install-nix
       printf '%s  %s\n' \
