@@ -1,5 +1,11 @@
 # Dependencies and build output
 node_modules/
+
+# Nix
+.direnv/
+result
+result-*
+.go/
 build/
 
 # Environment variables

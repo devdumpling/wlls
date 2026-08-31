@@ -34,6 +34,23 @@ deno task check
 deno task test
 ```
 
+## Nix development environment
+
+The rewrite uses a flake for pinned system and infrastructure tools. With
+direnv installed and enabled, allow the project once:
+
+```bash
+direnv allow
+```
+
+The checked-in `.envrc` will then enter the flake automatically. Without direnv,
+enter it explicitly with `nix develop`.
+
+This provides Go, Caddy, SQLite, Terraform, direnv, and the supporting
+development and deployment tools. Go application dependencies remain managed by
+Go modules. Use `nix fmt flake.nix` to format the flake and `nix flake check` to
+validate it.
+
 The production build is written to `build/`. It contains complete HTML for every page, one fingerprinted stylesheet, and one small fingerprinted JavaScript module. Cloudflare serves the directory directly; there is no request-time application runtime.
 
 ## Navigation
