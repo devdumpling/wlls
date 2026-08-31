@@ -1,4 +1,4 @@
-package views
+package hello
 
 templ Page() {
 	<!doctype html>
@@ -17,9 +17,13 @@ templ Page() {
 		<body>
 			<main>
 				<p>hello from Go and Templ</p>
-				<h1 id="greeting">Hello, world.</h1>
+				@Greeting("Hello, world.")
 				<button type="button" data-on:click="@post('/hello')">Say hello</button>
 			</main>
 		</body>
 	</html>
+}
+
+templ Greeting(message string) {
+	<p id="greeting" role="status">{ message }</p>
 }
