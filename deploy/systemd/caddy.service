@@ -1,0 +1,35 @@
+[Unit]
+Description=Caddy web server for wlls.dev
+Documentation=https://caddyserver.com/docs/
+After=network-online.target wlls.service
+Wants=network-online.target wlls.service
+
+[Service]
+Type=notify
+User=caddy
+Group=caddy
+Environment=WLLS_SITE_ADDRESS=wlls.dev
+Environment=WLLS_UPSTREAM=127.0.0.1:8080
+Environment=XDG_DATA_HOME=/var/lib/caddy
+Environment=XDG_CONFIG_HOME=/var/lib/caddy
+EnvironmentFile=-/etc/wlls/caddy.env
+ExecStart=/nix/var/nix/profiles/wlls/bin/caddy run --environ --config /etc/wlls/Caddyfile
+ExecReload=/nix/var/nix/profiles/wlls/bin/caddy reload --config /etc/wlls/Caddyfile --force
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectControlGroups=true
+ProtectHome=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectSystem=strict
+RestrictSUIDSGID=true
+StateDirectory=caddy
+
+[Install]
+WantedBy=multi-user.target

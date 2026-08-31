@@ -1,0 +1,16 @@
+{
+	admin localhost:2019
+}
+
+{$WLLS_SITE_ADDRESS:http://localhost:3000} {
+	encode zstd gzip
+
+	header {
+		-Server
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+	}
+
+	reverse_proxy {$WLLS_UPSTREAM:127.0.0.1:8080}
+}

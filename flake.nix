@@ -27,6 +27,48 @@
     {
       formatter = forAllSystems (system: packagesFor.${system}.nixfmt);
 
+      packages = forAllSystems (
+        system:
+        let
+          pkgs = packagesFor.${system};
+          linuxPkgs = if system == "x86_64-linux" then pkgs else pkgs.pkgsCross.gnu64;
+          mkWlls =
+            buildPkgs:
+            buildPkgs.buildGoModule {
+              pname = "wlls";
+              version = "0.1.0";
+              src = self;
+              vendorHash = "sha256-1kqVqPirpgUb1XVlSb6JykwNKNgNldZzjb2cRMDyksM=";
+              subPackages = [ "cmd/wlls" ];
+              env.CGO_ENABLED = 0;
+              ldflags = [
+                "-s"
+                "-w"
+              ];
+            };
+          wlls = mkWlls pkgs;
+          wllsLinuxAmd64 = mkWlls linuxPkgs;
+        in
+        {
+          default = wlls;
+          inherit wlls;
+          runtime = pkgs.symlinkJoin {
+            name = "wlls-runtime";
+            paths = [
+              wlls
+              pkgs.caddy
+            ];
+          };
+          runtime-linux-amd64 = linuxPkgs.symlinkJoin {
+            name = "wlls-runtime-linux-amd64";
+            paths = [
+              wllsLinuxAmd64
+              linuxPkgs.caddy
+            ];
+          };
+        }
+      );
+
       devShells = forAllSystems (
         system:
         let
