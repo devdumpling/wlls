@@ -1,0 +1,76 @@
+#cloud-config
+
+package_update: true
+package_upgrade: true
+packages:
+  - ca-certificates
+  - curl
+  - xz-utils
+
+ssh_pwauth: false
+disable_root: true
+
+users:
+  - default
+  - name: deploy
+    gecos: wlls deployment user
+    groups: [sudo]
+    shell: /bin/bash
+    lock_passwd: true
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+  - name: wlls
+    system: true
+    no_create_home: true
+    shell: /usr/sbin/nologin
+  - name: caddy
+    system: true
+    no_create_home: true
+    shell: /usr/sbin/nologin
+
+swap:
+  filename: /swapfile
+  size: 1G
+  maxsize: 1G
+
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-wlls.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      PermitRootLogin no
+  - path: /etc/sysctl.d/99-wlls.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      vm.swappiness=10
+
+runcmd:
+  - install -d -m 0755 -o root -g root /etc/wlls
+  - systemctl reload ssh
+  - sysctl --system
+  - |
+      set -eu
+      curl --proto '=https' --tlsv1.2 --silent --show-error --location \
+        https://releases.nixos.org/nix/nix-2.34.3/install -o /tmp/install-nix
+      printf '%s  %s\n' \
+        '15af988e88ffc16d5d4abd6e1d100eba8b0dff6a41c6e03a7718c2b4a87e0cd6' \
+        '/tmp/install-nix' | sha256sum --check --status
+      sh /tmp/install-nix --daemon --yes
+      rm /tmp/install-nix
+  - |
+      set -eu
+      mkdir -p /etc/nix
+      grep -q '^experimental-features = ' /etc/nix/nix.conf || \
+        printf '%s\n' 'experimental-features = nix-command flakes' >> /etc/nix/nix.conf
+      grep -q '^auto-optimise-store = ' /etc/nix/nix.conf || \
+        printf '%s\n' 'auto-optimise-store = true' >> /etc/nix/nix.conf
+      sed -i '/^trusted-users = /d' /etc/nix/nix.conf
+      printf '%s\n' 'trusted-users = root deploy' >> /etc/nix/nix.conf
+      systemctl restart nix-daemon
+      /nix/var/nix/profiles/default/bin/nix --version
+
+final_message: "wlls server bootstrap completed after $UPTIME seconds"

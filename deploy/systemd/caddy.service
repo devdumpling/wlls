@@ -9,6 +9,8 @@ Type=notify
 User=caddy
 Group=caddy
 Environment=WLLS_SITE_ADDRESS=wlls.dev
+Environment=WLLS_REDIRECT_ADDRESS=www.wlls.dev
+Environment=WLLS_CANONICAL_URL=https://wlls.dev
 Environment=WLLS_UPSTREAM=127.0.0.1:8080
 Environment=XDG_DATA_HOME=/var/lib/caddy
 Environment=XDG_CONFIG_HOME=/var/lib/caddy

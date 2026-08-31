@@ -14,3 +14,7 @@
 
 	reverse_proxy {$WLLS_UPSTREAM:127.0.0.1:8080}
 }
+
+{$WLLS_REDIRECT_ADDRESS:http://www.localhost:3000} {
+	redir {$WLLS_CANONICAL_URL:http://localhost:3000}{uri} permanent
+}

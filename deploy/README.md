@@ -2,56 +2,69 @@
 
 ## Local Caddy proxy
 
-Run the Go application in one terminal:
+Run the application and Caddy in separate terminals:
 
 ```bash
 go run ./cmd/wlls
-```
-
-Run Caddy in another:
-
-```bash
 caddy run --config deploy/Caddyfile
 ```
 
-The application is then available through Caddy at <http://localhost:3000>.
-`WLLS_SITE_ADDRESS` and `WLLS_UPSTREAM` override those defaults.
+Open <http://localhost:3000>. Production environment values switch the site to
+`wlls.dev` and redirect `www.wlls.dev` to the apex domain.
 
-## Nix build
+## Deploy to DigitalOcean
 
-Build the native application/runtime, or cross-compile the Linux AMD64 runtime
-used by the Droplet:
+Provision the Droplet first by following [`../infra/README.md`](../infra/README.md).
+The default deployment uses Terraform's Reserved IP and the dedicated SSH key:
 
 ```bash
-nix build .#wlls
-nix build .#runtime
-nix build .#runtime-linux-amd64
+./deploy/deploy.sh
 ```
 
-The Linux output can be built locally on an Apple Silicon Mac and contains both
-Linux `wlls` and Caddy binaries. The server runtime will be installed into the
-stable profile path `/nix/var/nix/profiles/wlls`. The systemd units refer to
-binaries through that profile, allowing a new Nix generation to be activated
-without rewriting the units.
+An explicit IP or hostname can be supplied while testing:
+
+```bash
+./deploy/deploy.sh 203.0.113.10
+```
+
+Configuration can also be provided through environment variables:
+
+```text
+WLLS_HOST       Server address; overrides the Terraform output
+WLLS_SSH_USER   SSH user, defaults to deploy
+WLLS_SSH_KEY    Private key, defaults to ~/.ssh/wlls_deploy
+WLLS_SSH_PORT   SSH port, defaults to 22
+```
+
+The command:
+
+1. Waits for cloud-init and verifies remote Nix.
+2. Cross-builds `.#runtime-linux-amd64` locally.
+3. Copies the Nix closure directly into the remote store.
+4. Atomically activates `/nix/var/nix/profiles/wlls`.
+5. Installs the Caddyfile and systemd units.
+6. Starts and enables both services.
+7. Checks the application on `127.0.0.1:8080/healthz`.
+8. Restores the previous runtime if that health check fails.
+
+Caddy may log certificate errors until Cloudflare DNS points `wlls.dev` to the
+Reserved IP. It will obtain and renew certificates automatically after cutover.
+
+## Builds
+
+```bash
+nix build .#wlls                 # native application
+nix build .#runtime              # native application and Caddy
+nix build .#runtime-linux-amd64  # Droplet runtime, cross-built locally
+```
 
 ## Server layout
 
 ```text
+/nix/var/nix/profiles/wlls  # active runtime and previous generations
 /etc/wlls/Caddyfile
-/etc/wlls/caddy.env       # optional Caddy overrides
-/etc/wlls/wlls.env        # optional application configuration
-/var/lib/caddy            # certificates and Caddy state
-/var/lib/wlls             # application and future SQLite state
-```
-
-The checked-in units expect dedicated `caddy` and `wlls` system users. Terraform
-cloud-init will create the users and directories and install Nix. The separate
-deployment command will install the runtime profile and enable the services.
-
-For a staging hostname, write the following on the server before starting
-Caddy:
-
-```text
-# /etc/wlls/caddy.env
-WLLS_SITE_ADDRESS=next.wlls.dev
+/etc/wlls/caddy.env         # optional Caddy overrides
+/etc/wlls/wlls.env          # optional application configuration
+/var/lib/caddy              # certificates and Caddy state
+/var/lib/wlls               # application and future SQLite state
 ```

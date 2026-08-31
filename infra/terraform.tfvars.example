@@ -1,0 +1,9 @@
+region       = "nyc1"
+droplet_size = "s-1vcpu-1gb-amd"
+
+# Restrict this for local-only deployments. Leave the default in place if
+# GitHub-hosted Actions must connect directly over SSH.
+ssh_source_cidrs = ["203.0.113.10/32"]
+
+# Public, not private, key material only.
+ssh_public_key = "ssh-ed25519 AAAAC3... you@example.com"

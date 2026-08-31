@@ -93,6 +93,7 @@
               curl
               jq
               direnv
+              shellcheck
             ];
 
             shellHook = ''
