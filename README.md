@@ -51,6 +51,20 @@ development and deployment tools. Go application dependencies remain managed by
 Go modules. Use `nix fmt flake.nix` to format the flake and `nix flake check` to
 validate it.
 
+### Go hello world
+
+The initial Go application lives under `cmd/wlls` and is intentionally
+independent of the current Deno site:
+
+```bash
+go tool templ generate
+go test ./...
+go run ./cmd/wlls
+```
+
+Then open <http://localhost:8080>. The button demonstrates a Datastar SSE
+response, and `/healthz` is available for process and deployment checks.
+
 The production build is written to `build/`. It contains complete HTML for every page, one fingerprinted stylesheet, and one small fingerprinted JavaScript module. Cloudflare serves the directory directly; there is no request-time application runtime.
 
 ## Navigation

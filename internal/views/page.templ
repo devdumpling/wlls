@@ -1,0 +1,25 @@
+package views
+
+templ Page() {
+	<!doctype html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>wlls.dev</title>
+			<style>
+				:root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+				body { max-width: 42rem; margin: 4rem auto; padding: 0 1rem; }
+				button { cursor: pointer; font: inherit; padding: .5rem .75rem; }
+			</style>
+			<script type="module" src="/static/datastar.js"></script>
+		</head>
+		<body>
+			<main>
+				<p>hello from Go and Templ</p>
+				<h1 id="greeting">Hello, world.</h1>
+				<button type="button" data-on:click="@post('/hello')">Say hello</button>
+			</main>
+		</body>
+	</html>
+}
