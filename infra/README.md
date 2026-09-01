@@ -6,7 +6,9 @@ Nix builds and installs the runtime.
 
 Cloudflare will remain the registrar, authoritative DNS provider, and home of
 the existing email records. Web records will be **DNS only**, so HTTP traffic
-goes directly to DigitalOcean rather than through Cloudflare's proxy.
+goes directly to DigitalOcean rather than through Cloudflare's proxy. See the
+[`operations runbook`](../docs/operations.md) for cutover, maintenance, and
+rollback procedures.
 
 ## What Terraform creates
 

@@ -73,7 +73,7 @@ runtime_path="$(nix build \
 
 log "Copying Nix closure"
 remote_store="ssh-ng://$ssh_target:$ssh_port?ssh-key=$ssh_key&remote-program=/nix/var/nix/profiles/default/bin/nix-daemon"
-nix copy --to "$remote_store" "$runtime_path"
+nix copy --no-check-sigs --to "$remote_store" "$runtime_path"
 
 log "Uploading service configuration"
 remote_tmp="$(ssh "${ssh_args[@]}" "$ssh_target" 'mktemp -d /tmp/wlls-deploy.XXXXXX')"
@@ -117,7 +117,7 @@ sudo systemctl restart wlls.service
 
 healthy=false
 for _ in $(seq 1 20); do
-  if curl --fail --silent --show-error http://127.0.0.1:8080/healthz >/dev/null; then
+  if curl --fail --silent http://127.0.0.1:8080/healthz >/dev/null 2>&1; then
     healthy=true
     break
   fi

@@ -1,5 +1,8 @@
 # Deployment
 
+See the [`operations runbook`](../docs/operations.md) for production cutover,
+monitoring, rollback, security, and backup guidance.
+
 ## Local Caddy proxy
 
 Run the application and Caddy in separate terminals:
@@ -40,7 +43,9 @@ The command:
 
 1. Waits for cloud-init and verifies remote Nix.
 2. Cross-builds `.#runtime-linux-amd64` locally.
-3. Copies the Nix closure directly into the remote store.
+3. Copies the locally built Nix closure over authenticated SSH. Local deployment
+   disables Nix signature checks because no binary cache or signing key is
+   involved.
 4. Atomically activates `/nix/var/nix/profiles/wlls`.
 5. Installs the Caddyfile and systemd units.
 6. Starts and enables both services.
