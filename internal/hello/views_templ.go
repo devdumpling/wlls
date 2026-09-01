@@ -29,7 +29,7 @@ func Page() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>wlls.dev</title><style>\n\t\t\t\t:root { color-scheme: light dark; font-family: system-ui, sans-serif; }\n\t\t\t\tbody { max-width: 42rem; margin: 4rem auto; padding: 0 1rem; }\n\t\t\t\tbutton { cursor: pointer; font: inherit; padding: .5rem .75rem; }\n\t\t\t</style><script type=\"module\" src=\"/static/datastar.js\"></script></head><body><main><p>hello from Go and Templ</p>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"><title>wlls.dev</title><style>\n\t\t\t\t:root { color-scheme: light dark; font-family: system-ui, sans-serif; }\n\t\t\t\tbody { max-width: 42rem; margin: 4rem auto; padding: 0 1rem; }\n\t\t\t\tbutton { cursor: pointer; font: inherit; padding: .5rem .75rem; }\n\t\t\t</style><script type=\"module\" src=\"/static/datastar.js\"></script></head><body><main><p>Oh hi! You caught me rebuilding things from scratch... and uh, in an awkward mostly broken state. Check back later!</p>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
