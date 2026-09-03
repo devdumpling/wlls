@@ -23,11 +23,5 @@ crash.log
 crash.*.log
 infra/tfplan
 
-# Tooling
-.wrangler/
-coverage/
-playwright-report/
-test-results/
-
 # Operating system files
 .DS_Store
