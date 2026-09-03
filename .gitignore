@@ -25,3 +25,6 @@ infra/tfplan
 
 # Operating system files
 .DS_Store
+
+# air
+tmp
