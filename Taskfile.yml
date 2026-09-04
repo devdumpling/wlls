@@ -1,43 +1,85 @@
 version: "3"
 
+vars:
+  APP: ./cmd/wlls
+  BINARY: ./bin/wlls
+
 tasks:
-  # The `build:` tasks below are used together for production builds of a project
-  build:templ:
+  default:
+    desc: Start the development environment
     cmds:
-      - go tool templ generate
+      - task: dev
+
+  generate:
+    desc: Generate Go code from Templ components
     sources:
       - "**/*.templ"
     generates:
       - "**/*_templ.go"
+    cmds:
+      - go tool templ generate
+
+  dev:
+    desc: Run with server and browser live reload
+    cmds:
+      - >-
+        go tool templ generate
+        --watch
+        --proxy=http://127.0.0.1:8080
+        --open-browser=false
+        --cmd="go tool air"
 
   build:
-    cmds:
-      - go build -tags=prod -o bin/main ./cmd/wlls
+    desc: Build the application
     deps:
-      - build:templ
-
-  # Use this task to debug with the delve debugger
-  debug:
+      - generate
     cmds:
-      - go tool dlv exec ./bin/main
-    deps:
-      - build
-
-  live:server:
-    cmds:
-      - |
-        go tool air
-
-  live:
-    deps:
-      - live:server
+      - mkdir -p ./bin
+      - go build -trimpath -o {{.BINARY}} {{.APP}}
 
   run:
-    cmds:
-      - ./bin/main
+    desc: Build and run the application
     deps:
       - build
-
-  default:
     cmds:
-      - task: live
+      - "{{.BINARY}}"
+
+  debug:
+    desc: Run the application through Delve
+    deps:
+      - generate
+    cmds:
+      - go tool dlv debug {{.APP}}
+
+  test:
+    desc: Run tests with the race detector
+    deps:
+      - generate
+    cmds:
+      - go test -race ./...
+
+  check:
+    desc: Run all local verification
+    cmds:
+      - task: generate
+      - go vet ./...
+      - go test -race ./...
+      - go build ./cmd/wlls
+
+  fmt:
+    desc: Format Templ and Go source
+    cmds:
+      - go tool templ fmt .
+      - go tool templ generate
+      - go fmt ./...
+
+  tidy:
+    desc: Synchronize Go module dependencies
+    cmds:
+      - go mod tidy
+
+  deploy:
+    desc: Verify and deploy the application
+    cmds:
+      - task: check
+      - ./deploy/deploy.sh
