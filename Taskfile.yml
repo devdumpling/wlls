@@ -1,0 +1,43 @@
+version: "3"
+
+tasks:
+  # The `build:` tasks below are used together for production builds of a project
+  build:templ:
+    cmds:
+      - go tool templ generate
+    sources:
+      - "**/*.templ"
+    generates:
+      - "**/*_templ.go"
+
+  build:
+    cmds:
+      - go build -tags=prod -o bin/main ./cmd/wlls
+    deps:
+      - build:templ
+
+  # Use this task to debug with the delve debugger
+  debug:
+    cmds:
+      - go tool dlv exec ./bin/main
+    deps:
+      - build
+
+  live:server:
+    cmds:
+      - |
+        go tool air
+
+  live:
+    deps:
+      - live:server
+
+  run:
+    cmds:
+      - ./bin/main
+    deps:
+      - build
+
+  default:
+    cmds:
+      - task: live
