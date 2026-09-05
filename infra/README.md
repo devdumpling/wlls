@@ -4,9 +4,9 @@ The site runs as a Go service behind Caddy on one DigitalOcean Droplet.
 Terraform owns the DigitalOcean resources; cloud-init bootstraps the machine;
 Nix builds and installs the runtime.
 
-Cloudflare will remain the registrar, authoritative DNS provider, and home of
-the existing email records. Web records will be **DNS only**, so HTTP traffic
-goes directly to DigitalOcean rather than through Cloudflare's proxy. See the
+Cloudflare remains the registrar, authoritative DNS provider, web proxy, and
+home of the existing email records. Caddy terminates the Cloudflare-to-origin
+TLS connection and Cloudflare SSL/TLS mode must be **Full (strict)**. See the
 [`operations runbook`](../docs/operations.md) for cutover, maintenance, and
 rollback procedures.
 
@@ -101,8 +101,8 @@ Cloudflare DNS:
 
 ```text
 Type   Name   Value                 Proxy
-A      @      <Reserved IPv4>       DNS only
-CNAME  www    wlls.dev              DNS only
+A      @      <Reserved IPv4>       Proxied
+CNAME  www    wlls.dev              Proxied
 ```
 
 Replace conflicting existing apex or `www` web records. Do not add an AAAA
@@ -123,9 +123,9 @@ curl -I https://wlls.dev
 curl https://wlls.dev/healthz
 ```
 
-The first command should return the Reserved IPv4. In Cloudflare, both web
-records must show the gray **DNS only** cloud. Cloudflare will answer DNS queries
-but will not carry, cache, or inspect web traffic.
+The first command should return Cloudflare proxy addresses rather than the
+Reserved IPv4. In Cloudflare, both web records must show the orange **Proxied**
+cloud. Verify Full (strict) TLS and preserve all unrelated email records.
 
 ## Terraform state
 

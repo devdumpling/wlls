@@ -1,1 +1,236 @@
-/* TBD */
+@layer reset, base, components;
+
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html {
+    text-size-adjust: none;
+  }
+  body,
+  h1,
+  h2,
+  h3,
+  p,
+  ul,
+  ol,
+  blockquote,
+  pre {
+    margin-block-start: 0;
+  }
+  img,
+  picture,
+  svg {
+    display: block;
+    max-inline-size: 100%;
+  }
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: light dark;
+    --background: light-dark(#faf9f6, #171716);
+    --surface: light-dark(#f0eee8, #232321);
+    --text: light-dark(#252521, #eceae4);
+    --muted: light-dark(#67675f, #aaa89f);
+    --accent: light-dark(#7d351d, #e49b7d);
+    --border: light-dark(#d8d5cc, #3e3d39);
+    --measure: 44rem;
+    --space: clamp(1rem, 3vw, 1.5rem);
+    font-family: Literata, Georgia, serif;
+    font-synthesis: none;
+    line-height: 1.65;
+  }
+
+  @font-face {
+    font-family: Literata;
+    src: url("../fonts/literata-latin.woff2") format("woff2");
+    font-style: normal;
+    font-display: swap;
+  }
+
+  @font-face {
+    font-family: Literata;
+    src: url("../fonts/literata-latin-italic.woff2") format("woff2");
+    font-style: italic;
+    font-display: swap;
+  }
+
+  html {
+    background: var(--background);
+    color: var(--text);
+  }
+  body {
+    margin: 0;
+    min-block-size: 100dvh;
+  }
+  a {
+    color: var(--accent);
+    text-underline-offset: 0.18em;
+  }
+  a:hover {
+    text-decoration-thickness: 0.12em;
+  }
+  :focus-visible {
+    outline: 0.16rem solid var(--accent);
+    outline-offset: 0.2rem;
+  }
+
+  .site-header,
+  main {
+    inline-size: min(calc(100% - 2 * var(--space)), var(--measure));
+    margin-inline: auto;
+  }
+
+  .site-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    padding-block: 1.5rem;
+  }
+
+  .site-header nav {
+    display: flex;
+    gap: 1rem;
+  }
+  .site-header a {
+    font-family: monospace;
+    color: inherit;
+  }
+  .site-name {
+    font-family: monospace;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  main {
+    padding-block: clamp(2.5rem, 8vw, 5rem);
+  }
+
+  h1,
+  h2,
+  h3 {
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+  h1 {
+    font-size: clamp(2rem, 7vw, 3.5rem);
+  }
+  h2 {
+    margin-block-start: 2.5rem;
+  }
+  p,
+  li {
+    text-wrap: pretty;
+  }
+  blockquote {
+    margin-inline: 0;
+    padding-inline-start: 1rem;
+    border-inline-start: 0.2rem solid var(--accent);
+    color: var(--muted);
+  }
+  pre {
+    overflow-x: auto;
+    padding: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.35rem;
+    background: var(--surface);
+    line-height: 1.45;
+  }
+  code {
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.9em;
+  }
+  :not(pre) > code {
+    padding: 0.1em 0.3em;
+    border-radius: 0.2rem;
+    background: var(--surface);
+  }
+  hr {
+    margin-block: 3rem;
+    border: 0;
+    border-block-start: 1px solid var(--border);
+  }
+}
+
+@layer components {
+  .skip-link {
+    position: fixed;
+    inset-block-start: 0.5rem;
+    inset-inline-start: 0.5rem;
+    z-index: 10;
+    translate: 0 -200%;
+    padding: 0.5rem 0.75rem;
+    background: var(--text);
+    color: var(--background);
+  }
+  .skip-link:focus {
+    translate: 0;
+  }
+  .eyebrow,
+  .post-meta {
+    color: var(--muted);
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .article-header {
+    margin-block-end: 2.5rem;
+  }
+  .article-header h1 {
+    margin-block-end: 0.75rem;
+  }
+  .article-dek {
+    color: var(--muted);
+    font-size: 1.15rem;
+  }
+  .article-body > :first-child {
+    margin-block-start: 0;
+  }
+  .article-footer {
+    margin-block-start: 4rem;
+  }
+  .post-list {
+    padding: 0;
+    list-style: none;
+  }
+  .post-list li {
+    padding-block: 1.25rem;
+    border-block-start: 1px solid var(--border);
+  }
+  .post-list h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1.25rem;
+  }
+  .post-list p {
+    margin: 0;
+    color: var(--muted);
+  }
+  .post-list a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .post-list a:hover h2 {
+    color: var(--accent);
+  }
+  .message-page {
+    min-block-size: 45vh;
+    display: grid;
+    align-content: center;
+    justify-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a {
+    transition: color 150ms ease;
+  }
+}

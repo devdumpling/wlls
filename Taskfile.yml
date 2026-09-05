@@ -8,7 +8,7 @@ tasks:
   default:
     desc: Start the development environment
     cmds:
-      - task: dev
+      - go tool task dev
 
   generate:
     desc: Generate Go code from Templ components
@@ -61,10 +61,11 @@ tasks:
   check:
     desc: Run all local verification
     cmds:
-      - task: generate
+      - go tool task generate
       - go vet ./...
       - go test -race ./...
-      - go build ./cmd/wlls
+      - mkdir -p ./bin
+      - go build -trimpath -o ./bin/wlls-check {{.APP}}
 
   fmt:
     desc: Format Templ and Go source
@@ -81,5 +82,5 @@ tasks:
   deploy:
     desc: Verify and deploy the application
     cmds:
-      - task: check
+      - go tool task check
       - ./deploy/deploy.sh

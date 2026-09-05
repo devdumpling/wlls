@@ -1,0 +1,50 @@
+package site
+
+templ Document(metadata Metadata, assets Assets, content templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ metadata.Title }</title>
+			<meta name="description" content={ metadata.Description }/>
+			if metadata.Canonical != "" {
+				<link rel="canonical" href={ templ.SafeURL(metadata.Canonical) }/>
+				<meta property="og:url" content={ metadata.Canonical }/>
+			}
+			<meta property="og:title" content={ metadata.Title }/>
+			<meta property="og:description" content={ metadata.Description }/>
+			if metadata.Type != "" {
+				<meta property="og:type" content={ metadata.Type }/>
+			}
+			if metadata.NoIndex {
+				<meta name="robots" content="noindex"/>
+			}
+			<link rel="icon" href={ assets.Favicon } type="image/svg+xml"/>
+			<link rel="stylesheet" href={ assets.Stylesheet }/>
+			<script type="module" src={ assets.Datastar }></script>
+		</head>
+		<body>
+			<a class="skip-link" href="#main-content">Skip to content</a>
+			<header class="site-header">
+				<a class="site-name" href="/">wlls.dev</a>
+				<nav aria-label="Primary">
+					<a href="/blog">Posts</a>
+					<a href="/about">About</a>
+				</nav>
+			</header>
+			<main id="main-content">
+				@content
+			</main>
+		</body>
+	</html>
+}
+
+templ NotFound() {
+	<section class="message-page">
+		<p class="eyebrow">404</p>
+		<h1>Page not found</h1>
+		<p>The requested page does not exist.</p>
+		<a href="/">Read the latest post</a>
+	</section>
+}

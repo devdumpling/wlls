@@ -1,38 +1,75 @@
-<img src="static/images/avatars/dev.webp" alt="pixelated avatar" width="64" align="left" />
+<img src="internal/assets/static/images/avatars/dev.webp" alt="pixelated avatar" width="64" align="left" />
 
 # wlls.dev
 
-Personal site and blog. Writing about software, games, craft, and whatever else stays interesting.
+Server-rendered personal site and blog built with Go, Chi, Templ,
+embedded Markdown, and plain CSS.
 
 **[about](https://wlls.dev/about)** · **[linkedin](https://www.linkedin.com/in/devon-a-wells/)** · **[bluesky](https://bsky.app/profile/wlls.dev)**
 
-## Nix development environment
+## Development
+
+Enter the pinned Nix development environment:
 
 ```bash
 direnv allow
 ```
 
-The checked-in `.envrc` will then enter the flake automatically. Without direnv,
-enter it explicitly with `nix develop`.
+Without direnv, use `nix develop` explicitly.
 
-This provides Go, Caddy, SQLite, Terraform, direnv, and the supporting
-development and deployment tools. Go application dependencies remain managed by
-Go modules. Use `nix fmt flake.nix` to format the flake and `nix flake check` to
-validate it.
-
-### Go hello world
+Start Templ's live-reload proxy and Air:
 
 ```bash
-go tool templ generate
-go test ./...
-go run ./cmd/wlls
+go tool task
 ```
 
-Then open <http://localhost:8080>. To exercise the local Caddy proxy, run
-`caddy run --config deploy/Caddyfile` in another terminal and open
-<http://localhost:3000>. The button demonstrates a Datastar SSE response, and
-`/healthz` is available for process and deployment checks. `cmd/wlls` is the
-thin executable entrypoint, `internal/app` composes the server and routes, and
-`internal/hello` keeps the example handler and Templ views together.
+The application listens on <http://127.0.0.1:8080>; the Templ proxy opens on
+<http://127.0.0.1:7331>. Go, Templ, CSS, JavaScript, Markdown, and embedded asset
+changes are rebuilt automatically.
 
-The production build is written to `build/`. It contains complete HTML for every page, one fingerprinted stylesheet, and one small fingerprinted JavaScript module. Cloudflare serves the directory directly; there is no request-time application runtime.
+Run all local checks with:
+
+```bash
+go tool task check
+```
+
+Useful commands:
+
+```text
+go tool task dev       Live development
+go tool task generate  Generate Templ Go source
+go tool task build     Build ./bin/wlls
+go tool task run       Build and run
+go tool task debug     Run with Delve
+go tool task test      Race-enabled tests
+go tool task check     Generate, vet, test, and build
+go tool task fmt       Format Templ and Go
+go tool task tidy      Synchronize modules
+go tool task deploy    Check and deploy
+```
+
+## Runtime
+
+The Go process embeds authored Markdown, CSS, fonts, images, and the Datastar
+browser module. At startup it validates and renders content into an immutable
+post index. The newest post is served at `/`, the archive at `/blog`, individual
+posts at `/blog/{slug}`, and the about page at `/about`.
+
+Eligible text responses negotiate zstd compression with Brotli fallback.
+Fingerprinted assets are cached immutably; HTML is cached for a short browser
+lifetime and a longer shared-cache lifetime. Health endpoints are never cached.
+
+For local reverse-proxy testing, run the application and Caddy separately:
+
+```bash
+go run ./cmd/wlls
+caddy run --config deploy/Caddyfile
+```
+
+Then open <http://localhost:3000>.
+
+SQLite, NATS, NATSrpc, and Datastar SSE will be introduced with the first real
+interactive feature rather than as unused platform placeholders. See
+[`docs/architecture.md`](docs/architecture.md),
+[`docs/implementation-plan.md`](docs/implementation-plan.md), and
+[`docs/wlls-platform-architecture-spec.md`](docs/wlls-platform-architecture-spec.md).

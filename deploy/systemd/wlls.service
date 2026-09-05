@@ -8,12 +8,15 @@ Type=simple
 User=wlls
 Group=wlls
 WorkingDirectory=/var/lib/wlls
+Environment=WLLS_ENV=production
 Environment=WLLS_ADDR=127.0.0.1:8080
+Environment=WLLS_BASE_URL=https://wlls.dev
+Environment=WLLS_SHUTDOWN_TIMEOUT=10s
 EnvironmentFile=-/etc/wlls/wlls.env
 ExecStart=/nix/var/nix/profiles/wlls/bin/wlls
 Restart=on-failure
 RestartSec=2s
-TimeoutStopSec=10s
+TimeoutStopSec=15s
 
 NoNewPrivileges=true
 PrivateDevices=true

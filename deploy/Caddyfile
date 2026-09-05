@@ -3,8 +3,6 @@
 }
 
 {$WLLS_SITE_ADDRESS:http://localhost:3000} {
-	encode zstd gzip
-
 	header {
 		-Server
 		Referrer-Policy "strict-origin-when-cross-origin"

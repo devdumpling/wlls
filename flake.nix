@@ -38,7 +38,7 @@
               pname = "wlls";
               version = "0.1.0";
               src = self;
-              vendorHash = "sha256-1kqVqPirpgUb1XVlSb6JykwNKNgNldZzjb2cRMDyksM=";
+              vendorHash = "sha256-Jr3sTnyz1qixLtoB3wvsQ7SRUK0D9vMb5qHFxOUefyA=";
               subPackages = [ "cmd/wlls" ];
               env.CGO_ENABLED = 0;
               ldflags = [

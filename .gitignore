@@ -7,6 +7,8 @@ result
 result-*
 .go/
 build/
+bin/
+.task/
 
 # Environment variables
 .env

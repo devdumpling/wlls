@@ -11,9 +11,11 @@ Cloudflare DNS ──► DigitalOcean Reserved IP ──► Caddy ──► Go o
 - **Nix** builds the Go and Caddy runtime.
 - **`deploy/deploy.sh`** transfers and activates releases.
 - **systemd** runs and restarts Go and Caddy.
-- **Caddy** provides TLS, HTTP/2, HTTP/3, compression, and reverse proxying.
-- **Cloudflare** remains the registrar, authoritative DNS provider, and home of
-  the email records. Web records are DNS-only.
+- **Caddy** provides TLS, HTTP/2, HTTP/3, and reverse proxying.
+- **Go** negotiates zstd/Brotli response compression and sets resource-specific
+  cache policies.
+- **Cloudflare** remains the registrar, authoritative DNS provider, web proxy,
+  and home of the email records.
 
 ## Before production cutover
 
@@ -40,9 +42,10 @@ securely until it is migrated to a remote backend.
 ```
 
 The command builds Linux AMD64 locally, copies the Nix closure over authenticated
-SSH, activates the remote profile, installs configuration, restarts services,
-and checks the application health endpoint. It restores the previous runtime if
-the application health check fails.
+SSH, validates staged proxy configuration, promotes the runtime and service
+configuration, restarts the Go service, checks the local health endpoint, and
+reloads Caddy. It restores the previous runtime and configuration if activation
+fails.
 
 A dirty Git tree warning from Nix is informational, but production releases
 should normally come from committed source.
@@ -53,8 +56,8 @@ In Cloudflare, replace only the web records:
 
 ```text
 Type   Name   Value                 Proxy
-A      @      <Reserved IPv4>       DNS only
-CNAME  www    wlls.dev              DNS only
+A      @      <Reserved IPv4>       Proxied
+CNAME  www    wlls.dev              Proxied
 ```
 
 Remove conflicting web records and stale AAAA records. Do not alter MX, SPF,
@@ -79,9 +82,18 @@ ssh -i ~/.ssh/wlls_deploy deploy@"$IP" \
 Verify:
 
 ```bash
-curl -I https://wlls.dev
+curl -I -H 'Accept-Encoding: zstd, br' https://wlls.dev
 curl https://wlls.dev/healthz
 dig MX wlls.dev
+
+Cloudflare SSL/TLS mode must be **Full (strict)**. Add a Cache Rule for GET/HEAD
+HTML resources that makes them eligible for cache and respects the origin
+`Cache-Control` header; exclude `/healthz`, `/readyz`, and all present or future
+SSE routes. Cloudflare does not cache HTML by file type by default.
+
+Confirm HTML has a public cache policy, fingerprinted `/static/` assets are
+immutable, health resources are `no-store`, and the negotiated response has
+exactly one `Content-Encoding`.
 ```
 
 Keep the old Cloudflare-hosted application available briefly as a DNS rollback
@@ -134,8 +146,8 @@ curl https://wlls.dev/healthz
 
 ## Rollback
 
-The deployment command automatically rolls back when the new Go service fails
-its local health check. To roll back manually:
+The deployment command automatically rolls back the runtime and promoted
+configuration when activation fails. To roll back manually:
 
 ```bash
 ssh -i ~/.ssh/wlls_deploy deploy@"$IP"

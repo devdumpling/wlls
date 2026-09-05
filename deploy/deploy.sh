@@ -92,20 +92,79 @@ upload_dir="$2"
 profile=/nix/var/nix/profiles/wlls
 nix_env=/nix/var/nix/profiles/default/bin/nix-env
 previous_runtime="$(readlink -f "$profile" 2>/dev/null || true)"
+backup_dir="$upload_dir/previous"
+promoted=false
 
 cleanup() {
   rm -rf "$upload_dir"
 }
 trap cleanup EXIT
 
-rollback() {
-  if [[ -n "$previous_runtime" && -e "$previous_runtime" ]]; then
-    echo "Application health check failed; restoring $previous_runtime" >&2
-    sudo "$nix_env" --profile "$profile" --set "$previous_runtime"
-    sudo systemctl restart wlls.service
+caddy_command() {
+  sudo env \
+    WLLS_SITE_ADDRESS=wlls.dev \
+    WLLS_REDIRECT_ADDRESS=www.wlls.dev \
+    WLLS_CANONICAL_URL=https://wlls.dev \
+    WLLS_UPSTREAM=127.0.0.1:8080 \
+    "$@"
+}
+
+backup_file() {
+  local source="$1" name="$2"
+  if sudo test -e "$source"; then
+    sudo cp -a "$source" "$backup_dir/$name"
+  else
+    touch "$backup_dir/$name.missing"
   fi
 }
 
+restore_file() {
+  local destination="$1" name="$2"
+  if [[ -e "$backup_dir/$name.missing" ]]; then
+    sudo rm -f "$destination"
+  else
+    sudo cp -a "$backup_dir/$name" "$destination"
+  fi
+}
+
+rollback() {
+  trap - ERR
+  echo "Activation failed; restoring the previous runtime and configuration" >&2
+  if [[ -n "$previous_runtime" && -e "$previous_runtime" ]]; then
+    sudo "$nix_env" --profile "$profile" --set "$previous_runtime" || true
+  fi
+  restore_file /etc/wlls/Caddyfile Caddyfile
+  restore_file /etc/systemd/system/wlls.service wlls.service
+  restore_file /etc/systemd/system/caddy.service caddy.service
+  sudo systemctl daemon-reload || true
+  if [[ -n "$previous_runtime" && -e "$previous_runtime" ]]; then
+    sudo systemctl restart wlls.service || true
+    if sudo systemctl is-active --quiet caddy.service; then
+      sudo systemctl reload caddy.service || sudo systemctl restart caddy.service || true
+    fi
+  else
+    sudo systemctl stop wlls.service caddy.service || true
+  fi
+}
+
+on_error() {
+  local status=$?
+  if [[ "$promoted" == true ]]; then
+    rollback
+  fi
+  exit "$status"
+}
+trap on_error ERR
+
+# Validate uploaded configuration with the new runtime before promotion.
+caddy_command "$runtime_path/bin/caddy" validate --config "$upload_dir/Caddyfile" >/dev/null
+
+mkdir -p "$backup_dir"
+backup_file /etc/wlls/Caddyfile Caddyfile
+backup_file /etc/systemd/system/wlls.service wlls.service
+backup_file /etc/systemd/system/caddy.service caddy.service
+
+promoted=true
 sudo install -d -m 0755 -o root -g root /etc/wlls
 sudo install -m 0644 "$upload_dir/Caddyfile" /etc/wlls/Caddyfile
 sudo install -m 0644 "$upload_dir/wlls.service" /etc/systemd/system/wlls.service
@@ -126,18 +185,17 @@ done
 
 if [[ "$healthy" != true ]]; then
   sudo journalctl --unit wlls.service --no-pager --lines 50 >&2 || true
-  rollback
-  exit 1
+  false
 fi
 
-sudo env \
-    WLLS_SITE_ADDRESS=wlls.dev \
-    WLLS_REDIRECT_ADDRESS=www.wlls.dev \
-    WLLS_CANONICAL_URL=https://wlls.dev \
-    WLLS_UPSTREAM=127.0.0.1:8080 \
-    "$profile/bin/caddy" validate --config /etc/wlls/Caddyfile >/dev/null
-sudo systemctl restart caddy.service
+if sudo systemctl is-active --quiet caddy.service; then
+  sudo systemctl reload caddy.service
+else
+  sudo systemctl start caddy.service
+fi
 sudo systemctl is-active --quiet wlls.service caddy.service
+promoted=false
+trap - ERR
 REMOTE
 
 log "Deployment healthy at $host"

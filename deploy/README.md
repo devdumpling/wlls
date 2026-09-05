@@ -46,11 +46,12 @@ The command:
 3. Copies the locally built Nix closure over authenticated SSH. Local deployment
    disables Nix signature checks because no binary cache or signing key is
    involved.
-4. Atomically activates `/nix/var/nix/profiles/wlls`.
-5. Installs the Caddyfile and systemd units.
-6. Starts and enables both services.
-7. Checks the application on `127.0.0.1:8080/healthz`.
-8. Restores the previous runtime if that health check fails.
+4. Validates the staged Caddyfile with the new runtime.
+5. Backs up and promotes the runtime, Caddyfile, and systemd units as one
+   release operation.
+6. Restarts the Go service and checks `127.0.0.1:8080/healthz`.
+7. Reloads an active Caddy service rather than restarting it.
+8. Restores the previous runtime and configuration if activation fails.
 
 Caddy may log certificate errors until Cloudflare DNS points `wlls.dev` to the
 Reserved IP. It will obtain and renew certificates automatically after cutover.
@@ -71,5 +72,5 @@ nix build .#runtime-linux-amd64  # Droplet runtime, cross-built locally
 /etc/wlls/caddy.env         # optional Caddy overrides
 /etc/wlls/wlls.env          # optional application configuration
 /var/lib/caddy              # certificates and Caddy state
-/var/lib/wlls               # application and future SQLite state
+/var/lib/wlls               # application state (currently empty)
 ```
