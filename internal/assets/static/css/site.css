@@ -37,17 +37,18 @@
 @layer base {
   :root {
     color-scheme: light dark;
-    --background: light-dark(#faf9f6, #171716);
-    --surface: light-dark(#f0eee8, #232321);
-    --text: light-dark(#252521, #eceae4);
-    --muted: light-dark(#67675f, #aaa89f);
-    --accent: light-dark(#7d351d, #e49b7d);
-    --border: light-dark(#d8d5cc, #3e3d39);
+    --background: light-dark(#f5f1e8, #1b1815);
+    --surface: light-dark(#ebe5da, #27221e);
+    --text: light-dark(#454038, #d7cdc0);
+    --muted: light-dark(#756e63, #a99f93);
+    --accent: light-dark(#7d432e, #cf9278);
+    --border: light-dark(#d8d0c3, #403933);
     --measure: 44rem;
     --space: clamp(1rem, 3vw, 1.5rem);
     font-family: Literata, Georgia, serif;
+    font-size: 17px;
     font-synthesis: none;
-    line-height: 1.65;
+    line-height: 1.68;
   }
 
   @font-face {
@@ -118,6 +119,7 @@
   h1,
   h2,
   h3 {
+    font-weight: 450;
     line-height: 1.15;
     text-wrap: balance;
   }
@@ -130,6 +132,9 @@
   p,
   li {
     text-wrap: pretty;
+  }
+  .article-body p {
+    margin-block-end: 1.2em;
   }
   blockquote {
     margin-inline: 0;
@@ -178,7 +183,8 @@
   .eyebrow,
   .post-meta {
     color: var(--muted);
-    font-size: 0.85rem;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.72rem;
     letter-spacing: 0.04em;
     text-transform: uppercase;
   }

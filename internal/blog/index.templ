@@ -12,7 +12,6 @@ templ Index(posts []Post) {
 						<a href={ templ.URL("/blog/" + post.Slug) }>
 							<h2>{ post.Title }</h2>
 							<p>{ post.Description }</p>
-							<p class="post-meta"><time datetime={ post.PublishedAt.Format("2006-01-02") }>{ post.DisplayDate() }</time></p>
 						</a>
 					</article>
 				</li>
