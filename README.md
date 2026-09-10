@@ -71,5 +71,3 @@ Then open <http://localhost:3000>.
 SQLite, NATS, NATSrpc, and Datastar SSE will be introduced with the first real
 interactive feature rather than as unused platform placeholders. See
 [`docs/architecture.md`](docs/architecture.md),
-[`docs/implementation-plan.md`](docs/implementation-plan.md), and
-[`docs/wlls-platform-architecture-spec.md`](docs/wlls-platform-architecture-spec.md).
