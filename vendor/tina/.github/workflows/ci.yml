@@ -1,0 +1,168 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - "ADR/**"
+      - "notes/**"
+      - "*.cast"
+      - "*.bin"
+      - "LICENSE"
+      - "NOTICE"
+      - ".gitignore"
+      - "examples/**"
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "ADR/**"
+      - "notes/**"
+      - "*.cast"
+      - "*.bin"
+      - "LICENSE"
+      - "NOTICE"
+      - ".gitignore"
+      - "examples/**"
+
+jobs:
+  check-platform:
+    name: Type-check platform backend (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - darwin_arm64
+          - linux_amd64
+          - linux_arm64
+          - windows_amd64
+          - freebsd_amd64
+    steps:
+      - uses: actions/checkout@v6
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release: dev-2026-07
+      - name: odin check platform backend (${{ matrix.target }})
+        run: odin check src/ -strict-style -no-entry-point -define:TINA_SIM=false -define:TINA_ASSERTS=true -target:${{ matrix.target }}
+
+  check-simulation:
+    name: Type-check simulation backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release: dev-2026-07
+      - name: odin check simulation backend
+        run: odin check src/ -strict-style -no-entry-point -define:TINA_SIM=true -define:TINA_ASSERTS=true
+
+  test-platform:
+    name: Platform tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release: dev-2026-07
+      - name: Run platform tests (${{ matrix.os }})
+        run: odin test tests/ -all-packages -define:ODIN_TEST_FANCY=false -define:ODIN_TEST_FAIL_ON_BAD_MEMORY=true
+
+  test-simulation:
+    name: Simulation tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release: dev-2026-07
+      - name: Run simulation tests
+        run: odin test tests/ -all-packages -define:TINA_SIM=true -define:ODIN_TEST_FANCY=false -define:ODIN_TEST_FAIL_ON_BAD_MEMORY=true
+
+  test-sanitizer:
+    name: Sanitizer tests (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: address-platform
+            sanitizer: address
+            tina_sim: false
+            experimental: false
+          - name: address-simulation
+            sanitizer: address
+            tina_sim: true
+            experimental: false
+          - name: thread-platform
+            sanitizer: thread
+            tina_sim: false
+            experimental: false
+          - name: memory-platform
+            sanitizer: memory
+            tina_sim: false
+            experimental: true
+          - name: memory-simulation
+            sanitizer: memory
+            tina_sim: true
+            experimental: true
+    steps:
+      - uses: actions/checkout@v6
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release: dev-2026-07
+      - name: Run ${{ matrix.name }} tests
+        run: odin test tests/ -all-packages -sanitize:${{ matrix.sanitizer }} -define:TINA_SIM=${{ matrix.tina_sim }} -define:ODIN_TEST_THREADS=1 -define:ODIN_TEST_FANCY=false -define:ODIN_TEST_FAIL_ON_BAD_MEMORY=true
+
+  test-asan-death-runner:
+    name: ASan death runner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release: dev-2026-07
+      - name: Run ASan death-test runner
+        run: odin run tools/asan_death_tests
+
+  compliance-check:
+    name: HTTP/1.1 Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: laytan/setup-odin@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          release: dev-2026-07
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.14
+      - name: Clone h1spec
+        run: git clone --depth 1 https://github.com/uNetworking/h1spec.git
+      - name: HTTP Compliance check
+        run: |
+          odin run src/extensions/http/server/compliance_check &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID 2>/dev/null" EXIT
+          for i in $(seq 1 15); do
+            curl -sf http://127.0.0.1:8080/health > /dev/null 2>&1 && break
+            sleep 1
+          done
+          cd h1spec
+          output=$(deno run --allow-net http_test.ts 127.0.0.1 8080 2>&1)
+          echo "$output"
+          [[ "$output" == *"33 out of 33 tests passed"* ]]

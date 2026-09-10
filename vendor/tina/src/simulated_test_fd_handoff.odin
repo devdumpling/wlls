@@ -1,0 +1,595 @@
+package tina
+
+import "core:mem"
+import "core:testing"
+
+when TINA_SIMULATION_MODE {
+	FD_HANDOFF_LISTENER_TYPE_ID: Isolate_Type_Id : 0
+	FD_HANDOFF_DISPATCHER_TYPE_ID: Isolate_Type_Id : 1
+	FD_HANDOFF_BUSY_DISPATCHER_TYPE_ID: Isolate_Type_Id : 1
+
+	FDHandoffListener :: struct {
+		listen_fd:      FD_Handle,
+		target_handle:  Isolate_Handle,
+		handoff_result: FD_Handoff_Result,
+		hand_offered:   bool,
+	}
+
+	FDHandoffDispatcher :: struct {
+		received_accept: bool,
+		client_fd:       FD_Handle,
+		peer_port:       u16,
+	}
+
+	FDHandoffBusyDispatcher :: struct {
+		fd: FD_Handle,
+	}
+
+	// Simulation-only diagnostic field IDs for FD handoff observation.
+	FD_HANDOFF_DIAG_LISTENER_RESULT:   Diagnostic_Field_Id : 0
+	FD_HANDOFF_DIAG_LISTENER_OFFERED:  Diagnostic_Field_Id : 1
+	FD_HANDOFF_DIAG_DISPATCHER_ACCEPT: Diagnostic_Field_Id : 0
+	FD_HANDOFF_DIAG_DISPATCHER_CLIENT_FD: Diagnostic_Field_Id : 1
+	FD_HANDOFF_DIAG_DISPATCHER_PEER_PORT: Diagnostic_Field_Id : 2
+
+	fd_handoff_listener_init :: proc(self: rawptr, args: []u8) -> Isolate_Transition {
+		iso := cast(^FDHandoffListener)self
+		fd, error := ctx_socket(.AF_INET, .STREAM, .TCP)
+		if error != .None {
+			return transition_to_crash(.Init_Failed)
+		}
+
+		iso.listen_fd = fd
+		iso.target_handle = (cast(^Isolate_Handle)&args[0])^
+
+		bind_error := ctx_bind(fd, Socket_Address_Inet4{address = {127, 0, 0, 1}, port = 8080})
+		if bind_error != .None {
+			return transition_to_crash(.Init_Failed)
+		}
+		if ctx_listen(fd, 16) != .None {
+			return transition_to_crash(.Init_Failed)
+		}
+
+		return transition_to_wait_io_or_crash(ctx_submit_io(IoOp_Accept{listen_fd = fd}))
+	}
+
+	fd_handoff_listener_handler :: proc(
+		self: rawptr,
+		message: ^Message,
+	) -> Isolate_Transition {
+		iso := cast(^FDHandoffListener)self
+		if message != nil && message.tag == IO_TAG_ACCEPT_COMPLETE {
+			iso.handoff_result = ctx_fd_handoff(iso.target_handle, message.io.fd)
+			iso.hand_offered = iso.handoff_result == .ok
+			ctx_test_diagnostic_write_u64(FD_HANDOFF_DIAG_LISTENER_RESULT, u64(iso.handoff_result))
+			ctx_test_diagnostic_write_u64(FD_HANDOFF_DIAG_LISTENER_OFFERED, iso.hand_offered ? 1 : 0)
+			return ISOLATE_TRANSITION_WAIT_MESSAGE
+		}
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	fd_handoff_dispatcher_init :: proc(self: rawptr, args: []u8) -> Isolate_Transition {
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	fd_handoff_dispatcher_handler :: proc(
+		self: rawptr,
+		message: ^Message,
+	) -> Isolate_Transition {
+		iso := cast(^FDHandoffDispatcher)self
+		if message != nil && message.tag == IO_TAG_ACCEPT_COMPLETE {
+			iso.received_accept = true
+			iso.client_fd = message.io.fd
+			iso.peer_port = message.io.peer_address.port
+			ctx_test_diagnostic_write_u64(FD_HANDOFF_DIAG_DISPATCHER_ACCEPT, 1)
+			ctx_test_diagnostic_write_u64(FD_HANDOFF_DIAG_DISPATCHER_CLIENT_FD, u64(iso.client_fd))
+			ctx_test_diagnostic_write_u64(FD_HANDOFF_DIAG_DISPATCHER_PEER_PORT, u64(iso.peer_port))
+		}
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	fd_handoff_busy_dispatcher_init :: proc(
+		self: rawptr,
+		args: []u8,
+	) -> Isolate_Transition {
+		iso := cast(^FDHandoffBusyDispatcher)self
+		fd, error := ctx_socket(.AF_INET, .STREAM, .TCP)
+		if error != .None {
+			return transition_to_crash(.Init_Failed)
+		}
+		iso.fd = fd
+		return transition_to_wait_io_or_crash(ctx_submit_io(IoOp_Recv{fd = fd, buffer_size_max = 64}))
+	}
+
+	fd_handoff_busy_dispatcher_handler :: proc(
+		self: rawptr,
+		message: ^Message,
+	) -> Isolate_Transition {
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	@(test)
+	test_fd_handoff_accept_completion_reaches_remote_dispatcher :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		target_handle := make_handle(1, FD_HANDOFF_DISPATCHER_TYPE_ID, 0, 1)
+		listener_args_size, listener_args_payload := sim_test_pack_init_args(
+			bytes_of(&target_handle),
+		)
+
+		types := [2]IsolateTypeDescriptor {
+			{
+				id = FD_HANDOFF_LISTENER_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(FDHandoffListener),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = fd_handoff_listener_init,
+				handler_fn = fd_handoff_listener_handler,
+				mailbox_capacity = 8,
+				budget_weight = 1,
+			},
+			{
+				id = FD_HANDOFF_DISPATCHER_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(FDHandoffDispatcher),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = fd_handoff_dispatcher_init,
+				handler_fn = fd_handoff_dispatcher_handler,
+				mailbox_capacity = 1,
+				budget_weight = 1,
+			},
+		}
+
+		shard_0_children := [1]Child_Spec {
+			Static_Child_Spec {
+				type_id = FD_HANDOFF_LISTENER_TYPE_ID,
+				restart_type = .permanent,
+				args_size = listener_args_size,
+				args_payload = listener_args_payload,
+			},
+		}
+		shard_1_children := [1]Child_Spec {
+			Static_Child_Spec{type_id = FD_HANDOFF_DISPATCHER_TYPE_ID, restart_type = .permanent},
+		}
+		root_group_0 := sim_test_make_root_group(shard_0_children[:])
+		root_group_1 := sim_test_make_root_group(shard_1_children[:])
+		shard_specs := [2]ShardSpec {
+			{shard_id = 0, root_group = root_group_0},
+			{shard_id = 1, root_group = root_group_1},
+		}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 64,
+			terminate_on_quiescent = true,
+			builtin_checkers       = CHECKER_FLAGS_ALL,
+			checker_interval_ticks = 8,
+		}
+
+		spec := sim_test_make_spec(
+			&sim_config,
+			types[:],
+			shard_specs[:],
+			Sim_Test_Spec_Options {
+				reactor_buffer_slot_count = 8,
+				fd_handoff_entry_count = 4,
+				timer_entry_count = 256,
+				supervision_groups_max = 8,
+			},
+		)
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		sim.shards[0].reactor.backend.config.delay_range_ticks = {0, 0}
+		sim.shards[1].reactor.backend.config.delay_range_ticks = {0, 0}
+		simulator_run(&sim)
+
+		shard_0 := &sim.shards[0]
+		shard_1 := &sim.shards[1]
+
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard_0,
+			FD_HANDOFF_LISTENER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_LISTENER_RESULT,
+			u64(FD_Handoff_Result.ok),
+		)
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard_0,
+			FD_HANDOFF_LISTENER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_LISTENER_OFFERED,
+			1,
+		)
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard_1,
+			FD_HANDOFF_DISPATCHER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_DISPATCHER_ACCEPT,
+			1,
+		)
+		client_fd, client_fd_found := shard_diagnostic_read(
+			shard_1,
+			FD_HANDOFF_DISPATCHER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_DISPATCHER_CLIENT_FD,
+		)
+		testing.expect(t, client_fd_found, "dispatcher client-fd diagnostic not found")
+		testing.expect(t, client_fd != u64(FD_HANDLE_NONE), "dispatcher should receive adopted FD")
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard_1,
+			FD_HANDOFF_DISPATCHER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_DISPATCHER_PEER_PORT,
+			u64(9999),
+		)
+		testing.expect_value(
+			t,
+			shard_0.handoff_table.free_count,
+			shard_0.handoff_table.entry_count,
+		)
+	}
+
+	@(test)
+	test_fd_handoff_rejects_when_dispatcher_is_busy :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		target_handle := make_handle(1, FD_HANDOFF_BUSY_DISPATCHER_TYPE_ID, 0, 1)
+		listener_args_size, listener_args_payload := sim_test_pack_init_args(
+			bytes_of(&target_handle),
+		)
+
+		types := [2]IsolateTypeDescriptor {
+			{
+				id = FD_HANDOFF_LISTENER_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(FDHandoffListener),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = fd_handoff_listener_init,
+				handler_fn = fd_handoff_listener_handler,
+				mailbox_capacity = 8,
+				budget_weight = 1,
+			},
+			{
+				id = FD_HANDOFF_BUSY_DISPATCHER_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(FDHandoffBusyDispatcher),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = fd_handoff_busy_dispatcher_init,
+				handler_fn = fd_handoff_busy_dispatcher_handler,
+				mailbox_capacity = 1,
+				budget_weight = 1,
+			},
+		}
+
+		shard_0_children := [1]Child_Spec {
+			Static_Child_Spec {
+				type_id = FD_HANDOFF_LISTENER_TYPE_ID,
+				restart_type = .permanent,
+				args_size = listener_args_size,
+				args_payload = listener_args_payload,
+			},
+		}
+		shard_1_children := [1]Child_Spec {
+			Static_Child_Spec {
+				type_id = FD_HANDOFF_BUSY_DISPATCHER_TYPE_ID,
+				restart_type = .permanent,
+			},
+		}
+		root_group_0 := sim_test_make_root_group(shard_0_children[:])
+		root_group_1 := sim_test_make_root_group(shard_1_children[:])
+		shard_specs := [2]ShardSpec {
+			{shard_id = 0, root_group = root_group_0},
+			{shard_id = 1, root_group = root_group_1},
+		}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 8,
+			terminate_on_quiescent = false,
+			builtin_checkers       = CHECKER_FLAGS_ALL,
+			checker_interval_ticks = 8,
+		}
+
+		spec := sim_test_make_spec(
+			&sim_config,
+			types[:],
+			shard_specs[:],
+			Sim_Test_Spec_Options {
+				reactor_buffer_slot_count = 8,
+				fd_handoff_entry_count = 4,
+				timer_entry_count = 256,
+				supervision_groups_max = 8,
+			},
+		)
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		sim.shards[0].reactor.backend.config.delay_range_ticks = {0, 0}
+		sim.shards[1].reactor.backend.config.delay_range_ticks = {64, 64}
+		simulator_run(&sim)
+
+		shard_test_diagnostic_expect_u64(
+			t,
+			&sim.shards[0],
+			FD_HANDOFF_LISTENER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_LISTENER_RESULT,
+			u64(FD_Handoff_Result.ok),
+		)
+		testing.expect_value(t, sim.shards[0].counters.handoff_rejects, u64(1))
+		testing.expect_value(
+			t,
+			sim.shards[0].handoff_table.free_count,
+			sim.shards[0].handoff_table.entry_count,
+		)
+	}
+
+	// Regression test: the OFFER is delayed past the timeout threshold.
+	// The source must NOT close the offered FDs on timeout — doing so causes
+	// an ABA vulnerability in production (kernel reuses the FD integer) and
+	// adopt failure in simulation (descriptor closed before dup).
+	// The dispatcher must still receive the adopted socket after the delayed
+	// OFFER is delivered.
+	@(test)
+	test_fd_handoff_late_offer_still_adopts_after_timeout :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		target_handle := make_handle(1, FD_HANDOFF_DISPATCHER_TYPE_ID, 0, 1)
+		listener_args_size, listener_args_payload := sim_test_pack_init_args(
+			bytes_of(&target_handle),
+		)
+
+		types := [2]IsolateTypeDescriptor {
+			{
+				id = FD_HANDOFF_LISTENER_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(FDHandoffListener),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = fd_handoff_listener_init,
+				handler_fn = fd_handoff_listener_handler,
+				mailbox_capacity = 8,
+				budget_weight = 1,
+			},
+			{
+				id = FD_HANDOFF_DISPATCHER_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(FDHandoffDispatcher),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = fd_handoff_dispatcher_init,
+				handler_fn = fd_handoff_dispatcher_handler,
+				mailbox_capacity = 1,
+				budget_weight = 1,
+			},
+		}
+
+		shard_0_children := [1]Child_Spec {
+			Static_Child_Spec {
+				type_id = FD_HANDOFF_LISTENER_TYPE_ID,
+				restart_type = .permanent,
+				args_size = listener_args_size,
+				args_payload = listener_args_payload,
+			},
+		}
+		shard_1_children := [1]Child_Spec {
+			Static_Child_Spec{type_id = FD_HANDOFF_DISPATCHER_TYPE_ID, restart_type = .permanent},
+		}
+		root_group_0 := sim_test_make_root_group(shard_0_children[:])
+		root_group_1 := sim_test_make_root_group(shard_1_children[:])
+		shard_specs := [2]ShardSpec {
+			{shard_id = 0, root_group = root_group_0},
+			{shard_id = 1, root_group = root_group_1},
+		}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 64,
+			terminate_on_quiescent = true,
+			builtin_checkers       = CHECKER_FLAGS_ALL,
+			checker_interval_ticks = 8,
+		}
+
+		spec := sim_test_make_spec(
+			&sim_config,
+			types[:],
+			shard_specs[:],
+			Sim_Test_Spec_Options {
+				reactor_buffer_slot_count = 8,
+				fd_handoff_entry_count = 4,
+				timer_entry_count = 256,
+				supervision_groups_max = 8,
+			},
+		)
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		sim.shards[0].reactor.backend.config.delay_range_ticks = {0, 0}
+		sim.shards[1].reactor.backend.config.delay_range_ticks = {0, 0}
+
+		// Key difference from late-ACK test: delay the OFFER (source→destination)
+		// past the timeout threshold, while keeping ACK path fast.
+		for round in u64(0) ..< (FD_HANDOFF_TIMEOUT_TICKS + 8) {
+			sim.shards[0].current_tick = round
+			sim.network.channels[0][1].delay_ticks = u32(FD_HANDOFF_TIMEOUT_TICKS + 4)
+			scheduler_tick(&sim.shards[0])
+
+			sim.shards[1].current_tick = round
+			sim.network.channels[1][0].delay_ticks = 0
+			scheduler_tick(&sim.shards[1])
+		}
+
+		shard_0 := &sim.shards[0]
+		shard_1 := &sim.shards[1]
+
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard_0,
+			FD_HANDOFF_LISTENER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_LISTENER_RESULT,
+			u64(FD_Handoff_Result.ok),
+		)
+		// The critical assertion: even though the source observed a timeout,
+		// the destination must still successfully adopt the socket from the
+		// delayed OFFER. If this fails, the offered FD was closed prematurely.
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard_1,
+			FD_HANDOFF_DISPATCHER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_DISPATCHER_ACCEPT,
+			1,
+		)
+		client_fd, client_fd_found := shard_diagnostic_read(
+			shard_1,
+			FD_HANDOFF_DISPATCHER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_DISPATCHER_CLIENT_FD,
+		)
+		testing.expect(t, client_fd_found, "dispatcher client-fd diagnostic not found")
+		testing.expect(t, client_fd != u64(FD_HANDLE_NONE), "dispatcher should receive adopted FD")
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard_1,
+			FD_HANDOFF_DISPATCHER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_DISPATCHER_PEER_PORT,
+			u64(9999),
+		)
+		testing.expect_value(t, shard_0.counters.handoff_timeouts, u64(1))
+		testing.expect_value(
+			t,
+			shard_0.handoff_table.free_count,
+			shard_0.handoff_table.entry_count,
+		)
+	}
+
+	@(test)
+	test_fd_handoff_timeout_ignores_late_ack :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		target_handle := make_handle(1, FD_HANDOFF_DISPATCHER_TYPE_ID, 0, 1)
+		listener_args_size, listener_args_payload := sim_test_pack_init_args(
+			bytes_of(&target_handle),
+		)
+
+		types := [2]IsolateTypeDescriptor {
+			{
+				id = FD_HANDOFF_LISTENER_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(FDHandoffListener),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = fd_handoff_listener_init,
+				handler_fn = fd_handoff_listener_handler,
+				mailbox_capacity = 8,
+				budget_weight = 1,
+			},
+			{
+				id = FD_HANDOFF_DISPATCHER_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(FDHandoffDispatcher),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = fd_handoff_dispatcher_init,
+				handler_fn = fd_handoff_dispatcher_handler,
+				mailbox_capacity = 1,
+				budget_weight = 1,
+			},
+		}
+
+		shard_0_children := [1]Child_Spec {
+			Static_Child_Spec {
+				type_id = FD_HANDOFF_LISTENER_TYPE_ID,
+				restart_type = .permanent,
+				args_size = listener_args_size,
+				args_payload = listener_args_payload,
+			},
+		}
+		shard_1_children := [1]Child_Spec {
+			Static_Child_Spec{type_id = FD_HANDOFF_DISPATCHER_TYPE_ID, restart_type = .permanent},
+		}
+		root_group_0 := sim_test_make_root_group(shard_0_children[:])
+		root_group_1 := sim_test_make_root_group(shard_1_children[:])
+		shard_specs := [2]ShardSpec {
+			{shard_id = 0, root_group = root_group_0},
+			{shard_id = 1, root_group = root_group_1},
+		}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 64,
+			terminate_on_quiescent = true,
+			builtin_checkers       = CHECKER_FLAGS_ALL,
+			checker_interval_ticks = 8,
+		}
+
+		spec := sim_test_make_spec(
+			&sim_config,
+			types[:],
+			shard_specs[:],
+			Sim_Test_Spec_Options {
+				reactor_buffer_slot_count = 8,
+				fd_handoff_entry_count = 4,
+				timer_entry_count = 256,
+				supervision_groups_max = 8,
+			},
+		)
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		sim.shards[0].reactor.backend.config.delay_range_ticks = {0, 0}
+		sim.shards[1].reactor.backend.config.delay_range_ticks = {0, 0}
+
+		for round in u64(0) ..< (FD_HANDOFF_TIMEOUT_TICKS + 8) {
+			sim.shards[0].current_tick = round
+			sim.network.channels[0][1].delay_ticks = 0
+			scheduler_tick(&sim.shards[0])
+
+			sim.shards[1].current_tick = round
+			sim.network.channels[1][0].delay_ticks = u32(FD_HANDOFF_TIMEOUT_TICKS + 4)
+			scheduler_tick(&sim.shards[1])
+		}
+
+		shard_0 := &sim.shards[0]
+		shard_1 := &sim.shards[1]
+
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard_0,
+			FD_HANDOFF_LISTENER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_LISTENER_RESULT,
+			u64(FD_Handoff_Result.ok),
+		)
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard_1,
+			FD_HANDOFF_DISPATCHER_TYPE_ID,
+			0,
+			FD_HANDOFF_DIAG_DISPATCHER_ACCEPT,
+			1,
+		)
+		testing.expect_value(t, shard_0.counters.handoff_timeouts, u64(1))
+		testing.expect_value(t, shard_0.counters.handoff_rejects, u64(0))
+		testing.expect_value(
+			t,
+			shard_0.handoff_table.free_count,
+			shard_0.handoff_table.entry_count,
+		)
+	}
+}

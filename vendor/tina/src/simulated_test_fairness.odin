@@ -1,0 +1,169 @@
+package tina
+
+import "core:fmt"
+import "core:mem"
+import "core:testing"
+
+when TINA_SIMULATION_MODE {
+
+	// ============================================================================
+	// Intra-Type Starvation Prevention (Dispatch Cursor Verification)
+	// ============================================================================
+
+	STARVATION_COORD_ID: Isolate_Type_Id : 0
+	STARVATION_WORKER_ID: Isolate_Type_Id : 1
+
+	StarvationWorker :: struct {
+		run_count: u32,
+	}
+
+	STARVATION_DIAG_RUN_COUNT: Diagnostic_Field_Id : 0
+
+	starvation_coord_init :: proc(self: rawptr, args: []u8) -> Isolate_Transition {
+		// Spawn 300 workers to exceed one same-type dispatch batch.
+		for i in 0 ..< 300 {
+			spec := Spawn_Spec {
+				type_id      = STARVATION_WORKER_ID,
+				group_id     = ctx_supervision_group_id(),
+				restart_type = .temporary,
+			}
+			_ = assert_spawn_success(ctx_spawn(spec), "StarvationWorker")
+		}
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	starvation_coord_handler :: proc(
+		self: rawptr,
+		message: ^Message,
+	) -> Isolate_Transition {
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	starvation_worker_init :: proc(self: rawptr, args: []u8) -> Isolate_Transition {
+		return ISOLATE_TRANSITION_YIELD
+	}
+
+	starvation_worker_handler :: proc(
+		self: rawptr,
+		message: ^Message,
+	) -> Isolate_Transition {
+		w := cast(^StarvationWorker)self
+		w.run_count += 1
+		ctx_test_diagnostic_write_u64(STARVATION_DIAG_RUN_COUNT, u64(w.run_count))
+		// Yielding keeps us in .Runnable state, ensuring we always consume budget
+		return ISOLATE_TRANSITION_YIELD
+	}
+
+	@(test)
+	test_intra_type_starvation_prevention :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		types := [2]IsolateTypeDescriptor {
+			{
+				id                = STARVATION_COORD_ID,
+				slot_count        = 1,
+				stride            = 0, // Zero-sized, purely behavioral
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler      = starvation_coord_init,
+				handler_fn        = starvation_coord_handler,
+			},
+			{
+				id                = STARVATION_WORKER_ID,
+				slot_count        = 300,
+				stride            = size_of(StarvationWorker),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler      = starvation_worker_init,
+				handler_fn        = starvation_worker_handler,
+				budget_weight     = 1,
+			},
+		}
+
+		children := [1]Child_Spec {
+			Static_Child_Spec{type_id = STARVATION_COORD_ID, restart_type = .permanent},
+		}
+
+		root_group := Group_Spec {
+			strategy                = .One_For_One,
+			restart_count_max       = 3,
+			window_duration_ticks   = 1000,
+			children                = children[:],
+			child_count_dynamic_max = 305, // Room for 1 Coord + 300 Workers + padding/wiggle-room
+		}
+
+		shard_specs := [1]ShardSpec{{shard_id = 0, root_group = root_group}}
+
+		sim_config := SimulationConfig {
+			seed                              = t.seed,
+			ticks_max                         = 10, // Exactly 10 ticks. One weight earns 256 credits per tick by default.
+			terminate_on_quiescent            = false, // Never quiescent because workers always yield
+			builtin_checkers                  = CHECKER_FLAGS_ALL,
+			checker_interval_ticks            = 10,
+			diagnostic_record_count_per_shard = 400,
+		}
+
+		spec := SystemSpec {
+			shard_count               = 1,
+			types                     = types[:],
+			shard_specs               = shard_specs[:],
+			simulation                = &sim_config,
+			pool_slot_count           = 256,
+			reactor_buffer_slot_count = 4,
+			reactor_buffer_slot_size  = 1024,
+			transfer_slot_count       = 4,
+			transfer_slot_size        = 1024,
+			timer_entry_count         = 64,
+			timer_resolution_ns       = 1_000_000,
+			fd_table_slot_count       = 16,
+			fd_entry_size             = size_of(FD_Entry),
+			log_ring_size             = 4096,
+			supervision_groups_max    = 4,
+			scratch_memory_size        = 8192,
+		}
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		// Run the 10 ticks
+		simulator_run(&sim)
+
+		shard := &sim.shards[0]
+		starved_count: u32 = 0
+		min_runs: u32 = max(u32)
+		max_runs: u32 = 0
+
+		// Verify every single worker got a fair share of the 2,560 total dispatches
+		for i in 0 ..< 300 {
+			run_count, run_count_found := shard_diagnostic_read(
+				shard,
+				STARVATION_WORKER_ID,
+				Isolate_Slot_Index(i),
+				STARVATION_DIAG_RUN_COUNT,
+			)
+			testing.expect(t, run_count_found, "worker run-count diagnostic not found")
+
+			if run_count == 0 {
+				starved_count += 1
+			}
+
+			worker_run_count := u32(run_count)
+			if worker_run_count < min_runs do min_runs = worker_run_count
+			if worker_run_count > max_runs do max_runs = worker_run_count
+		}
+
+		// If the bug exists, starved_count will be exactly 44 (slots 256 to 299)
+		testing.expect_value(t, starved_count, 0)
+
+		// Mathematical fairness check: 2560 total dispatches / 300 isolates = ~8.5
+		// Every isolate should have run 8 or 9 times.
+		testing.expect(t, min_runs >= 8, "Fairness violation: some isolates ran too rarely")
+		testing.expect(t, max_runs <= 9, "Fairness violation: some isolates ran too often")
+
+		fmt.printfln(
+			"\n[TEST SUCCESS] Intra-type starvation prevented. All 300 isolates ran fairly (Min: %d, Max: %d).",
+			min_runs,
+			max_runs,
+		)
+	}
+}

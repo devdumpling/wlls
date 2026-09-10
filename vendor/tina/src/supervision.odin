@@ -1,0 +1,496 @@
+package tina
+
+import "core:mem"
+import "core:testing"
+
+Build_Result :: enum u8 {
+	Ok,
+	Escalated,
+}
+
+@(private = "package")
+_assert_group_layout :: #force_inline proc(group: ^Supervision_Group) {
+	when TINA_RUNTIME_ASSERTIONS {
+		assert(
+			group.child_count_static == u16(len(group.boot_spec.children)),
+			"child_count_static must match boot_spec child count",
+		)
+		assert(
+			group.child_count_static + group.child_count_dynamic <= u16(len(group.children_handles)),
+			"group child counts exceed children_handles capacity",
+		)
+		assert(
+			group.child_count_dynamic <= u16(len(group.dynamic_specs)),
+			"group child_count_dynamic exceeds dynamic_specs capacity",
+		)
+	}
+}
+
+@(private = "package")
+_group_total_child_count :: #force_inline proc(group: ^Supervision_Group) -> u16 {
+	_assert_group_layout(group)
+	return group.child_count_static + group.child_count_dynamic
+}
+
+@(private = "file")
+_supervision_subgroup_handle_make :: #force_inline proc "contextless" (
+	shard_id: Shard_Id,
+	group_id: Supervision_Group_Id,
+) -> Isolate_Handle {
+	// Supervision stores subgroup references in the existing child-handle array.
+	// The reserved subgroup type makes the slot bits carry a group index, not an
+	// isolate slot index; keep that representation isolated behind this helper.
+	return make_handle(shard_id, SUPERVISION_SUBGROUP_TYPE_ID, Isolate_Slot_Index(group_id), 0)
+}
+
+@(private = "file")
+_supervision_subgroup_group_id_from_handle :: #force_inline proc(
+	handle: Isolate_Handle,
+) -> Supervision_Group_Id {
+	when TINA_RUNTIME_ASSERTIONS {
+		assert(extract_type_id(handle) == SUPERVISION_SUBGROUP_TYPE_ID, "handle is not a supervision subgroup handle")
+	}
+	return Supervision_Group_Id(extract_slot(handle))
+}
+
+@(private = "package")
+_find_child_index :: proc(group: ^Supervision_Group, handle: Isolate_Handle) -> (u16, bool) {
+	for i in 0 ..< _group_total_child_count(group) {
+		if group.children_handles[i] == handle do return i, true
+	}
+	return 0, false
+}
+
+@(private = "package")
+_remove_child_at :: proc(group: ^Supervision_Group, child_index: u16) {
+	_assert_group_layout(group)
+	if child_index < group.child_count_static {
+		group.children_handles[child_index] = ISOLATE_HANDLE_NONE
+		return
+	}
+
+	child_index_dynamic := child_index - group.child_count_static
+	child_index_dynamic_last := group.child_count_dynamic - 1
+
+	for i in child_index_dynamic ..< child_index_dynamic_last {
+		target := group.child_count_static + i
+		source := target + 1
+		group.children_handles[target] = group.children_handles[source]
+		group.dynamic_specs[i] = group.dynamic_specs[i + 1]
+	}
+
+	last_slot := group.child_count_static + child_index_dynamic_last
+	group.children_handles[last_slot] = ISOLATE_HANDLE_NONE
+	group.child_count_dynamic -= 1
+}
+
+@(private = "package")
+_get_child_restart_type :: proc(group: ^Supervision_Group, child_index: u16) -> Restart_Type {
+	_assert_group_layout(group)
+	if child_index < group.child_count_static {
+		child_spec_pointer := &group.boot_spec.children[child_index]
+		#partial switch &s in child_spec_pointer {
+		case Static_Child_Spec:
+			return s.restart_type
+		case Group_Spec:
+			return .permanent
+		}
+		return .temporary
+	}
+
+	return group.dynamic_specs[child_index - group.child_count_static].restart_type
+}
+
+@(private = "package")
+_check_and_record_restart :: proc(shard: ^Shard, group: ^Supervision_Group) -> bool {
+	now := shard.current_tick
+	if now - group.window_start_tick >= u64(group.window_duration_ticks) {
+		group.window_start_tick = now
+		group.restart_count = 1
+		return false
+	}
+	group.restart_count += 1
+	return group.restart_count > group.restart_count_max
+}
+
+@(private = "package")
+_escalate :: proc(shard: ^Shard, group: ^Supervision_Group) {
+	for i := _group_total_child_count(group); i > 0; i -= 1 {
+		handle := group.children_handles[i - 1]
+		if handle == ISOLATE_HANDLE_NONE do continue
+		if extract_type_id(handle) != SUPERVISION_SUBGROUP_TYPE_ID {
+			_teardown_isolate(shard, extract_type_id(handle), extract_slot(handle), .Shutdown)
+			continue
+		}
+		subgroup_id := _supervision_subgroup_group_id_from_handle(handle)
+		_teardown_subgroup(shard, &shard.supervision_groups[subgroup_id])
+	}
+	group.child_count_dynamic = 0
+
+	if group.parent_id == SUPERVISION_GROUP_ID_NONE {
+		os_trap_restore(&shard.trap_environment_outer, RECOVERY_ROOT_ESCALATE)
+	} else {
+		group_handle := _supervision_subgroup_handle_make(shard.id, group.group_id)
+		_on_child_exit(shard, group.parent_id, group_handle, .Crashed)
+	}
+}
+
+@(private = "package")
+_teardown_subgroup :: proc(shard: ^Shard, group: ^Supervision_Group) {
+	for i := _group_total_child_count(group); i > 0; i -= 1 {
+		handle := group.children_handles[i - 1]
+		if handle == ISOLATE_HANDLE_NONE do continue
+		if extract_type_id(handle) != SUPERVISION_SUBGROUP_TYPE_ID {
+			_teardown_isolate(shard, extract_type_id(handle), extract_slot(handle), .Shutdown)
+			continue
+		}
+		subgroup_id := _supervision_subgroup_group_id_from_handle(handle)
+		_teardown_subgroup(shard, &shard.supervision_groups[subgroup_id])
+	}
+
+	for i in group.child_count_static ..< _group_total_child_count(group) {
+		group.children_handles[i] = ISOLATE_HANDLE_NONE
+	}
+	group.child_count_dynamic = 0
+	group.restart_count = 0
+	group.window_start_tick = shard.current_tick
+}
+
+@(private = "package")
+_spawn_static_child_at :: proc(shard: ^Shard, group: ^Supervision_Group, child_index: u16) -> bool {
+	_assert_group_layout(group)
+	spec: Spawn_Spec
+	spec.group_id = group.group_id
+	spec.handoff_fd = FD_HANDLE_NONE
+	spec.handoff_mode = .Full
+
+	child_spec_pointer := &group.boot_spec.children[child_index]
+	#partial switch &s in child_spec_pointer {
+	case Static_Child_Spec:
+		spec.type_id = s.type_id
+		spec.restart_type = s.restart_type
+		spec.args_size = s.args_size
+		spec.args_payload = s.args_payload
+	case Group_Spec:
+		return false
+	}
+
+	res := _make_isolate(shard, spec, ISOLATE_HANDLE_NONE)
+	if handle, ok := res.(Isolate_Handle); ok {
+		group.children_handles[child_index] = handle
+		return true
+	}
+	return false
+}
+
+@(private = "package")
+_respawn_child_at :: proc(shard: ^Shard, group: ^Supervision_Group, child_index: u16) -> Build_Result {
+	_assert_group_layout(group)
+	if child_index < group.child_count_static {
+		child_spec_pointer := &group.boot_spec.children[child_index]
+		#partial switch &s in child_spec_pointer {
+		case Static_Child_Spec:
+			if _spawn_static_child_at(shard, group, child_index) {
+				return .Ok
+			}
+		case Group_Spec:
+			subgroup_handle := group.children_handles[child_index]
+			subgroup_index := extract_slot(subgroup_handle)
+			return _rebuild_subgroup(shard, &shard.supervision_groups[subgroup_index])
+		}
+	} else {
+		child_index_dynamic := child_index - group.child_count_static
+		dyn := &group.dynamic_specs[child_index_dynamic]
+
+		spec := Spawn_Spec {
+			group_id     = group.group_id,
+			handoff_fd   = FD_HANDLE_NONE,
+			handoff_mode = .Full,
+			type_id      = dyn.type_id,
+			restart_type = dyn.restart_type,
+			args_size    = dyn.args_size,
+			args_payload = dyn.args_payload,
+		}
+
+		res := _make_isolate(shard, spec, ISOLATE_HANDLE_NONE)
+		if handle, ok := res.(Isolate_Handle); ok {
+			group.children_handles[child_index] = handle
+			return .Ok
+		}
+	}
+
+	_escalate(shard, group)
+	return .Escalated
+}
+
+@(private = "package")
+_apply_strategy :: proc(shard: ^Shard, group: ^Supervision_Group, child_index_crashed: u16) -> Build_Result {
+	_assert_group_layout(group)
+	child_index_start: u16 = group.strategy == .Rest_For_One ? child_index_crashed + 1 : 0
+	child_count := _group_total_child_count(group)
+
+	if group.strategy == .One_For_All || group.strategy == .Rest_For_One {
+		for i := child_count; i > child_index_start; i -= 1 {
+			child_index_target := i - 1
+			if child_index_target == child_index_crashed do continue
+
+			handle := group.children_handles[child_index_target]
+			if handle == ISOLATE_HANDLE_NONE do continue
+			if extract_type_id(handle) != SUPERVISION_SUBGROUP_TYPE_ID {
+				_teardown_isolate(
+					shard,
+					extract_type_id(handle),
+					extract_slot(handle),
+					.Shutdown,
+				)
+				group.children_handles[child_index_target] = ISOLATE_HANDLE_NONE
+				continue
+			}
+			subgroup_id := _supervision_subgroup_group_id_from_handle(handle)
+			_teardown_subgroup(shard, &shard.supervision_groups[subgroup_id])
+		}
+	}
+
+	restart_start: u16
+	restart_end: u16
+
+	switch group.strategy {
+	case .One_For_One:
+		restart_start = child_index_crashed; restart_end = child_index_crashed + 1
+	case .One_For_All:
+		restart_start = 0; restart_end = child_count
+	case .Rest_For_One:
+		restart_start = child_index_crashed; restart_end = child_count
+	}
+
+	for i in restart_start ..< restart_end {
+		if _get_child_restart_type(group, i) == .temporary do continue
+		if _respawn_child_at(shard, group, i) == .Escalated {
+			return .Escalated
+		}
+	}
+
+	return .Ok
+}
+
+@(private = "package")
+_on_child_exit :: proc(
+	shard: ^Shard,
+	group_id: Supervision_Group_Id,
+	child_handle: Isolate_Handle,
+	exit_kind: Exit_Kind,
+) {
+	group := &shard.supervision_groups[u16(group_id)]
+
+	child_index, found := _find_child_index(group, child_handle)
+	if !found do return
+
+	process_phase := load_process_phase()
+	if exit_kind == .Shutdown ||
+	   process_phase == .Shutting_Down ||
+	   process_phase == .Terminated {
+		_remove_child_at(group, child_index)
+		return
+	}
+
+	restart_type := _get_child_restart_type(group, child_index)
+
+	should_restart := false
+	switch exit_kind {
+	case .Normal:
+		should_restart = (restart_type == .permanent)
+	case .Crashed:
+		should_restart = (restart_type != .temporary)
+	case .Shutdown:
+	}
+
+	if !should_restart {
+		_remove_child_at(group, child_index)
+		return
+	}
+
+	if _check_and_record_restart(shard, group) {
+		_escalate(shard, group)
+		return
+	}
+
+	_ = _apply_strategy(shard, group, child_index)
+}
+
+@(private = "package")
+shard_build_supervision_tree :: proc(
+	shard: ^Shard,
+	root_spec: ^Group_Spec,
+	alloc: mem.Allocator,
+	arena_alloc_data: ^Grand_Arena_Allocator_Data = nil,
+) -> (
+	Build_Result,
+	mem.Allocator_Error,
+) {
+	build_result, build_error, _ := _build_group(
+		shard,
+		root_spec,
+		SUPERVISION_GROUP_ID_NONE,
+		0,
+		alloc,
+		arena_alloc_data,
+	)
+	return build_result, build_error
+}
+
+@(private = "package")
+_build_group :: proc(
+	shard: ^Shard,
+	group_spec: ^Group_Spec,
+	parent_id: Supervision_Group_Id,
+	group_index_next: u16,
+	alloc: mem.Allocator,
+	arena_alloc_data: ^Grand_Arena_Allocator_Data,
+) -> (
+	Build_Result,
+	mem.Allocator_Error,
+	u16,
+) {
+	group_index := group_index_next
+	current_next := group_index_next + 1
+
+	group := &shard.supervision_groups[group_index]
+	group.group_id = Supervision_Group_Id(group_index)
+	group.parent_id = parent_id
+	group.strategy = group_spec.strategy
+	group.boot_spec = group_spec
+	group.window_duration_ticks = group_spec.window_duration_ticks
+	group.restart_count_max = group_spec.restart_count_max
+	group.restart_count = 0
+	group.window_start_tick = shard.current_tick
+	group.child_count_static = u16(len(group_spec.children))
+	group.child_count_dynamic = 0
+
+	allocation_error: mem.Allocator_Error
+	child_capacity_count := len(group_spec.children) + int(group_spec.child_count_dynamic_max)
+	if len(group.children_handles) == 0 && child_capacity_count > 0 {
+		if arena_alloc_data != nil do grand_arena_allocator_set_name(
+			arena_alloc_data,
+			"Group_Handles",
+			int(group_index),
+		)
+		group.children_handles, allocation_error = make([]Isolate_Handle, child_capacity_count, alloc)
+		if allocation_error != .None do return .Ok, allocation_error, current_next
+	}
+
+	if group_spec.child_count_dynamic_max > 0 && len(group.dynamic_specs) == 0 {
+		if arena_alloc_data != nil do grand_arena_allocator_set_name(
+			arena_alloc_data,
+			"Group_Dynamic_Specs",
+			int(group_index),
+		)
+		group.dynamic_specs, allocation_error = make(
+			[]Dynamic_Child_Spec,
+			group_spec.child_count_dynamic_max,
+			alloc,
+		)
+		if allocation_error != .None do return .Ok, allocation_error, current_next
+	}
+
+	_assert_group_layout(group)
+
+	for i in 0 ..< len(group.children_handles) {
+		group.children_handles[i] = ISOLATE_HANDLE_NONE
+	}
+
+	for i in 0 ..< len(group_spec.children) {
+		child_spec_pointer := &group_spec.children[i]
+
+		#partial switch &s in child_spec_pointer {
+		case Static_Child_Spec:
+			// Initial tree construction is a control-plane build step. Retrying the same
+			// static child spawn in a tight loop without any state change is pure churn.
+			if !_spawn_static_child_at(shard, group, u16(i)) {
+				_escalate(shard, group)
+				return .Escalated, .None, current_next
+			}
+
+		case Group_Spec:
+			subgroup_id := Supervision_Group_Id(current_next)
+			group.children_handles[i] = _supervision_subgroup_handle_make(shard.id, subgroup_id)
+
+			build_result: Build_Result
+			build_error: mem.Allocator_Error
+			build_result, build_error, current_next = _build_group(
+				shard,
+				&s,
+				Supervision_Group_Id(group_index),
+				current_next,
+				alloc,
+				arena_alloc_data,
+			)
+			if build_error != .None {
+				return .Ok, build_error, current_next
+			}
+			if build_result == .Escalated {
+				return .Escalated, .None, current_next
+			}
+		}
+	}
+
+	return .Ok, .None, current_next
+}
+
+@(private = "package")
+_rebuild_subgroup :: proc(shard: ^Shard, group: ^Supervision_Group) -> Build_Result {
+	_assert_group_layout(group)
+	for i in 0 ..< len(group.boot_spec.children) {
+		if _respawn_child_at(shard, group, u16(i)) == .Escalated {
+			return .Escalated
+		}
+	}
+	group.restart_count = 0
+	group.window_start_tick = shard.current_tick
+	return .Ok
+}
+
+@(test)
+test_on_child_exit_does_not_restart_during_process_shutdown :: proc(t: ^testing.T) {
+	phase_previous := load_process_phase()
+	defer store_process_phase(phase_previous)
+	store_process_phase(.Shutting_Down)
+
+	child_handle := make_handle(0, 1, 0, 1)
+	children := []Child_Spec {
+		Static_Child_Spec {
+			type_id      = 1,
+			restart_type = .permanent,
+		},
+	}
+	group_spec := Group_Spec {
+		strategy              = .One_For_One,
+		restart_count_max     = 3,
+		window_duration_ticks = 10,
+		children              = children,
+	}
+
+	fixture := test_shard_fixture_init(
+		Test_Shard_Spec{
+			type_count              = 2,
+			slot_counts             = {0, 0},
+			subsystems              = {.Metadata, .Supervision},
+			supervision_group_count = 1,
+		},
+	)
+	defer test_shard_fixture_deinit(fixture)
+	shard := &fixture.shard
+
+	group := &shard.supervision_groups[0]
+	group.group_id = 0
+	group.boot_spec = &group_spec
+	group.strategy = .One_For_One
+	group.child_count_static = 1
+	group.children_handles = make([]Isolate_Handle, 1)
+	defer delete(group.children_handles)
+	group.children_handles[0] = child_handle
+
+	_on_child_exit(shard, 0, child_handle, .Normal)
+
+	testing.expect_value(t, group.children_handles[0], ISOLATE_HANDLE_NONE)
+	testing.expect_value(t, group.child_count_dynamic, u16(0))
+}

@@ -1,0 +1,412 @@
+package tina
+
+import "base:sanitizer"
+import "core:mem"
+import "core:os"
+import "core:testing"
+
+_ :: sanitizer
+_ :: testing
+
+Log_Level :: enum u8 {
+	ERROR = 0,
+	WARN  = 1,
+	INFO  = 2,
+	DEBUG = 3,
+}
+
+Log_Tag :: distinct u8
+
+LOG_TAG_ISOLATE_CRASHED: Log_Tag : 0x01
+LOG_TAG_ISOLATE_TRAPPED: Log_Tag : 0x02
+LOG_TAG_SUPERVISION: Log_Tag : 0x03
+LOG_TAG_SHARD_RESTARTED: Log_Tag : 0x06
+LOG_TAG_IO_EXHAUSTION: Log_Tag : 0x08
+// Application log tags can start from here (0x40 - 0xFF)
+USER_LOG_TAG_BASE: Log_Tag : 0x40
+
+POSIX_PIPE_BUF_SIZE :: 4096 // Guaranteed atomic write size on POSIX
+MAX_FORMATTED_LOG_LINE :: 512 // Max size for the formatted log line output
+
+// On-ring record header. Field order is the wire format — see ADR §4.1.
+
+Log_Record_Header :: struct {
+	payload_size:   u16,
+	_reserved_0:    u16,
+	level:          Log_Level,
+	tag:            Log_Tag,
+	_reserved_1:    u16,
+	timestamp:      u64,
+	isolate_handle: Isolate_Handle,
+}
+
+Log_Record_Header_Size :: u64(size_of(Log_Record_Header))
+
+// Lock the wire format. If a contributor reorders fields or changes a type,
+// these fail at compile time instead of silently desyncing the ring.
+#assert(size_of(Log_Record_Header) == 24)
+#assert(offset_of(Log_Record_Header, payload_size) == 0)
+#assert(offset_of(Log_Record_Header, level) == 4)
+#assert(offset_of(Log_Record_Header, tag) == 5)
+#assert(offset_of(Log_Record_Header, timestamp) == 8)
+#assert(offset_of(Log_Record_Header, isolate_handle) == 16)
+
+// Single source of truth for on-ring record size: header followed by payload
+// padded to 8-byte alignment. Used by writer, normal flush, and emergency flush
+// paths so a Log_Record_Header layout change cannot desynchronize them.
+@(private = "package")
+log_record_size_from_payload_size :: #force_inline proc "contextless" (
+	payload_size: u16,
+) -> u64 {
+	return Log_Record_Header_Size + u64((payload_size + 7) & ~u16(7))
+}
+
+Log_Ring_Buffer :: struct {
+	buffer:        []u8,
+	capacity_mask: u64, // Mask instead of capacity for fast bitwise wrapping
+	read_cursor:   u64,
+	write_cursor:  u64,
+}
+
+log_init :: proc(ring: ^Log_Ring_Buffer, backing: []u8) {
+	capacity := u64(len(backing))
+	assert(
+		capacity > 0 && (capacity & (capacity - 1)) == 0,
+		"Log ring buffer capacity must be a power of 2",
+	)
+
+	ring.buffer = backing
+	ring.capacity_mask = capacity - 1
+	ring.read_cursor = 0
+	ring.write_cursor = 0
+}
+
+log_init_tina_owned :: proc(ring: ^Log_Ring_Buffer, backing: []u8) {
+	log_init(ring, backing)
+
+	when TINA_ASAN_POISONING {
+		_sanitizer_address_poison_log_ring_region(ring, 0, u64(len(backing)))
+	}
+}
+
+// Writes a diagnostic log to the Shard's environment.
+// The message is raw-byte
+ctx_log_raw :: #force_inline proc(
+	level: Log_Level,
+	$tag: Log_Tag,
+	payload: []u8,
+) {
+	#assert(
+		tag >= USER_LOG_TAG_BASE,
+		"[Tina] User code cannot log with system tags. Tag must be >= 0x40.",
+	)
+	shard, frame := _current_isolate_turn_frame_require_handle()
+	_shard_log(shard, frame.isolate_handle, level, tag, payload)
+}
+
+// Writes a diagnostic log to the Shard's environment.
+// The message is typed
+ctx_log_typed :: #force_inline proc(
+	level: Log_Level,
+	$tag: Log_Tag,
+	message: ^$T,
+) where size_of(T) <=
+	MAX_PAYLOAD_SIZE {
+	#assert(
+		tag >= USER_LOG_TAG_BASE,
+		"[Tina] User code cannot log with system tags. Tag must be >= 0x40.",
+	)
+	shard, frame := _current_isolate_turn_frame_require_handle()
+	_shard_log(
+		shard,
+		frame.isolate_handle,
+		level,
+		tag,
+		mem.byte_slice(message, size_of(T)),
+	)
+}
+
+ctx_log :: proc {
+	ctx_log_raw,
+	ctx_log_typed,
+}
+
+// The internal logging primitive
+@(private = "package")
+_shard_log :: #force_inline proc "contextless" (
+	shard: ^Shard,
+	source: Isolate_Handle,
+	level: Log_Level,
+	tag: Log_Tag,
+	payload: []u8,
+) {
+	timestamp := shard.current_tick
+	payload_size := u16(min(len(payload), MAX_PAYLOAD_SIZE))
+	record_size := log_record_size_from_payload_size(payload_size)
+
+	capacity := shard.log_ring.capacity_mask + 1
+	if shard.log_ring.write_cursor + record_size - shard.log_ring.read_cursor > capacity {
+		return
+	}
+
+	record_offset := shard.log_ring.write_cursor
+	_sanitizer_address_unpoison_log_ring_region(&shard.log_ring, record_offset, record_size)
+
+	header := Log_Record_Header {
+		timestamp      = timestamp,
+		isolate_handle = source,
+		payload_size   = payload_size,
+		level          = level,
+		tag            = tag,
+	}
+
+	_write_ring_data(
+		&shard.log_ring,
+		shard.log_ring.write_cursor,
+		mem.byte_slice(cast(^u8)&header, Log_Record_Header_Size),
+	)
+	if payload_size > 0 {
+		_write_ring_data(
+			&shard.log_ring,
+			shard.log_ring.write_cursor + Log_Record_Header_Size,
+			payload[:payload_size],
+		)
+	}
+	shard.log_ring.write_cursor += record_size
+}
+
+// 2-part ring buffer block copy (SIMD-friendly)
+@(private = "package")
+_write_ring_data :: #force_inline proc "contextless" (
+	ring: ^Log_Ring_Buffer,
+	offset: u64,
+	data: []u8,
+) {
+	size := u64(len(data))
+	if size == 0 do return
+
+	start := offset & ring.capacity_mask
+	capacity := ring.capacity_mask + 1
+
+	if start + size <= capacity {
+		// Fits perfectly without wrapping
+		mem.copy(&ring.buffer[start], raw_data(data), int(size))
+	} else {
+		// Wraps the buffer edge: perform two distinct copies
+		first_chunk := capacity - start
+		first_count := int(first_chunk)
+		mem.copy(&ring.buffer[start], raw_data(data), first_count)
+
+		mem.copy(&ring.buffer[0], raw_data(data[first_count:]), int(size - first_chunk))
+	}
+}
+
+// 2-part ring buffer block read (SIMD-friendly)
+@(private = "package")
+_read_ring_data :: #force_inline proc "contextless" (
+	ring: ^Log_Ring_Buffer,
+	offset: u64,
+	data: []u8,
+) {
+	size := u64(len(data))
+	if size == 0 do return
+
+	start := offset & ring.capacity_mask
+	capacity := ring.capacity_mask + 1
+
+	if start + size <= capacity {
+		// Fits perfectly without wrapping
+		mem.copy(raw_data(data), &ring.buffer[start], int(size))
+	} else {
+		// Wraps the buffer edge: perform two distinct copies
+		first_chunk := capacity - start
+		first_count := int(first_chunk)
+		mem.copy(raw_data(data), &ring.buffer[start], first_count)
+
+		mem.copy(raw_data(data[first_count:]), &ring.buffer[0], int(size - first_chunk))
+	}
+}
+
+@(private = "package")
+log_level_label :: #force_inline proc "contextless" (level: Log_Level) -> string {
+	@(static, rodata)
+	labels := [4]string{"ERROR", "WARN", "INFO", "DEBUG"}
+	if u8(level) < 4 do return labels[u8(level)]
+	return "UNKNOWN"
+}
+
+// Advances ring.read_cursor to `next_cursor` and poisons the bytes that are
+// released by that advancement. Read-cursor movement is performed first so an
+// emergency snapshot cannot observe bytes ASan already considers freed.
+@(private = "package")
+_log_flush_advance_read_cursor :: #force_inline proc "contextless" (
+	ring: ^Log_Ring_Buffer,
+	previous_cursor: u64,
+	next_cursor: u64,
+) {
+	ring.read_cursor = next_cursor
+	when TINA_ASAN_POISONING {
+		_sanitizer_address_poison_log_ring_region(
+			ring,
+			previous_cursor,
+			next_cursor - previous_cursor,
+		)
+	}
+}
+
+@(private = "package")
+LOG_FLUSH_SHOULD_WRITE_TO_STDERR_DEFAULT :: !ODIN_TEST
+
+// Step 7: Flush logs to OS stream via PIPE_BUF chunks
+log_flush :: proc(shard: ^Shard) {
+	temp_buffer: [POSIX_PIPE_BUF_SIZE]u8
+	temp_size := 0
+	ring := &shard.log_ring
+	commit_cursor := ring.read_cursor
+
+	for commit_cursor < ring.write_cursor {
+		if ring.write_cursor - commit_cursor < Log_Record_Header_Size {break}
+
+		header: Log_Record_Header
+		_read_ring_data(
+			ring,
+			commit_cursor,
+			mem.byte_slice(cast(^u8)&header, Log_Record_Header_Size),
+		)
+		record_size := log_record_size_from_payload_size(header.payload_size)
+
+		if ring.write_cursor - commit_cursor < record_size {break}
+
+		payload_buf: [MAX_PAYLOAD_SIZE]u8
+		_read_ring_data(
+			ring,
+			commit_cursor + Log_Record_Header_Size,
+			payload_buf[:header.payload_size],
+		)
+
+		line_buffer: [MAX_FORMATTED_LOG_LINE]u8
+		position := 0
+		position = _sig_append_str(line_buffer[:], position, "[")
+		position = _sig_append_u64(line_buffer[:], position, header.timestamp)
+		position = _sig_append_str(line_buffer[:], position, "] ")
+		position = _sig_append_str(line_buffer[:], position, log_level_label(header.level))
+		position = _sig_append_str(line_buffer[:], position, "[Tag:")
+		position = _sig_append_hex(line_buffer[:], position, u64(header.tag))
+		position = _sig_append_str(line_buffer[:], position, "] Handle:")
+		position = _sig_append_hex(line_buffer[:], position, u64(header.isolate_handle))
+		position = _sig_append_str(line_buffer[:], position, " - ")
+		payload_size := min(int(header.payload_size), len(line_buffer) - position - 1)
+		for i in 0 ..< payload_size {
+			line_buffer[position + i] = payload_buf[i]
+		}
+		position += payload_size
+		line_buffer[position] = '\n'
+		position += 1
+		line_bytes := line_buffer[:position]
+
+		if temp_size + len(line_bytes) > POSIX_PIPE_BUF_SIZE {
+			when LOG_FLUSH_SHOULD_WRITE_TO_STDERR_DEFAULT {
+				written_size, write_error := os.write(os.stderr, temp_buffer[:temp_size])
+				if write_error != nil || written_size < temp_size {
+					break // Retain data for next tick (Capacitor behavior)
+				}
+			}
+			_log_flush_advance_read_cursor(ring, ring.read_cursor, commit_cursor)
+			temp_size = 0
+		}
+		copy(temp_buffer[temp_size:], line_bytes)
+		temp_size += len(line_bytes)
+
+		commit_cursor += record_size
+	}
+
+	if temp_size > 0 {
+		when LOG_FLUSH_SHOULD_WRITE_TO_STDERR_DEFAULT {
+			written_size, write_error := os.write(os.stderr, temp_buffer[:temp_size])
+			if write_error == nil && written_size == temp_size {
+				_log_flush_advance_read_cursor(ring, ring.read_cursor, commit_cursor)
+			}
+		} else {
+			_log_flush_advance_read_cursor(ring, ring.read_cursor, commit_cursor)
+		}
+	}
+}
+
+when TINA_ASAN_POISONING {
+
+@(test)
+test_log_ring_byte_poisoning :: proc(t: ^testing.T) {
+	backing: [64]u8
+	ring: Log_Ring_Buffer
+	log_init_tina_owned(&ring, backing[:])
+
+	fixture := test_shard_fixture_init(
+		Test_Shard_Spec{
+			type_count  = 1,
+			slot_counts = {0},
+			strides     = {0},
+			subsystems  = {.Metadata},
+		},
+	)
+	defer test_shard_fixture_deinit(fixture)
+
+	shard := &fixture.shard
+	shard.log_ring = ring
+	shard.current_tick = 1
+
+	payload := []u8{'h', 'e', 'l', 'l', 'o'}
+
+	testing.expect(
+		t,
+		sanitizer.address_region_is_poisoned_rawptr(rawptr(&backing[32]), 1) != nil,
+		"initially reusable log-ring byte must be poisoned",
+	)
+
+	_shard_log(
+		shard,
+		ISOLATE_HANDLE_NONE,
+		Log_Level.INFO,
+		USER_LOG_TAG_BASE,
+		payload,
+	)
+
+	testing.expect(
+		t,
+		sanitizer.address_region_is_poisoned_rawptr(rawptr(&backing[0]), 32) == nil,
+		"written log-record bytes must be unpoisoned",
+	)
+	testing.expect(
+		t,
+		sanitizer.address_region_is_poisoned_rawptr(rawptr(&backing[32]), 1) != nil,
+		"adjacent reusable log-ring byte must remain poisoned",
+	)
+
+	log_flush(shard)
+
+	testing.expect(
+		t,
+		sanitizer.address_region_is_poisoned_rawptr(rawptr(&backing[0]), 1) != nil,
+		"flushed log-record bytes must be re-poisoned",
+	)
+
+	_shard_log(
+		shard,
+		ISOLATE_HANDLE_NONE,
+		Log_Level.INFO,
+		USER_LOG_TAG_BASE,
+		payload,
+	)
+
+	testing.expect(
+		t,
+		sanitizer.address_region_is_poisoned_rawptr(rawptr(&backing[32]), 32) == nil,
+		"second live log-record bytes must be unpoisoned",
+	)
+	testing.expect(
+		t,
+		sanitizer.address_region_is_poisoned_rawptr(rawptr(&backing[0]), 1) != nil,
+		"previously flushed bytes must remain poisoned after second write",
+	)
+}
+
+}

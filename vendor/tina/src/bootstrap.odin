@@ -1,0 +1,363 @@
+package tina
+
+import "core:fmt"
+import "core:mem"
+import "core:os"
+import "core:sync"
+import "core:sys/info"
+import "core:thread"
+import "core:time"
+
+// Ensure we are compiling for a 64-bit architecture, which the explicit padding relies on.
+// #assert(size_of(rawptr) == 8, "Tina requires a 64-bit architecture.")
+
+MAX_SHARDS :: 256
+
+OS_Thread_Handle :: distinct uintptr
+
+// Single-writer health report a shard publishes about itself for the watchdog
+// to read. The owning shard thread is the ONLY writer; the watchdog and the
+// bootstrap thread treat it as untrusted health INPUT and never write here.
+// It lives as the first cache line of the shard's own guard-paged Grand Arena,
+// so a peer shard cannot reach it via a contiguous overrun.
+// A shard corrupting its own report is tolerated: thewatchdog cross-checks
+// liveness via the heartbeat and treats the report as a hint.
+// Watchdog-to-shard commands travel the separate Control_Signal channel.
+Shard_Health_Report :: struct #align (CACHE_LINE_SIZE) {
+	shard_pointer:            ^Shard,
+	os_thread_handle:         OS_Thread_Handle,
+	restart_window_start_ns:  u64,
+	restart_count:            u16,
+	reported_state:           u8,
+	_padding:                 [CACHE_LINE_SIZE - 3 * size_of(u64) - size_of(u16) - size_of(u8)]u8,
+}
+
+#assert(size_of(Shard_Health_Report) == CACHE_LINE_SIZE, "Shard_Health_Report must occupy exactly one cache line")
+#assert(align_of(Shard_Health_Report) == CACHE_LINE_SIZE, "Shard_Health_Report alignment must match CACHE_LINE_SIZE")
+
+// Passed to each Shard thread upon creation.
+Shard_Config :: struct {
+	// Dense remote routes in ascending shard-id order, excluding self.
+	outbound_rings:    [REMOTE_SHARD_COUNT_MAX]^SPSC_Ring,
+	inbound_rings:     [REMOTE_SHARD_COUNT_MAX]^SPSC_Ring,
+	outbound_control_channels: [REMOTE_SHARD_COUNT_MAX]^Shard_Control_Channel,
+	inbound_control_channel:   ^Shard_Control_Channel,
+	grand_arena_base:  []u8,
+	system_spec:       ^SystemSpec,
+	shard_spec:        ^ShardSpec,
+	barrier:           ^sync.Barrier,
+	health_report:     ^Shard_Health_Report,
+	total_memory_size: int,
+	shard_id:          Shard_Id,
+	target_core:       u8,
+}
+
+// #assert(size_of(Shard_Config) == 4160, "Shard_Config alignment/size drifted.")
+
+// The single entry point to start the Tina process.
+// Validates the boot specification, allocates the Grand Arenas, and spawns Shard threads.
+tina_start :: proc(spec: ^SystemSpec) {
+	// ========================================================================
+	// PHASE: BOOTSTRAP (single-threaded)
+	// ========================================================================
+	store_process_phase(.Bootstrap)
+	os_set_current_thread_name("tina-watchdog")
+
+	// 1. Parse boot spec and validate
+	error := validate_system_spec(spec)
+	if error != .None {
+		fmt.eprintfln("[FATAL] Boot spec validation failed: %v", error)
+		os.exit(1)
+	}
+
+	when TINA_SIMULATION_MODE {
+		if spec.simulation != nil {
+			simulator, simulator_error := new(Simulator)
+			if simulator_error != .None {
+				fmt.eprintfln("[FATAL] Failed to allocate simulator: %v", simulator_error)
+				os.exit(1)
+			}
+			defer free(simulator)
+
+			if init_error := simulator_init(simulator, spec, context.allocator); init_error != .None {
+				fmt.eprintfln("[FATAL] Simulator init failed: %v", init_error)
+				os.exit(1)
+			}
+			defer simulator_deinit(simulator)
+
+			store_process_phase(.Running)
+			simulator_run(simulator)
+			store_process_phase(.Terminated)
+			return // End process cleanly, bypassing production setup
+		}
+	}
+
+	// Evaluate SPSC ring matrix via painter's algorithm. Returns counts (items), not sizes (bytes).
+	ring_counts, ring_counts_error := compute_ring_sizes(
+		spec.shard_count,
+		spec.default_ring_size,
+		spec.ring_overrides,
+		context.allocator,
+	)
+	if ring_counts_error != .None {
+		fmt.eprintfln("[FATAL] Failed to compute SPSC ring sizes: %v", ring_counts_error)
+		os.exit(1)
+	}
+	defer {
+		for row in ring_counts do delete(row)
+		delete(ring_counts)
+	}
+
+	// 5. Initialize coordination structures
+	shard_configs := make([]Shard_Config, spec.shard_count)
+	remote_shard_count := int(spec.shard_count) - 1
+
+	barrier := new(sync.Barrier)
+	sync.barrier_init(barrier, int(spec.shard_count)) // Main thread does NOT wait on this
+
+	// 3. Reserve Grand Arena VA for each Shard with guard pages. The first cache
+	// line of each arena backs that shard's Shard_Health_Report, so the report
+	// inherits the arena's per-shard isolation for free with no separate mapping.
+	shard_memory_size := compute_shard_memory_total(spec) + CACHE_LINE_SIZE
+	total_system_memory_size := int(spec.shard_count) * shard_memory_size
+
+	for i in 0 ..< spec.shard_count {
+		arena_mem, mem_error := os_reserve_arena_with_guard(uint(shard_memory_size))
+		if mem_error != .None {
+			fmt.eprintfln("[FATAL] Failed to reserve Grand Arena for Shard %v", i)
+			os.exit(1)
+		}
+
+		config := &shard_configs[i]
+		config.grand_arena_base = arena_mem
+		config.system_spec = spec
+		if int(i) < len(spec.shard_specs) {
+			config.shard_spec = &spec.shard_specs[i]
+		}
+		config.barrier = barrier
+		// The report occupies the first cache line; the shard carves its general
+		// arena from the bytes after it (see shard_thread_entry).
+		config.health_report = cast(^Shard_Health_Report)raw_data(arena_mem)
+		config.total_memory_size = shard_memory_size
+		config.shard_id = Shard_Id(i)
+		config.target_core = u8(i) // Mapped directly to shard_id by default
+	}
+
+	// 2. Allocate SPSC ring buffers (outside Grand Arena)
+	spsc_memory_size: int = 0
+
+	for source in 0 ..< spec.shard_count {
+		for target in 0 ..< spec.shard_count {
+			// Shards don't talk to themselves via SPSC rings
+			if source == target do continue
+
+			ring_count := ring_counts[source][target]
+			if ring_count == 0 do continue
+
+			ring_memory_size := size_of(SPSC_Ring) + int(ring_count) * size_of(Message_Envelope)
+			spsc_memory_size += ring_memory_size
+
+			// TODO: (Production) mbind to the writer's (source) NUMA node here.
+			raw_mem, alloc_error := os_reserve_arena_with_guard(uint(ring_memory_size))
+			if alloc_error != .None {
+				fmt.eprintfln("[FATAL] Failed to allocate SPSC ring %v->%v", source, target)
+				os.exit(1)
+			}
+
+			ring := cast(^SPSC_Ring)raw_data(raw_mem)
+			buffer := mem.slice_ptr(
+				cast(^Message_Envelope)&raw_mem[size_of(SPSC_Ring)],
+				int(ring_count),
+			)
+			spsc_ring_init_tina_owned(ring, u64(ring_count), buffer)
+
+			os_apply_memory_policy(raw_mem, i32(source), spec.memory_init_mode)
+			// Wire directly into the pre-allocated configs
+			outbound_index := remote_route_index_from_shard_id(Shard_Id(source), Shard_Id(target))
+			inbound_index := remote_route_index_from_shard_id(Shard_Id(target), Shard_Id(source))
+			shard_configs[source].outbound_rings[outbound_index] = ring
+			shard_configs[target].inbound_rings[inbound_index] = ring
+		}
+	}
+
+	// Control-plane channels carry scheduler-owned lifecycle events. They are
+	// separate from data-plane rings so recovery state does not compete with user traffic.
+	control_memory_size: int = 0
+	control_source_count := int(spec.shard_count)
+	for target in 0 ..< spec.shard_count {
+		channel_memory_size := size_of(Shard_Control_Channel) +
+			control_source_count * size_of(Shard_Control_Channel_Cell)
+		control_memory_size += channel_memory_size
+		raw_mem, alloc_error := os_reserve_arena_with_guard(uint(channel_memory_size))
+		if alloc_error != .None {
+			fmt.eprintfln("[FATAL] Failed to allocate control channel for shard %v", target)
+			os.exit(1)
+		}
+
+		channel := cast(^Shard_Control_Channel)raw_data(raw_mem)
+		cells := mem.slice_ptr(
+			cast(^Shard_Control_Channel_Cell)&raw_mem[size_of(Shard_Control_Channel)],
+			control_source_count,
+		)
+		shard_control_channel_init(channel, control_source_count, cells)
+
+		// The target scheduler is the single consumer and drains this channel every tick.
+		os_apply_memory_policy(raw_mem, i32(target), spec.memory_init_mode)
+		shard_configs[target].inbound_control_channel = channel
+
+		for source in 0 ..< spec.shard_count {
+			if source == target do continue
+
+			outbound_index := remote_route_index_from_shard_id(Shard_Id(source), Shard_Id(target))
+			shard_configs[source].outbound_control_channels[outbound_index] = channel
+		}
+	}
+
+	for shard_index in 0 ..< spec.shard_count {
+		for route_index in 0 ..< remote_shard_count {
+			assert(shard_configs[shard_index].outbound_rings[route_index] != nil)
+			assert(shard_configs[shard_index].inbound_rings[route_index] != nil)
+			assert(shard_configs[shard_index].outbound_control_channels[route_index] != nil)
+		}
+		assert(shard_configs[shard_index].inbound_control_channel != nil)
+	}
+
+	total_system_memory_size += spsc_memory_size + control_memory_size
+	// System Memory Fit Check
+	if total_ram, _, _, _, ram_ok := info.ram_stats(); ram_ok {
+		safety_margin := spec.safety_margin
+		if safety_margin <= 0.0 do safety_margin = 0.9 // Default from ADR
+
+		max_allowed := f64(total_ram) * f64(safety_margin)
+		if f64(total_system_memory_size) > max_allowed {
+			fmt.eprintfln(
+				"[FATAL] Memory budget (%.2f MB) exceeds %.0f%% of available RAM (%.2f MB)",
+				f64(total_system_memory_size) / 1024.0 / 1024.0,
+				safety_margin * 100.0,
+				f64(total_ram) / 1024.0 / 1024.0,
+			)
+			os.exit(1)
+		}
+	}
+
+	fmt.printfln(
+		"[SYSTEM] Total requested memory: %v bytes (%.2f MB)",
+		total_system_memory_size,
+		f64(total_system_memory_size) / 1024.0 / 1024.0,
+	)
+
+	// 4. Install signal handlers and set signal mask
+	when !TINA_SIMULATION_MODE {
+		os_signals_init_process()
+	}
+
+	// ========================================================================
+	// PHASE: SHARD_INIT (multi-threaded, pre-scheduler)
+	// ========================================================================
+	store_process_phase(.Shard_Init)
+
+	// 6. Spawn Shard threads
+	threads := make([]^thread.Thread, spec.shard_count)
+	for i in 0 ..< spec.shard_count {
+		t := thread.create(shard_thread_entry)
+		t.data = &shard_configs[i]
+		thread.start(t)
+		threads[i] = t
+	}
+
+	// TODO: 7. Spawn DIO thread (if enabled). For v1, this feature isn't implemented.
+
+	// 8. Main thread: poll-wait for all Shards to hit RUNNING (with timeout)
+	timeout_duration :=
+		time.Millisecond * time.Duration(spec.init_timeout_ms == 0 ? 30_000 : spec.init_timeout_ms)
+
+	stopwatch: time.Stopwatch
+	time.stopwatch_start(&stopwatch)
+
+	init_loop: for {
+		when !TINA_SIMULATION_MODE {
+			event := os_poll_watchdog_events(0)
+			if event == .Shutdown {
+				fmt.eprintfln("[FATAL] Shutdown requested during shard initialization. Force exiting bootstrap.")
+				os_force_exit(130)
+			}
+		}
+
+		all_running := true
+		failed_shard_index := -1
+		failed_state := Shard_State.Init
+		for index in 0 ..< spec.shard_count {
+			state := load_reported_state_acquire(shard_configs[index].health_report)
+			if state == .Running {
+				continue
+			}
+
+			all_running = false
+			if state != .Init {
+				failed_shard_index = int(index)
+				failed_state = state
+				break
+			}
+		}
+
+		if all_running do break init_loop
+		if failed_shard_index >= 0 {
+			fmt.eprintfln(
+				"[FATAL] Shard %d entered %s during initialization before watchdog startup. Inspect prior logs for the root cause.",
+				failed_shard_index,
+				shard_state_label(failed_state),
+			)
+			os_force_exit(1)
+		}
+
+		if time.stopwatch_duration(stopwatch) > timeout_duration {
+			for index in 0 ..< spec.shard_count {
+				state := load_reported_state(shard_configs[index].health_report)
+				fmt.eprintfln(
+					"[FATAL] Shard %d failed to initialize within %v (state: %s)",
+					index,
+					timeout_duration,
+					shard_state_label(state),
+				)
+			}
+			os_force_exit(1)
+		}
+		time.sleep(10 * time.Millisecond) // Coarse polling
+	}
+
+	watchdog_shards := make([]^Shard, spec.shard_count)
+	defer delete(watchdog_shards)
+	watchdog_health_reports := make([]^Shard_Health_Report, spec.shard_count)
+	defer delete(watchdog_health_reports)
+	for index in 0 ..< spec.shard_count {
+		report := shard_configs[index].health_report
+		state := load_reported_state_acquire(report)
+		if state != .Running || report.shard_pointer == nil {
+			fmt.eprintfln("[FATAL] Shard %d reached watchdog startup without a published shard pointer", index)
+			os.exit(1)
+		}
+		watchdog_shards[index] = report.shard_pointer
+		watchdog_health_reports[index] = report
+	}
+	watchdog_view := Watchdog_View {
+		shards = watchdog_shards,
+		health_reports = watchdog_health_reports,
+	}
+
+	// ========================================================================
+	// PHASE: RUNNING
+	// ========================================================================
+	store_process_phase(.Running)
+
+	// 10. Enter Watchdog loop (sigtimedwait / kqueue)
+	watchdog_loop(&watchdog_view, spec)
+
+	// Await graceful termination
+	for t in threads {
+		thread.join(t)
+		thread.destroy(t)
+	}
+
+	store_process_phase(.Terminated)
+	fmt.printfln("[SYSTEM] Process Terminated Cleanly.")
+}

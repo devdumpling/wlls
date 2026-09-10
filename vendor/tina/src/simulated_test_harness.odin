@@ -1,0 +1,514 @@
+package tina
+
+import "core:mem"
+import "core:testing"
+
+when TINA_SIMULATION_MODE {
+
+	// ============================================================================
+	// Harness-level tests: termination reason, final checkers, user checkers
+	// ============================================================================
+
+	HARNESS_NOOP_TYPE_ID: Isolate_Type_Id : 0
+	HARNESS_TRAP_PARENT_TYPE_ID: Isolate_Type_Id : 0
+	HARNESS_TRAP_CHILD_TYPE_ID: Isolate_Type_Id : 1
+
+	HarnessNoopIsolate :: struct {}
+	HarnessTrapParent :: struct {
+		spawn_failed:         bool,
+		continued_after_trap: bool,
+		parent_handle:        Isolate_Handle,
+		group_id:             Supervision_Group_Id,
+	}
+	HarnessTrapChild :: struct {}
+
+	HARNESS_TRAP_DIAG_SPAWN_FAILED:         Diagnostic_Field_Id : 0
+	HARNESS_TRAP_DIAG_CONTINUED_AFTER_TRAP: Diagnostic_Field_Id : 1
+	HARNESS_TRAP_DIAG_PARENT_HANDLE:        Diagnostic_Field_Id : 2
+	HARNESS_TRAP_DIAG_GROUP_ID:             Diagnostic_Field_Id : 3
+
+	harness_noop_init :: proc(self: rawptr, args: []u8) -> Isolate_Transition {
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	harness_noop_handler :: proc(self: rawptr, message: ^Message) -> Isolate_Transition {
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	harness_trap_child_init :: proc(self: rawptr, args: []u8) -> Isolate_Transition {
+		trigger_tier2_panic(g_current_shard_pointer)
+	}
+
+	harness_trap_child_handler :: proc(self: rawptr, message: ^Message) -> Isolate_Transition {
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	harness_trap_parent_init :: proc(self: rawptr, args: []u8) -> Isolate_Transition {
+		parent := cast(^HarnessTrapParent)self
+		child_spec := Spawn_Spec {
+			type_id      = HARNESS_TRAP_CHILD_TYPE_ID,
+			group_id     = ctx_supervision_group_id(),
+			restart_type = .temporary,
+		}
+
+		spawn_result := ctx_spawn(child_spec)
+		switch result in spawn_result {
+		case Isolate_Handle:
+			parent.spawn_failed = false
+		case Spawn_Error:
+			parent.spawn_failed = result == .init_failed
+		}
+
+		parent.parent_handle = ctx_self_handle()
+		parent.group_id = ctx_supervision_group_id()
+		parent.continued_after_trap = true
+
+		ctx_test_diagnostic_write_u64(HARNESS_TRAP_DIAG_SPAWN_FAILED, parent.spawn_failed ? 1 : 0)
+		ctx_test_diagnostic_write_u64(HARNESS_TRAP_DIAG_CONTINUED_AFTER_TRAP, parent.continued_after_trap ? 1 : 0)
+		ctx_test_diagnostic_write_u64(HARNESS_TRAP_DIAG_PARENT_HANDLE, u64(parent.parent_handle))
+		ctx_test_diagnostic_write_u64(HARNESS_TRAP_DIAG_GROUP_ID, u64(parent.group_id))
+
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	harness_trap_parent_handler :: proc(self: rawptr, message: ^Message) -> Isolate_Transition {
+		return ISOLATE_TRANSITION_WAIT_MESSAGE
+	}
+
+	Simulator_Test_Fault_Allocator_Data :: struct {
+		backing:          mem.Allocator,
+		allocation_count: int,
+		fail_after_count: int,
+	}
+
+	simulator_test_fault_allocator_proc :: proc(
+		allocator_data: rawptr,
+		mode: mem.Allocator_Mode,
+		size, alignment: int,
+		old_memory: rawptr,
+		old_size: int,
+		loc := #caller_location,
+	) -> ([]byte, mem.Allocator_Error) {
+		data := cast(^Simulator_Test_Fault_Allocator_Data)allocator_data
+		#partial switch mode {
+		case .Alloc, .Alloc_Non_Zeroed:
+			if data.allocation_count >= data.fail_after_count do return nil, .Out_Of_Memory
+			data.allocation_count += 1
+		}
+		return data.backing.procedure(
+			data.backing.data,
+			mode,
+			size,
+			alignment,
+			old_memory,
+			old_size,
+			loc,
+		)
+	}
+
+	simulator_test_fault_allocator :: proc(data: ^Simulator_Test_Fault_Allocator_Data) -> mem.Allocator {
+		return mem.Allocator{procedure = simulator_test_fault_allocator_proc, data = data}
+	}
+
+	@(test)
+	test_child_init_trap_returns_spawn_error_and_restores_parent_turn :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		types := [2]IsolateTypeDescriptor {
+			{
+				id = HARNESS_TRAP_PARENT_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(HarnessTrapParent),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = harness_trap_parent_init,
+				handler_fn = harness_trap_parent_handler,
+			},
+			{
+				id = HARNESS_TRAP_CHILD_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(HarnessTrapChild),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = harness_trap_child_init,
+				handler_fn = harness_trap_child_handler,
+			},
+		}
+
+		children := [1]Child_Spec {
+			Static_Child_Spec{type_id = HARNESS_TRAP_PARENT_TYPE_ID, restart_type = .temporary},
+		}
+		root_group := sim_test_make_root_group(children[:], .One_For_One, 1)
+		shard_specs := [1]ShardSpec{{shard_id = 0, root_group = root_group}}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 1,
+			terminate_on_quiescent = true,
+			builtin_checkers       = CHECKER_FLAGS_ALL,
+			checker_interval_ticks = 1,
+		}
+
+		spec := sim_test_make_spec(&sim_config, types[:], shard_specs[:])
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		shard := &sim.shards[0]
+
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard,
+			HARNESS_TRAP_PARENT_TYPE_ID,
+			0,
+			HARNESS_TRAP_DIAG_SPAWN_FAILED,
+			1,
+		)
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard,
+			HARNESS_TRAP_PARENT_TYPE_ID,
+			0,
+			HARNESS_TRAP_DIAG_CONTINUED_AFTER_TRAP,
+			1,
+		)
+		parent_handle, parent_handle_found := shard_diagnostic_read(
+			shard,
+			HARNESS_TRAP_PARENT_TYPE_ID,
+			0,
+			HARNESS_TRAP_DIAG_PARENT_HANDLE,
+		)
+		testing.expect(t, parent_handle_found, "parent-handle diagnostic not found")
+		testing.expect_value(t, extract_type_id(Isolate_Handle(parent_handle)), HARNESS_TRAP_PARENT_TYPE_ID)
+		shard_test_diagnostic_expect_u64(
+			t,
+			shard,
+			HARNESS_TRAP_PARENT_TYPE_ID,
+			0,
+			HARNESS_TRAP_DIAG_GROUP_ID,
+			u64(0),
+		)
+		testing.expect_value(t, shard.metadata[HARNESS_TRAP_PARENT_TYPE_ID]._state[0], Isolate_State.Wait_Message)
+		testing.expect_value(t, shard.metadata[HARNESS_TRAP_CHILD_TYPE_ID]._state[0], Isolate_State.Unallocated)
+		testing.expect_value(t, shard.current_isolate_turn_frame, nil)
+		testing.expect_value(t, shard.current_trap_environment, nil)
+	}
+
+	@(test)
+	test_simulator_deinit_balances_allocator :: proc(t: ^testing.T) {
+		types := [1]IsolateTypeDescriptor {
+			{
+				id = HARNESS_NOOP_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(HarnessNoopIsolate),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = harness_noop_init,
+				handler_fn = harness_noop_handler,
+			},
+		}
+
+		children := [1]Child_Spec {
+			Static_Child_Spec{type_id = HARNESS_NOOP_TYPE_ID, restart_type = .temporary},
+		}
+		root_group := sim_test_make_root_group(children[:])
+		shard_specs := [1]ShardSpec{{shard_id = 0, root_group = root_group}}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 1,
+			terminate_on_quiescent = true,
+		}
+
+		spec := sim_test_make_spec(&sim_config, types[:], shard_specs[:])
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		simulator_deinit(&sim)
+	}
+
+	@(test)
+	test_simulator_init_allocator_failure_cleans_partial_state :: proc(t: ^testing.T) {
+		types := [1]IsolateTypeDescriptor {
+			{
+				id = HARNESS_NOOP_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(HarnessNoopIsolate),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = harness_noop_init,
+				handler_fn = harness_noop_handler,
+			},
+		}
+
+		children := [1]Child_Spec {
+			Static_Child_Spec{type_id = HARNESS_NOOP_TYPE_ID, restart_type = .temporary},
+		}
+		root_group := sim_test_make_root_group(children[:])
+		shard_specs := [1]ShardSpec{{shard_id = 0, root_group = root_group}}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 1,
+			terminate_on_quiescent = true,
+		}
+
+		spec := sim_test_make_spec(&sim_config, types[:], shard_specs[:])
+
+		tracking_allocator: mem.Tracking_Allocator
+		mem.tracking_allocator_init(&tracking_allocator, context.allocator)
+		defer mem.tracking_allocator_destroy(&tracking_allocator)
+
+		fault_allocator_data := Simulator_Test_Fault_Allocator_Data {
+			backing          = mem.tracking_allocator(&tracking_allocator),
+			fail_after_count = 2,
+		}
+		fault_allocator := simulator_test_fault_allocator(&fault_allocator_data)
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, fault_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.Out_Of_Memory)
+		testing.expect_value(t, tracking_allocator.current_memory_allocated, i64(0))
+		testing.expect(t, sim.allocator.procedure == nil, "Failed simulator init must reset partial state")
+	}
+
+	@(test)
+	test_termination_reason_quiescent :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		types := [1]IsolateTypeDescriptor {
+			{
+				id = HARNESS_NOOP_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(HarnessNoopIsolate),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = harness_noop_init,
+				handler_fn = harness_noop_handler,
+			},
+		}
+
+		children := [1]Child_Spec {
+			Static_Child_Spec{type_id = HARNESS_NOOP_TYPE_ID, restart_type = .temporary},
+		}
+		root_group := sim_test_make_root_group(children[:])
+		shard_specs := [1]ShardSpec{{shard_id = 0, root_group = root_group}}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 10_000,
+			terminate_on_quiescent = true,
+			builtin_checkers       = CHECKER_FLAGS_ALL,
+			checker_interval_ticks = 100,
+		}
+
+		spec := sim_test_make_spec(&sim_config, types[:], shard_specs[:])
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		simulator_run(&sim)
+
+		testing.expect_value(t, sim.termination_reason, Termination_Reason.Quiescent)
+		testing.expect(t, sim.final_round < 10_000, "Should terminate early via quiescence")
+	}
+
+	@(test)
+	test_termination_reason_ticks_max :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		types := [1]IsolateTypeDescriptor {
+			{
+				id = HARNESS_NOOP_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(HarnessNoopIsolate),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = harness_noop_init,
+				handler_fn = harness_noop_handler,
+			},
+		}
+
+		children := [1]Child_Spec {
+			Static_Child_Spec{type_id = HARNESS_NOOP_TYPE_ID, restart_type = .temporary},
+		}
+		root_group := sim_test_make_root_group(children[:])
+		shard_specs := [1]ShardSpec{{shard_id = 0, root_group = root_group}}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 5,
+			terminate_on_quiescent = false,
+		}
+
+		spec := sim_test_make_spec(&sim_config, types[:], shard_specs[:])
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		simulator_run(&sim)
+
+		testing.expect_value(t, sim.termination_reason, Termination_Reason.Ticks_Max)
+		testing.expect_value(t, sim.final_round, u64(5))
+	}
+
+	@(test)
+	test_user_checker_violation_stops_simulation :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		types := [1]IsolateTypeDescriptor {
+			{
+				id = HARNESS_NOOP_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(HarnessNoopIsolate),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = harness_noop_init,
+				handler_fn = harness_noop_handler,
+			},
+		}
+
+		children := [1]Child_Spec {
+			Static_Child_Spec{type_id = HARNESS_NOOP_TYPE_ID, restart_type = .temporary},
+		}
+		root_group := sim_test_make_root_group(children[:])
+		shard_specs := [1]ShardSpec{{shard_id = 0, root_group = root_group}}
+
+		// User checker that fires a violation after round 3
+		always_fail_after_3 :: proc(shards: []Shard, tick: u64) -> Check_Result {
+			if tick >= 3 {
+				return Check_Violation{message = "test violation at round 3"}
+			}
+			return nil
+		}
+
+		user_checkers := [1]Checker_Fn{always_fail_after_3}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 1000,
+			terminate_on_quiescent = false,
+			builtin_checkers       = CHECKER_FLAGS_ALL,
+			user_checkers          = user_checkers[:],
+			checker_interval_ticks = 1,
+		}
+
+		spec := sim_test_make_spec(&sim_config, types[:], shard_specs[:])
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		simulator_run(&sim)
+
+		testing.expect_value(t, sim.termination_reason, Termination_Reason.Checker_Violation)
+		testing.expect(
+			t,
+			sim.final_round <= 3,
+			"Should stop at or before round 3 due to checker violation",
+		)
+	}
+
+	@(test)
+	test_final_checkers_run_on_quiescent_termination :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		types := [1]IsolateTypeDescriptor {
+			{
+				id = HARNESS_NOOP_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(HarnessNoopIsolate),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = harness_noop_init,
+				handler_fn = harness_noop_handler,
+			},
+		}
+
+		children := [1]Child_Spec {
+			Static_Child_Spec{type_id = HARNESS_NOOP_TYPE_ID, restart_type = .temporary},
+		}
+		root_group := sim_test_make_root_group(children[:])
+		shard_specs := [1]ShardSpec{{shard_id = 0, root_group = root_group}}
+
+		// User checker that always fires — should be caught by the final checker run
+		// even though checker_interval_ticks is 0 (no periodic checks)
+		always_fail :: proc(shards: []Shard, tick: u64) -> Check_Result {
+			return Check_Violation{message = "final checker caught this"}
+		}
+
+		user_checkers := [1]Checker_Fn{always_fail}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 10_000,
+			terminate_on_quiescent = true,
+			user_checkers          = user_checkers[:],
+			checker_interval_ticks = 0, // No periodic checks — only final
+		}
+
+		spec := sim_test_make_spec(&sim_config, types[:], shard_specs[:])
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		simulator_run(&sim)
+
+		// The loop exits via quiescence, but the final checker run should catch the violation
+		testing.expect_value(t, sim.termination_reason, Termination_Reason.Checker_Violation)
+	}
+
+	@(test)
+	test_disabled_builtin_checkers_do_not_fire :: proc(t: ^testing.T) {
+		defer free_all(context.temp_allocator)
+
+		types := [1]IsolateTypeDescriptor {
+			{
+				id = HARNESS_NOOP_TYPE_ID,
+				slot_count = 1,
+				stride = size_of(HarnessNoopIsolate),
+				soa_metadata_size = size_of(Isolate_Metadata),
+				init_handler = harness_noop_init,
+				handler_fn = harness_noop_handler,
+			},
+		}
+
+		children := [1]Child_Spec {
+			Static_Child_Spec{type_id = HARNESS_NOOP_TYPE_ID, restart_type = .temporary},
+		}
+		root_group := sim_test_make_root_group(children[:])
+		shard_specs := [1]ShardSpec{{shard_id = 0, root_group = root_group}}
+
+		// User checker that always passes
+		always_ok :: proc(shards: []Shard, tick: u64) -> Check_Result {
+			return nil
+		}
+
+		user_checkers := [1]Checker_Fn{always_ok}
+
+		sim_config := SimulationConfig {
+			seed                   = t.seed,
+			ticks_max              = 5,
+			terminate_on_quiescent = false,
+			builtin_checkers       = CHECKER_FLAGS_NONE,
+			user_checkers          = user_checkers[:],
+			checker_interval_ticks = 1,
+		}
+
+		spec := sim_test_make_spec(&sim_config, types[:], shard_specs[:])
+
+		sim: Simulator
+		error := simulator_init(&sim, &spec, context.temp_allocator)
+		testing.expect_value(t, error, mem.Allocator_Error.None)
+		defer simulator_deinit(&sim)
+
+		// Corrupt message pool to trigger Pool_Integrity if it were enabled
+		sim.shards[0].message_pool.free_count = sim.shards[0].message_pool.slot_count + 1
+
+		simulator_run(&sim)
+
+		testing.expect_value(t, sim.termination_reason, Termination_Reason.Ticks_Max)
+	}
+}

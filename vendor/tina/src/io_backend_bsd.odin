@@ -1,0 +1,1672 @@
+#+build darwin, freebsd, openbsd, netbsd
+#+private
+package tina
+
+// ============================================================================
+// kqueue-based POSIX Platform Backend (§6.6.2)
+// ============================================================================
+//
+// Emulates completion semantics on top of kqueue readiness notifications:
+//   Submit:  try syscall immediately (optimistic). EWOULDBLOCK → register ONESHOT.
+//   Collect: drain immediates, then kevent() for readiness, retry syscall.
+//   Cancel:  remove pending by token (swap-with-last).
+//   Wake:    trigger EVFILT_USER.
+//
+// Active when TINA_SIM is false (default) on Darwin/FreeBSD/OpenBSD/NetBSD.
+
+import "core:c"
+import kq "core:sys/kqueue"
+import "core:sys/posix"
+import "core:testing"
+
+when !TINA_SIMULATION_MODE {
+
+	// Token-based correlation requires 64-bit udata in kqueue's kevent struct.
+	// On 32-bit platforms, the Submission_Token (u64) would be truncated during
+	// the rawptr round-trip, causing silent completion mis-routing.
+	#assert(
+		size_of(uintptr) == 8,
+		"POSIX kqueue backend requires 64-bit uintptr for token packing",
+	)
+
+	MAX_POSIX_PENDING :: 1024
+
+	@(private = "package")
+	_backend_boot_scratch_size :: #force_inline proc "contextless" (
+		receive_slot_count: int,
+		fd_slot_count: int,
+	) -> int {
+		return 0
+	}
+
+	// Every accepted operation is either pending or represented by one unread
+	// completion. Equal capacities let cancellation and close move obligations
+	// between those states without requiring additional cleanup capacity.
+	MAX_POSIX_COMPLETED :: MAX_POSIX_PENDING
+	#assert(REACTOR_SUBMISSION_BATCH_COUNT <= MAX_POSIX_PENDING)
+	#assert(REACTOR_SUBMISSION_BATCH_COUNT <= MAX_POSIX_COMPLETED)
+	#assert(REACTOR_COMPLETION_BATCH_COUNT <= MAX_POSIX_COMPLETED)
+	MAX_POSIX_FD_IO_STATES :: 4096
+	POSIX_WAKE_IDENT :: 69
+	POSIX_EDGE_EVENT_UDATA_FLAG :: uintptr(1) << 63
+
+
+	BACKEND_POOL_BUFFER_OWNED_AFTER_SUBMIT :: false
+
+	@(private = "file")
+	_posix_map_socket_startup_error :: #force_inline proc "contextless" (error: posix.Errno) -> Backend_Error {
+		#partial switch error {
+		case .EACCES, .EPERM:
+			return .Permission_Denied
+		case .EINVAL:
+			return .Invalid_Argument
+		case .EADDRINUSE:
+			return .Address_In_Use
+		case .EADDRNOTAVAIL:
+			return .Address_Not_Available
+		case .EAFNOSUPPORT, .EPROTONOSUPPORT, .EOPNOTSUPP:
+			return .Unsupported
+		case .EMFILE, .ENFILE, .ENOBUFS, .ENOMEM:
+			return .Resource_Exhausted
+		case:
+			return .System_Error
+		}
+	}
+
+	// SO_NOSIGPIPE suppresses SIGPIPE on a per-socket basis.
+	// Available on Darwin (0x1022), FreeBSD (0x0800), and NetBSD (0x0800).
+	// OpenBSD does NOT have SO_NOSIGPIPE — it relies solely on MSG_NOSIGNAL per-send.
+	when ODIN_OS == .Darwin {
+		_SO_NOSIGPIPE :: 0x1022
+		_HAS_SO_NOSIGPIPE :: true
+	} else when ODIN_OS == .FreeBSD || ODIN_OS == .NetBSD {
+		_SO_NOSIGPIPE :: 0x0800
+		_HAS_SO_NOSIGPIPE :: true
+	} else {
+		// OpenBSD: no SO_NOSIGPIPE. SIGPIPE prevention uses MSG_NOSIGNAL on send/sendto.
+		_SO_NOSIGPIPE :: 0
+		_HAS_SO_NOSIGPIPE :: false
+	}
+
+	when ODIN_OS == .Darwin {
+		foreign import _libc "system:System.framework"
+		@(private = "file")
+		foreign _libc {
+			@(link_name = "sendfile")
+			_darwin_sendfile :: proc(fd: posix.FD, s: posix.FD, offset: posix.off_t, len: ^posix.off_t, hdtr: rawptr, flags: c.int) -> c.int ---
+		}
+	} else when ODIN_OS == .FreeBSD {
+		foreign import _libc "system:c"
+		@(private = "file")
+		foreign _libc {
+			@(link_name = "sendfile")
+			_freebsd_sendfile :: proc(fd: posix.FD, s: posix.FD, offset: posix.off_t, nbytes: c.size_t, hdtr: rawptr, sbytes: ^posix.off_t, flags: c.int) -> c.int ---
+		}
+	}
+
+	Pending_Posix_Op_Flag :: enum u8 {
+		Connect_In_Progress,
+		Edge_Clear,
+	}
+	Pending_Posix_Op_Flags :: bit_set[Pending_Posix_Op_Flag;u8]
+
+	Posix_FD_IO_State_Flag :: enum u8 {
+		Write_Edge_Clear,
+	}
+	Posix_FD_IO_State_Flags :: bit_set[Posix_FD_IO_State_Flag;u8]
+
+	Posix_FD_IO_State :: struct {
+		read_deferred_streak:  u8,
+		write_deferred_streak: u8,
+		write_ready_streak:    u8,
+		flags:                 Posix_FD_IO_State_Flags,
+		_padding:              [4]u8,
+	}
+
+	Posix_Stream_Tracking :: struct {
+		state:  ^Posix_FD_IO_State,
+		filter: kq.Filter,
+	}
+
+	Pending_Posix_Op :: struct {
+		submission:    Submission,
+		subject_fd:    OS_FD,
+		kqueue_ident:  uintptr,
+		kqueue_filter: kq.Filter,
+		flags:         Pending_Posix_Op_Flags,
+	}
+
+	_Platform_State :: struct {
+		kq_fd:           OS_FD,
+		pending:         [MAX_POSIX_PENDING]Pending_Posix_Op,
+		fd_io_states:    [MAX_POSIX_FD_IO_STATES]Posix_FD_IO_State,
+		pending_count:   u16,
+		completed:       [MAX_POSIX_COMPLETED]Raw_Completion,
+		completed_count: u16,
+		completed_read:  u16,
+	}
+
+	// ============================================================================
+	// Backend API
+	// ============================================================================
+
+	@(private = "package")
+	_backend_init :: proc(backend: ^Platform_Backend, config: Backend_Config) -> Backend_Error {
+		kq_fd, error := kq.kqueue()
+		if error != nil {
+			return .System_Error
+		}
+
+		backend.kq_fd = OS_FD(kq_fd)
+		backend.pending_count = 0
+		backend.completed_count = 0
+		backend.completed_read = 0
+
+		wake_ev := [1]kq.KEvent {
+			{ident = POSIX_WAKE_IDENT, filter = .User, flags = {.Add, .Enable, .Clear}},
+		}
+		time_spec: posix.timespec
+		_, kerr := kq.kevent(kq_fd, wake_ev[:], nil, &time_spec)
+		if kerr != nil {
+			posix.close(kq_fd)
+			return .System_Error
+		}
+
+		return .None
+	}
+
+	@(private = "package")
+	_backend_deinit :: proc(backend: ^Platform_Backend) {
+		if backend.kq_fd != OS_FD_INVALID {
+			posix.close(posix.FD(backend.kq_fd))
+			backend.kq_fd = OS_FD_INVALID
+		}
+		backend.pending_count = 0
+		backend.completed_count = 0
+		backend.completed_read = 0
+	}
+
+	@(private = "package")
+	_backend_quiesce_after_collect_fault :: proc(
+		backend: ^Platform_Backend,
+	) -> Backend_Quiesce_Result {
+		// kqueue tracks readiness only; no kernel operation retains user memory.
+		_backend_deinit(backend)
+		return .Quiesced
+	}
+
+	@(private = "package")
+	_backend_submit :: proc(
+		backend: ^Platform_Backend,
+		submissions: []Submission,
+	) -> Backend_Error {
+		_posix_compact_completed(backend)
+
+		// Accepted obligations occupy exactly one pending or unread-completion
+		// entry. A close converts matching pending entries into completions; it
+		// does not increase the obligation count beyond its own submission.
+		submission_count := len(submissions)
+		completion_count_unread := int(backend.completed_count - backend.completed_read)
+		obligation_count := int(backend.pending_count) + completion_count_unread
+		pending_available := MAX_POSIX_PENDING - int(backend.pending_count)
+		if obligation_count + submission_count > MAX_POSIX_COMPLETED ||
+		   submission_count > pending_available {
+			return .Queue_Full
+		}
+
+		for &submission in submissions {
+			tracking := _posix_stream_tracking(backend, &submission.operation)
+			result: Raw_Completion
+			immediate: bool
+			if _posix_tracking_should_skip_optimistic_try(tracking) {
+				result = Raw_Completion {
+					token = submission.token,
+				}
+				_posix_sanitizer_poison_pooled_submission_buffer(&submission)
+				immediate = false
+			} else {
+				result, immediate = _try_syscall(backend, &submission)
+				_posix_tracking_note_optimistic_result(tracking, immediate)
+			}
+
+			if immediate {
+				backend.completed[backend.completed_count] = result
+				backend.completed_count += 1
+			} else {
+				pending_flags: Pending_Posix_Op_Flags
+				if _, is_connect := submission.operation.(Submission_Op_Connect); is_connect {
+					pending_flags = {.Connect_In_Progress}
+				}
+				subject_fd, kq_ident, kq_filter := _submission_op_metadata(submission.operation)
+				backend.pending[backend.pending_count] = Pending_Posix_Op {
+					submission    = submission,
+					subject_fd    = subject_fd,
+					kqueue_ident  = kq_ident,
+					kqueue_filter = kq_filter,
+					flags         = pending_flags,
+				}
+				backend.pending_count += 1
+
+				reg_error := _register_kqueue(backend, &backend.pending[backend.pending_count - 1])
+				if reg_error != .None {
+					// Registration failed — remove from pending and complete as error.
+					// Cannot fail the batch: earlier submissions may have already
+					// executed real syscalls (optimistic try) that cannot be rolled back.
+					backend.pending_count -= 1
+					backend.completed[backend.completed_count] = Raw_Completion {
+						token   = submission.token,
+						outcome = Completion_Failure{error_code = -i32(posix.Errno.EIO)},
+					}
+					backend.completed_count += 1
+				}
+			}
+		}
+		return .None
+	}
+
+	@(private = "package")
+	_backend_collect :: proc(
+		backend: ^Platform_Backend,
+		completions: []Raw_Completion,
+		timeout_ns: i64,
+	) -> Backend_Collect_Result {
+		out: u32 = 0
+		output_max := u32(len(completions))
+
+		// Drain immediate completions first.
+		for backend.completed_read < backend.completed_count && out < output_max {
+			completions[out] = backend.completed[backend.completed_read]
+			backend.completed_read += 1
+			out += 1
+		}
+
+		// Reset completed ring when fully drained.
+		if backend.completed_read >= backend.completed_count {
+			backend.completed_count = 0
+			backend.completed_read = 0
+		}
+
+		if out >= output_max {
+			return Backend_Collect_Result{completion_count = out}
+		}
+
+		// Call kevent for readiness events.
+		time_spec: posix.timespec
+		time_spec_pointer: ^posix.timespec
+		if timeout_ns < 0 {
+			// Negative: block indefinitely (nil timespec = wait forever)
+			time_spec_pointer = nil
+		} else if timeout_ns == 0 {
+			// Zero: non-blocking poll
+			time_spec_pointer = &time_spec
+		} else {
+			// Positive: bounded wait
+			time_spec = posix.timespec {
+				tv_sec  = posix.time_t(timeout_ns / 1_000_000_000),
+				tv_nsec = c.long(timeout_ns % 1_000_000_000),
+			}
+			time_spec_pointer = &time_spec
+		}
+
+		events_buf: [REACTOR_COMPLETION_BATCH_COUNT]kq.KEvent
+
+		n, kerr := kq.kevent(kq.KQ(backend.kq_fd), nil, events_buf[:], time_spec_pointer)
+		if kerr != nil {
+			if kerr == .EINTR {
+				return Backend_Collect_Result{completion_count = out}
+			}
+			return Backend_Collect_Result{completion_count = out, fault = .System_Error}
+		}
+
+		for i in 0 ..< n {
+			event := &events_buf[i]
+
+			// Skip wake-up events.
+			if event.filter == .User && event.ident == POSIX_WAKE_IDENT {
+				continue
+			}
+
+			pending_index, token, found_pending := _find_pending_by_event(backend, event)
+
+			// EV_ERROR: changelist registration error propagated back through kevent.
+			// The data field carries the errno specifically when this flag is set.
+			if .Error in event.flags {
+				if found_pending {
+					store_result: Backend_Completion_Store_Result
+					out, store_result = _posix_deliver_completion(
+						backend,
+						completions,
+						out,
+						output_max,
+						Raw_Completion {
+							token   = token,
+							outcome = Completion_Failure{error_code = -i32(posix.Errno(event.data))},
+						},
+					)
+					if store_result != .Stored {
+						return Backend_Collect_Result{completion_count = out, fault = .System_Error}
+					}
+					_remove_pending(backend, pending_index)
+				}
+				continue
+			}
+
+			if !found_pending {
+				continue
+			}
+
+			pending_operation := &backend.pending[pending_index]
+			event_has_eof := .EOF in event.flags
+
+			// Connect completion: use getsockopt(SO_ERROR) instead of re-calling connect().
+			if .Connect_In_Progress in pending_operation.flags {
+				conn_result := Raw_Completion {
+					token = pending_operation.submission.token,
+				}
+				socket_error: posix.Errno
+				socket_error_size := posix.socklen_t(size_of(socket_error))
+				connect_fd := pending_operation.submission.operation.(Submission_Op_Connect).fd_socket
+				getsockopt_result := posix.getsockopt(
+					posix.FD(connect_fd),
+					posix.SOL_SOCKET,
+					.ERROR,
+					&socket_error,
+					&socket_error_size,
+				)
+				if getsockopt_result != .OK {
+					conn_result.outcome = Completion_Failure{error_code = -i32(posix.errno())}
+				} else if socket_error != nil {
+					conn_result.outcome = Completion_Failure{error_code = -i32(socket_error)}
+				} else {
+					conn_result.outcome = Completion_Success{}
+				}
+				store_result: Backend_Completion_Store_Result
+				out, store_result = _posix_deliver_completion(backend, completions, out, output_max, conn_result)
+				if store_result != .Stored {
+					return Backend_Collect_Result{completion_count = out, fault = .System_Error}
+				}
+				_remove_pending(backend, u16(pending_index))
+				continue
+			}
+
+			// Non-connect: retry the syscall.
+			tracking := _posix_stream_tracking(backend, &pending_operation.submission.operation)
+			result, immediate := _try_syscall(backend, &pending_operation.submission)
+			_posix_tracking_note_optimistic_result(tracking, immediate)
+
+			if immediate {
+				_posix_tracking_note_readiness_success(tracking)
+				store_result: Backend_Completion_Store_Result
+				out, store_result = _posix_deliver_completion(backend, completions, out, output_max, result)
+				if store_result != .Stored {
+					return Backend_Collect_Result{completion_count = out, fault = .System_Error}
+				}
+				_remove_pending(backend, pending_index)
+			} else if event_has_eof {
+				// Peer closed but syscall returned EWOULDBLOCK — complete as EOF.
+				// Re-registering would be pointless: no further data will arrive.
+				operation_kind := submission_token_operation_kind(pending_operation.submission.token)
+				switch operation_kind {
+				case .Read_Complete, .Write_Complete, .Send_Complete, .Recv_Complete,
+				     .Sendto_Complete, .Sendfile_Complete:
+				case .None, .Accept_Complete, .Connect_Complete, .Recvfrom_Complete,
+				     .Close_Complete:
+					assert(false, "EOF without syscall progress requires a transfer operation")
+				}
+				store_result: Backend_Completion_Store_Result
+				out, store_result = _posix_deliver_completion(
+					backend,
+					completions,
+					out,
+					output_max,
+					Raw_Completion {
+						token   = pending_operation.submission.token,
+						outcome = Completion_Transfer{byte_count = 0},
+					},
+				)
+				if store_result != .Stored {
+					return Backend_Collect_Result{completion_count = out, fault = .System_Error}
+				}
+				_remove_pending(backend, pending_index)
+			} else if .Edge_Clear in pending_operation.flags {
+				// EV_CLEAR remains armed. The next kernel edge will wake this pending op.
+				continue
+			} else {
+				// Still not ready — re-register ONESHOT.
+				rearm_error := _register_kqueue(backend, pending_operation)
+				if rearm_error != .None {
+					// Re-registration failed — complete as error to avoid stranding
+					// this operation in pending forever with no kqueue wakeup.
+					store_result: Backend_Completion_Store_Result
+					out, store_result = _posix_deliver_completion(
+						backend,
+						completions,
+						out,
+						output_max,
+						Raw_Completion {
+							token   = pending_operation.submission.token,
+							outcome = Completion_Failure{error_code = -i32(posix.Errno.EIO)},
+						},
+					)
+					if store_result != .Stored {
+						return Backend_Collect_Result{completion_count = out, fault = .System_Error}
+					}
+					_remove_pending(backend, pending_index)
+				}
+			}
+		}
+
+		return Backend_Collect_Result{completion_count = out}
+	}
+
+	@(private = "package")
+	_backend_set_current_tick :: #force_inline proc "contextless" (backend: ^Platform_Backend, tick_count: u64) {}
+
+	@(private = "package")
+	_backend_cancel :: proc(backend: ^Platform_Backend, token: Submission_Token) -> Backend_Error {
+		for i: u16 = 0; i < backend.pending_count; i += 1 {
+			if backend.pending[i].submission.token == token {
+				// kqueue does not deliver a cancellation completion when a
+				// pending op is cancelled. Synthesize one (.Synthesized) so
+				// reactor_collect_completions can reclaim its buffer without
+				// dispatching the completion to a slot. This mirrors the
+				// Linux/Windows behaviour where the kernel delivers an
+				// equivalent completion (e.g. -ECANCELED CQE on io_uring).
+				completion := Raw_Completion {
+					token   = token,
+					outcome = Completion_Failure{error_code = -i32(posix.Errno.ECANCELED)},
+					flags   = {.Synthesized},
+				}
+				store_result := _posix_store_completion(backend, completion)
+				if store_result != .Stored {
+					return .Resource_Exhausted
+				}
+				_remove_pending(backend, i)
+				return .None
+			}
+		}
+		return .Not_Found
+	}
+
+	@(private = "package")
+	_backend_wake :: proc(backend: ^Platform_Backend) {
+		ev := [1]kq.KEvent {
+			{ident = POSIX_WAKE_IDENT, filter = .User, fflags = {user = {.Trigger}}},
+		}
+		time_spec: posix.timespec
+		kq.kevent(kq.KQ(backend.kq_fd), ev[:], nil, &time_spec)
+	}
+
+	// ============================================================================
+	// Synchronous Control Operations
+	// ============================================================================
+
+	@(private = "package")
+	_backend_control_socket :: proc(
+		backend: ^Platform_Backend,
+		domain: Socket_Domain,
+		socket_type: Socket_Type,
+		protocol: Socket_Protocol,
+	) -> (
+		OS_FD,
+		Backend_Error,
+	) {
+		af: posix.AF
+		switch domain {
+		case .AF_INET:
+			af = .INET
+		case .AF_INET6:
+			af = .INET6
+		case .AF_UNIX:
+			af = .UNIX
+		}
+
+		st: posix.Sock
+		switch socket_type {
+		case .STREAM:
+			st = .STREAM
+		case .DGRAM:
+			st = .DGRAM
+		}
+
+		proto: posix.Protocol
+		switch protocol {
+		case .DEFAULT:
+			proto = .IP
+		case .TCP:
+			proto = .TCP
+		case .UDP:
+			proto = .UDP
+		}
+
+		fd := posix.socket(af, st, proto)
+		if fd < 0 {
+			return OS_FD_INVALID, _posix_map_socket_startup_error(posix.errno())
+		}
+
+		// Set non-blocking.
+		flags := posix.fcntl(fd, .GETFL)
+		if flags < 0 {
+			posix.close(fd)
+			return OS_FD_INVALID, _posix_map_socket_startup_error(posix.errno())
+		}
+		if posix.fcntl(fd, .SETFL, transmute(posix.O_Flags)(flags) + {.NONBLOCK}) < 0 {
+			posix.close(fd)
+			return OS_FD_INVALID, _posix_map_socket_startup_error(posix.errno())
+		}
+
+		// Set close-on-exec.
+		posix.fcntl(fd, .SETFD, posix.FD_CLOEXEC)
+
+		// Suppress SIGPIPE on this socket.
+		// On OpenBSD (no SO_NOSIGPIPE), SIGPIPE prevention relies on MSG_NOSIGNAL per-send.
+		when _HAS_SO_NOSIGPIPE {
+			nosigpipe: c.int = 1
+			posix.setsockopt(
+				fd,
+				posix.SOL_SOCKET,
+				transmute(posix.Sock_Option)c.int(_SO_NOSIGPIPE),
+				&nosigpipe,
+				size_of(nosigpipe),
+			)
+		}
+
+		return OS_FD(fd), .None
+	}
+
+	@(private = "package")
+	_backend_control_bind :: proc(
+		backend: ^Platform_Backend,
+		fd: OS_FD,
+		address: Socket_Address,
+	) -> Backend_Error {
+		sa, sa_len := _socket_address_to_sockaddr(address)
+		if sa_len == 0 {
+			return .Unsupported
+		}
+		if posix.bind(posix.FD(fd), (^posix.sockaddr)(&sa), sa_len) != .OK {
+			return _posix_map_socket_startup_error(posix.errno())
+		}
+		return .None
+	}
+
+	@(private = "package")
+	_backend_control_listen :: proc(
+		backend: ^Platform_Backend,
+		fd: OS_FD,
+		backlog: u32,
+	) -> Backend_Error {
+		if posix.listen(posix.FD(fd), i32(backlog)) != .OK {
+			return _posix_map_socket_startup_error(posix.errno())
+		}
+		return .None
+	}
+
+	@(private = "package")
+	_backend_control_setsockopt :: proc(
+		backend: ^Platform_Backend,
+		fd: OS_FD,
+		level: Socket_Level,
+		option: Socket_Option,
+		value: Socket_Option_Value,
+	) -> Backend_Error {
+		plevel: c.int
+		switch level {
+		case .SOL_SOCKET:
+			plevel = c.int(posix.SOL_SOCKET)
+		case .IPPROTO_TCP:
+			plevel = 6
+		case .IPPROTO_UDP:
+			plevel = 17
+		case .IPPROTO_IPV6:
+			plevel = 41
+		}
+
+		opt_int, opt_ok := _map_socket_option_int(option)
+		if !opt_ok {
+			return .Unsupported
+		}
+		popt := transmute(posix.Sock_Option)opt_int
+
+		switch v in value {
+		case bool:
+			val: c.int = v ? 1 : 0
+			if posix.setsockopt(posix.FD(fd), plevel, popt, &val, size_of(val)) != .OK {
+				return .System_Error
+			}
+		case i32:
+			val := c.int(v)
+			if posix.setsockopt(posix.FD(fd), plevel, popt, &val, size_of(val)) != .OK {
+				return .System_Error
+			}
+		case Socket_Linger:
+			lin := v
+			if posix.setsockopt(posix.FD(fd), plevel, popt, &lin, size_of(lin)) != .OK {
+				return .System_Error
+			}
+		case:
+			return .Unsupported
+		}
+		return .None
+	}
+
+	@(private = "package")
+	_backend_control_getsockopt :: proc(
+		backend: ^Platform_Backend,
+		fd: OS_FD,
+		level: Socket_Level,
+		option: Socket_Option,
+	) -> (
+		Socket_Option_Value,
+		Backend_Error,
+	) {
+		plevel: c.int
+		switch level {
+		case .SOL_SOCKET:
+			plevel = c.int(posix.SOL_SOCKET)
+		case .IPPROTO_TCP:
+			plevel = 6
+		case .IPPROTO_UDP:
+			plevel = 17
+		case .IPPROTO_IPV6:
+			plevel = 41
+		}
+
+		opt_int, opt_ok := _map_socket_option_int(option)
+		if !opt_ok {
+			return nil, .Unsupported
+		}
+		popt := transmute(posix.Sock_Option)opt_int
+
+		if option == .SO_LINGER {
+			lin: Socket_Linger
+			lin_len := posix.socklen_t(size_of(lin))
+			if posix.getsockopt(posix.FD(fd), plevel, popt, &lin, &lin_len) != .OK {
+				return nil, .System_Error
+			}
+			return lin, .None
+		}
+
+		val: c.int
+		val_len := posix.socklen_t(size_of(val))
+		if posix.getsockopt(posix.FD(fd), plevel, popt, &val, &val_len) != .OK {
+			return nil, .System_Error
+		}
+
+		#partial switch option {
+		case .SO_REUSEADDR, .SO_REUSEPORT, .SO_KEEPALIVE, .TCP_NODELAY, .IPV6_V6ONLY:
+			return bool(val != 0), .None
+		case:
+			return i32(val), .None
+		}
+	}
+
+	@(private = "package")
+	_backend_control_shutdown :: proc(
+		backend: ^Platform_Backend,
+		fd: OS_FD,
+		how: Shutdown_How,
+	) -> Backend_Error {
+		phow: posix.Shut
+		switch how {
+		case .SHUT_READER:
+			phow = .RD
+		case .SHUT_WRITER:
+			phow = .WR
+		case .SHUT_BOTH:
+			phow = .RDWR
+		}
+		if posix.shutdown(posix.FD(fd), phow) != .OK {
+			return .System_Error
+		}
+		return .None
+	}
+
+	@(private = "package")
+	_backend_control_close :: proc "contextless" (
+		backend: ^Platform_Backend,
+		fd: OS_FD,
+	) -> Backend_Error {
+		sweep_error := _sweep_pending_for_fd(backend, fd)
+		if sweep_error != .None {
+			return sweep_error
+		}
+		_posix_forget_fd_io_state(backend, fd)
+
+		if posix.close(posix.FD(fd)) != .OK {
+			return .System_Error
+		}
+		return .None
+	}
+
+	@(private = "package")
+	_backend_control_dup :: proc "contextless" (
+		backend: ^Platform_Backend,
+		fd: OS_FD,
+	) -> (
+		OS_FD,
+		Backend_Error,
+	) {
+		dup_fd := posix.fcntl(posix.FD(fd), .DUPFD_CLOEXEC, 0)
+		if dup_fd < 0 {
+			return OS_FD_INVALID, .System_Error
+		}
+		return OS_FD(dup_fd), .None
+	}
+
+	@(private = "package")
+	_backend_register_fixed_fd :: #force_inline proc "contextless" (
+		backend: ^Platform_Backend,
+		slot_index: u16,
+		fd: OS_FD,
+	) -> Backend_Fixed_File_Update_Result {
+		// No-op: kqueue has no fixed-file table.
+		return .Updated
+	}
+
+	@(private = "package")
+	_backend_unregister_fixed_fd :: #force_inline proc "contextless" (
+		backend: ^Platform_Backend,
+		slot_index: u16,
+	) -> Backend_Fixed_File_Update_Result {
+		// No-op: kqueue has no fixed-file table.
+		return .Updated
+	}
+
+	// ============================================================================
+	// Internal Helpers
+	// ============================================================================
+
+	// Route a completion to the output slice if space remains, otherwise buffer internally.
+	// Ensures kevent events are never dropped after kernel consumption.
+	@(private = "file")
+	_posix_deliver_completion :: proc(
+		backend: ^Platform_Backend,
+		completions: []Raw_Completion,
+		out_count: u32,
+		output_max: u32,
+		raw: Raw_Completion,
+	) -> (u32, Backend_Completion_Store_Result) {
+		if out_count < output_max {
+			completions[out_count] = raw
+			return out_count + 1, .Stored
+		}
+		store_result := _posix_store_completion(backend, raw)
+		return out_count, store_result
+	}
+
+	@(private = "file")
+	_posix_store_completion :: proc "contextless" (
+		backend: ^Platform_Backend,
+		raw: Raw_Completion,
+	) -> Backend_Completion_Store_Result {
+		_posix_compact_completed(backend)
+		if backend.completed_count >= MAX_POSIX_COMPLETED {
+			return .Capacity_Exhausted
+		}
+		backend.completed[backend.completed_count] = raw
+		backend.completed_count += 1
+		return .Stored
+	}
+
+	@(private = "file")
+	_posix_compact_completed :: proc "contextless" (backend: ^Platform_Backend) {
+		if backend.completed_read == 0 {
+			return
+		}
+		completion_count_unread := backend.completed_count - backend.completed_read
+		for completion_index: u16 = 0; completion_index < completion_count_unread; completion_index += 1 {
+			backend.completed[completion_index] = backend.completed[backend.completed_read + completion_index]
+		}
+		backend.completed_count = completion_count_unread
+		backend.completed_read = 0
+	}
+
+	// Configure an accepted client socket: non-blocking, close-on-exec, SIGPIPE suppression.
+	// Must be called on every FD returned by accept() before it is handed to user code.
+	@(private = "file")
+	_configure_accepted_socket :: proc(fd: posix.FD) {
+		// Set non-blocking.
+		flags := posix.fcntl(fd, .GETFL)
+		if flags >= 0 {
+			posix.fcntl(fd, .SETFL, transmute(posix.O_Flags)(flags) + {.NONBLOCK})
+		}
+		// Set close-on-exec.
+		posix.fcntl(fd, .SETFD, posix.FD_CLOEXEC)
+		// Suppress SIGPIPE on the accepted socket.
+		// On OpenBSD (no SO_NOSIGPIPE), SIGPIPE prevention relies on MSG_NOSIGNAL per-send.
+		when _HAS_SO_NOSIGPIPE {
+			nosigpipe: c.int = 1
+			posix.setsockopt(
+				fd,
+				posix.SOL_SOCKET,
+				transmute(posix.Sock_Option)c.int(_SO_NOSIGPIPE),
+				&nosigpipe,
+				size_of(nosigpipe),
+			)
+		}
+	}
+
+	@(private = "file")
+	_posix_sanitizer_unpoison_pooled_submission_buffer :: #force_inline proc "contextless" (submission: ^Submission) {
+		when TINA_ASAN_POISONING {
+			if submission.data_pointer == nil || submission.sanitizer_slot_size == 0 do return
+			_sanitizer_address_unpoison_raw(rawptr(submission.data_pointer), int(submission.sanitizer_slot_size))
+		}
+	}
+
+	@(private = "file")
+	_posix_sanitizer_poison_pooled_submission_buffer :: #force_inline proc "contextless" (submission: ^Submission) {
+		when TINA_ASAN_POISONING {
+			if submission.data_pointer == nil || submission.sanitizer_slot_size == 0 do return
+			_sanitizer_address_poison_raw(rawptr(submission.data_pointer), int(submission.sanitizer_slot_size))
+		}
+	}
+
+	@(private = "file")
+	_try_syscall :: proc(backend: ^Platform_Backend, submission: ^Submission) -> (Raw_Completion, bool) {
+		result := Raw_Completion {
+			token = submission.token,
+		}
+
+		switch op in submission.operation {
+		case Submission_Op_Read:
+			_posix_sanitizer_unpoison_pooled_submission_buffer(submission)
+			defer _posix_sanitizer_poison_pooled_submission_buffer(submission)
+			n := posix.pread(
+				posix.FD(op.fd),
+				([^]byte)(submission.data_pointer),
+				uint(submission.data_size),
+				posix.off_t(op.offset),
+			)
+			if n < 0 {
+				errno := posix.errno()
+				if errno == .EWOULDBLOCK || errno == .EAGAIN {
+					return result, false
+				}
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			}
+			result.outcome = Completion_Transfer{byte_count = u32(n)}
+			return result, true
+
+		case Submission_Op_Write:
+			_posix_sanitizer_unpoison_pooled_submission_buffer(submission)
+			defer _posix_sanitizer_poison_pooled_submission_buffer(submission)
+			n := posix.pwrite(
+				posix.FD(op.fd),
+				([^]byte)(submission.data_pointer),
+				uint(submission.data_size),
+				posix.off_t(op.offset),
+			)
+			if n < 0 {
+				errno := posix.errno()
+				if errno == .EWOULDBLOCK || errno == .EAGAIN {
+					return result, false
+				}
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			}
+			result.outcome = Completion_Transfer{byte_count = u32(n)}
+			return result, true
+
+		case Submission_Op_Accept:
+			client_addr: posix.sockaddr_storage
+			addr_len := posix.socklen_t(size_of(client_addr))
+			client_fd := posix.accept(
+				posix.FD(op.listen_fd),
+				(^posix.sockaddr)(&client_addr),
+				&addr_len,
+			)
+			if client_fd < 0 {
+				errno := posix.errno()
+				if errno == .EWOULDBLOCK || errno == .EAGAIN {
+					return result, false
+				}
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			}
+			_configure_accepted_socket(client_fd)
+			result.outcome = Completion_Accept {
+				client_fd    = OS_FD(client_fd),
+				peer_address = _sockaddr_to_peer_address(&client_addr),
+			}
+			return result, true
+
+		case Submission_Op_Connect:
+			sa, sa_len := _socket_address_to_sockaddr(op.address)
+			if posix.connect(posix.FD(op.fd_socket), (^posix.sockaddr)(&sa), sa_len) != .OK {
+				errno := posix.errno()
+				if errno == .EINPROGRESS || errno == .EWOULDBLOCK {
+					return result, false
+				}
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			}
+			result.outcome = Completion_Success{}
+			return result, true
+
+		case Submission_Op_Close:
+			// Sweep any pending ops on this FD before close(): on kqueue,
+			// close() silently removes kevents without firing events, so
+			// their buffers would otherwise be orphaned. The sweep
+			// synthesizes .Synthesized completions that the reactor's
+			// collection path reclaims.
+			sweep_error := _sweep_pending_for_fd(backend, op.fd)
+			when TINA_RUNTIME_ASSERTIONS {
+				assert(sweep_error == .None, "kqueue close submit preflight must reserve synthetic completion capacity")
+			}
+			if sweep_error != .None {
+				result.outcome = Completion_Failure{error_code = -i32(posix.Errno.ENOBUFS)}
+				return result, true
+			}
+			_posix_forget_fd_io_state(backend, op.fd)
+			if posix.close(posix.FD(op.fd)) != .OK {
+				result.outcome = Completion_Failure{error_code = -i32(posix.errno())}
+			} else {
+				result.outcome = Completion_Success{}
+			}
+			return result, true
+
+		case Submission_Op_Send:
+			_posix_sanitizer_unpoison_pooled_submission_buffer(submission)
+			defer _posix_sanitizer_poison_pooled_submission_buffer(submission)
+			n := posix.send(posix.FD(op.fd_socket), rawptr(submission.data_pointer), uint(submission.data_size), {.NOSIGNAL})
+			if n < 0 {
+				errno := posix.errno()
+				if errno == .EWOULDBLOCK || errno == .EAGAIN {
+					return result, false
+				}
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			}
+			result.outcome = Completion_Transfer{byte_count = u32(n)}
+			return result, true
+
+		case Submission_Op_Recv:
+			_posix_sanitizer_unpoison_pooled_submission_buffer(submission)
+			defer _posix_sanitizer_poison_pooled_submission_buffer(submission)
+			n := posix.recv(posix.FD(op.fd_socket), rawptr(submission.data_pointer), uint(submission.data_size), {})
+			if n < 0 {
+				errno := posix.errno()
+				if errno == .EWOULDBLOCK || errno == .EAGAIN {
+					return result, false
+				}
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			}
+			result.outcome = Completion_Transfer{byte_count = u32(n)}
+			return result, true
+
+		case Submission_Op_Sendto:
+			_posix_sanitizer_unpoison_pooled_submission_buffer(submission)
+			defer _posix_sanitizer_poison_pooled_submission_buffer(submission)
+			sa, sa_len := _socket_address_to_sockaddr(op.address)
+			n := posix.sendto(
+				posix.FD(op.fd_socket),
+				rawptr(submission.data_pointer),
+				uint(submission.data_size),
+				{.NOSIGNAL},
+				(^posix.sockaddr)(&sa),
+				sa_len,
+			)
+			if n < 0 {
+				errno := posix.errno()
+				if errno == .EWOULDBLOCK || errno == .EAGAIN {
+					return result, false
+				}
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			}
+			result.outcome = Completion_Transfer{byte_count = u32(n)}
+			return result, true
+
+		case Submission_Op_Recvfrom:
+			_posix_sanitizer_unpoison_pooled_submission_buffer(submission)
+			defer _posix_sanitizer_poison_pooled_submission_buffer(submission)
+			peer_addr: posix.sockaddr_storage
+			addr_len := posix.socklen_t(size_of(peer_addr))
+			n := posix.recvfrom(
+				posix.FD(op.fd_socket),
+				rawptr(submission.data_pointer),
+				uint(submission.data_size),
+				{},
+				(^posix.sockaddr)(&peer_addr),
+				&addr_len,
+			)
+			if n < 0 {
+				errno := posix.errno()
+				if errno == .EWOULDBLOCK || errno == .EAGAIN {
+					return result, false
+				}
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			}
+			result.outcome = Completion_Datagram {
+				byte_count   = u32(n),
+				peer_address = _sockaddr_to_peer_address(&peer_addr),
+			}
+			return result, true
+
+		case Submission_Op_Sendfile:
+			if op.size == 0 {
+				result.outcome = Completion_Transfer{byte_count = 0}
+				return result, true
+			}
+			nbytes_to_send := op.size
+			if op.size == SENDFILE_ALL_BYTES {
+				nbytes_to_send = 0
+			}
+
+			when ODIN_OS == .Darwin {
+				len_val := posix.off_t(nbytes_to_send)
+				rc := _darwin_sendfile(
+					posix.FD(op.fd_file),
+					posix.FD(op.fd_socket),
+					posix.off_t(op.source_offset),
+					&len_val,
+					nil,
+					0,
+				)
+				if rc == 0 {
+					result.outcome = Completion_Transfer{byte_count = u32(len_val)}
+					return result, true
+				}
+				errno := posix.errno()
+				// Partial progress takes priority — report bytes sent even on fatal errors.
+				if len_val > 0 {
+					result.outcome = Completion_Transfer{byte_count = u32(len_val)}
+					return result, true
+				}
+				if errno == .EAGAIN || errno == .EWOULDBLOCK {
+					return result, false
+				}
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			} else when ODIN_OS == .FreeBSD {
+				sbytes: posix.off_t
+				rc := _freebsd_sendfile(
+					posix.FD(op.fd_file),
+					posix.FD(op.fd_socket),
+					posix.off_t(op.source_offset),
+					c.size_t(nbytes_to_send),
+					nil,
+					&sbytes,
+					0,
+				)
+				if rc == 0 {
+					result.outcome = Completion_Transfer{byte_count = u32(sbytes)}
+					return result, true
+				}
+				errno := posix.errno()
+
+				if sbytes > 0 {
+					result.outcome = Completion_Transfer{byte_count = u32(sbytes)}
+					return result, true
+				}
+
+				if errno == .EAGAIN || errno == .EWOULDBLOCK {
+					return result, false
+				}
+
+				result.outcome = Completion_Failure{error_code = -i32(errno)}
+				return result, true
+			} else {
+				result.outcome = Completion_Failure{error_code = -i32(posix.Errno.EOPNOTSUPP)}
+				return result, true
+			}
+
+		case:
+			assert(false, "POSIX completion operation must be supported")
+			return result, true
+		}
+	}
+
+	@(private = "file")
+	_submission_op_metadata :: proc "contextless" (op: Submission_Operation) -> (subject_fd: OS_FD, ident: uintptr, filter: kq.Filter) {
+		switch o in op {
+		case Submission_Op_Read:
+			return o.fd, uintptr(o.fd), .Read
+		case Submission_Op_Recv:
+			return o.fd_socket, uintptr(o.fd_socket), .Read
+		case Submission_Op_Recvfrom:
+			return o.fd_socket, uintptr(o.fd_socket), .Read
+		case Submission_Op_Accept:
+			return o.listen_fd, uintptr(o.listen_fd), .Read
+		case Submission_Op_Write:
+			return o.fd, uintptr(o.fd), .Write
+		case Submission_Op_Send:
+			return o.fd_socket, uintptr(o.fd_socket), .Write
+		case Submission_Op_Sendto:
+			return o.fd_socket, uintptr(o.fd_socket), .Write
+		case Submission_Op_Connect:
+			return o.fd_socket, uintptr(o.fd_socket), .Write
+		case Submission_Op_Sendfile:
+			return o.fd_socket, uintptr(o.fd_socket), .Write
+		case Submission_Op_Close:
+			return o.fd, 0, .Read
+		case:
+			return OS_FD_INVALID, 0, .Read
+		}
+	}
+
+	@(private = "file")
+	_posix_stream_op_metadata :: #force_inline proc "contextless" (
+		op: ^Submission_Operation,
+	) -> (
+		OS_FD,
+		kq.Filter,
+		bool,
+	) {
+		#partial switch o in op^ {
+		case Submission_Op_Send:
+			return o.fd_socket, .Write, true
+		case Submission_Op_Recv:
+			return o.fd_socket, .Read, true
+		case:
+			return OS_FD_INVALID, .Read, false
+		}
+	}
+
+	@(private = "file")
+	_posix_fd_io_state :: #force_inline proc "contextless" (
+		backend: ^Platform_Backend,
+		fd: OS_FD,
+	) -> ^Posix_FD_IO_State {
+		fd_index := i32(fd)
+		if fd_index < 0 || fd_index >= MAX_POSIX_FD_IO_STATES {
+			return nil
+		}
+		return &backend.fd_io_states[fd_index]
+	}
+
+	@(private = "file")
+	_posix_forget_fd_io_state :: proc "contextless" (backend: ^Platform_Backend, fd: OS_FD) {
+		state := _posix_fd_io_state(backend, fd)
+		if state != nil {
+			state^ = Posix_FD_IO_State{}
+		}
+	}
+
+	@(private = "file")
+	_posix_stream_tracking :: #force_inline proc "contextless" (
+		backend: ^Platform_Backend,
+		op: ^Submission_Operation,
+	) -> Posix_Stream_Tracking {
+		fd, filter, ok := _posix_stream_op_metadata(op)
+		if !ok {
+			return {}
+		}
+		state := _posix_fd_io_state(backend, fd)
+		if state == nil {
+			return {}
+		}
+		return Posix_Stream_Tracking{state = state, filter = filter}
+	}
+
+	@(private = "file")
+	_posix_tracking_should_skip_optimistic_try :: #force_inline proc "contextless" (
+		tracking: Posix_Stream_Tracking,
+	) -> bool {
+		if tracking.state == nil {
+			return false
+		}
+		threshold := u8(REACTOR_POSIX_OPTIMISTIC_SKIP_DEFERRED_STREAK_COUNT)
+		if tracking.filter == .Read {
+			return tracking.state.read_deferred_streak >= threshold
+		}
+		return tracking.state.write_deferred_streak >= threshold
+	}
+
+	@(private = "file")
+	_posix_tracking_note_optimistic_result :: proc "contextless" (
+		tracking: Posix_Stream_Tracking,
+		immediate: bool,
+	) {
+		if tracking.state == nil {
+			return
+		}
+
+		if tracking.filter == .Read {
+			if immediate {
+				tracking.state.read_deferred_streak = 0
+			} else if tracking.state.read_deferred_streak < max(u8) {
+				tracking.state.read_deferred_streak += 1
+			}
+		} else {
+			if immediate {
+				tracking.state.write_deferred_streak = 0
+			} else if tracking.state.write_deferred_streak < max(u8) {
+				tracking.state.write_deferred_streak += 1
+			}
+		}
+	}
+
+	@(private = "file")
+	_posix_tracking_note_readiness_success :: proc "contextless" (
+		tracking: Posix_Stream_Tracking,
+	) {
+		if tracking.state == nil {
+			return
+		}
+
+		if tracking.filter == .Read {
+			return
+		}
+
+		threshold := u8(REACTOR_POSIX_WRITE_EDGE_CLEAR_READY_STREAK_COUNT)
+		if tracking.state.write_ready_streak < max(u8) {
+			tracking.state.write_ready_streak += 1
+		}
+		if tracking.state.write_ready_streak >= threshold {
+			tracking.state.flags += {.Write_Edge_Clear}
+		}
+	}
+
+	@(private = "file")
+	_posix_should_use_edge_clear :: proc "contextless" (
+		backend: ^Platform_Backend,
+		pending: ^Pending_Posix_Op,
+	) -> bool {
+		fd, filter, ok := _posix_stream_op_metadata(&pending.submission.operation)
+		if !ok {
+			return false
+		}
+		state := _posix_fd_io_state(backend, fd)
+		if state == nil {
+			return false
+		}
+		if filter == .Read {
+			return false
+		}
+		return .Write_Edge_Clear in state.flags
+	}
+
+	@(private = "file")
+	_posix_edge_event_udata :: proc "contextless" (fd: OS_FD, filter: kq.Filter) -> uintptr {
+		filter_bit := uintptr(0)
+		if filter == .Write {
+			filter_bit = 1
+		}
+		return POSIX_EDGE_EVENT_UDATA_FLAG | (filter_bit << 32) | uintptr(u32(i32(fd)))
+	}
+
+	@(private = "file")
+	_posix_edge_event_decode :: proc "contextless" (event_data: uintptr) -> (OS_FD, kq.Filter) {
+		fd := OS_FD(event_data & 0xFFFF_FFFF)
+		filter: kq.Filter = .Read
+		if ((event_data >> 32) & 1) != 0 {
+			filter = .Write
+		}
+		return fd, filter
+	}
+
+	@(private = "file")
+	_register_kqueue :: proc(backend: ^Platform_Backend, pending: ^Pending_Posix_Op) -> Backend_Error {
+		// Close operations don't need kqueue registration.
+		if _, is_close := pending.submission.operation.(Submission_Op_Close); is_close {
+			return .None
+		}
+
+		event_data := rawptr(uintptr(pending.submission.token))
+		ev := [1]kq.KEvent {
+			{
+				ident = pending.kqueue_ident,
+				filter = pending.kqueue_filter,
+				flags = {.Add, .Enable, .One_Shot},
+				udata = event_data,
+			},
+		}
+		if _posix_should_use_edge_clear(backend, pending) {
+			ev[0].flags = {.Add, .Enable, .Clear}
+			pending.flags += {.Edge_Clear}
+			ev[0].udata = rawptr(_posix_edge_event_udata(pending.subject_fd, pending.kqueue_filter))
+		} else {
+			pending.flags -= {.Edge_Clear}
+		}
+
+		time_spec: posix.timespec
+		_, kerr := kq.kevent(kq.KQ(backend.kq_fd), ev[:], nil, &time_spec)
+		if kerr != nil {
+			return .System_Error
+		}
+		return .None
+	}
+
+	@(private = "file")
+	_find_pending :: proc "contextless" (backend: ^Platform_Backend, token: Submission_Token) -> i32 {
+		for i: u16 = 0; i < backend.pending_count; i += 1 {
+			if backend.pending[i].submission.token == token {
+				return i32(i)
+			}
+		}
+		return -1
+	}
+
+	@(private = "file")
+	_find_pending_by_fd_filter :: proc "contextless" (
+		backend: ^Platform_Backend,
+		fd: OS_FD,
+		filter: kq.Filter,
+	) -> i32 {
+		for i: u16 = 0; i < backend.pending_count; i += 1 {
+			if backend.pending[i].subject_fd == fd && backend.pending[i].kqueue_filter == filter {
+				return i32(i)
+			}
+		}
+		return -1
+	}
+
+	@(private = "file")
+	_find_pending_by_event :: proc "contextless" (
+		backend: ^Platform_Backend,
+		event: ^kq.KEvent,
+	) -> (
+		u16,
+		Submission_Token,
+		bool,
+	) {
+		event_data := uintptr(event.udata)
+		if (event_data & POSIX_EDGE_EVENT_UDATA_FLAG) != 0 {
+			fd, filter := _posix_edge_event_decode(event_data)
+			pending_index := _find_pending_by_fd_filter(backend, fd, filter)
+			if pending_index >= 0 {
+				index := u16(pending_index)
+				return index, backend.pending[index].submission.token, true
+			}
+			return 0, 0, false
+		}
+
+		token := Submission_Token(u64(event_data))
+		pending_index := _find_pending(backend, token)
+		if pending_index >= 0 {
+			return u16(pending_index), token, true
+		}
+		return 0, 0, false
+	}
+
+	@(private = "file")
+	_remove_pending :: proc "contextless" (backend: ^Platform_Backend, index: u16) {
+		backend.pending_count -= 1
+		if index < backend.pending_count {
+			backend.pending[index] = backend.pending[backend.pending_count]
+		}
+	}
+
+	// Sweep pending operations matching a given OS_FD.
+	// Synthesizes -ECANCELED completions (flagged .Synthesized) for each
+	// match so the reactor's stale-path reclamation can free their buffers.
+	// Called before close() because on kqueue, close() silently removes
+	// kevents without firing events.
+	@(private = "file")
+	_sweep_pending_for_fd :: proc "contextless" (backend: ^Platform_Backend, fd: OS_FD) -> Backend_Error {
+		_posix_compact_completed(backend)
+		completion_count_required: u16 = 0
+		for pending_index: u16 = 0; pending_index < backend.pending_count; pending_index += 1 {
+			if backend.pending[pending_index].subject_fd == fd {
+				completion_count_required += 1
+			}
+		}
+		if int(backend.completed_count) + int(completion_count_required) > MAX_POSIX_COMPLETED {
+			return .Resource_Exhausted
+		}
+
+		i: u16 = 0
+		for i < backend.pending_count {
+			if backend.pending[i].subject_fd == fd {
+				completion := Raw_Completion {
+					token   = backend.pending[i].submission.token,
+					outcome = Completion_Failure{error_code = -i32(posix.Errno.ECANCELED)},
+					flags   = {.Synthesized},
+				}
+				store_result := _posix_store_completion(backend, completion)
+				if store_result != .Stored {
+					return .Resource_Exhausted
+				}
+				_remove_pending(backend, i)
+				// Don't increment — swapped-in element needs checking
+			} else {
+				i += 1
+			}
+		}
+		return .None
+	}
+
+	@(private = "file")
+	_socket_address_to_sockaddr :: proc "contextless" (
+		address: Socket_Address,
+	) -> (
+		posix.sockaddr_storage,
+		posix.socklen_t,
+	) {
+		native: posix.sockaddr_storage
+
+		switch socket_address in address {
+		case Socket_Address_Inet4:
+			internet4 := (^posix.sockaddr_in)(&native)
+			internet4.sin_family = .INET
+			internet4.sin_port = u16be(socket_address.port)
+			internet4.sin_addr = transmute(posix.in_addr)socket_address.address
+			internet4.sin_len = size_of(posix.sockaddr_in)
+			return native, posix.socklen_t(size_of(posix.sockaddr_in))
+		case Socket_Address_Inet6:
+			internet6 := (^posix.sockaddr_in6)(&native)
+			internet6.sin6_family = .INET6
+			internet6.sin6_port = u16be(socket_address.port)
+			internet6.sin6_addr = transmute(posix.in6_addr)socket_address.address
+			internet6.sin6_flowinfo = socket_address.flow
+			internet6.sin6_scope_id = socket_address.scope
+			internet6.sin6_len = size_of(posix.sockaddr_in6)
+			return native, posix.socklen_t(size_of(posix.sockaddr_in6))
+		case Socket_Address_Unix:
+			unix_address := (^posix.sockaddr_un)(&native)
+			unix_address.sun_family = .UNIX
+			unix_address.sun_len = size_of(posix.sockaddr_un)
+			for path_index in 0 ..< len(socket_address.path) {
+				unix_address.sun_path[path_index] = c.char(socket_address.path[path_index])
+			}
+			return native, posix.socklen_t(size_of(posix.sockaddr_un))
+		case:
+			return native, 0
+		}
+	}
+
+	@(private = "file")
+	_sockaddr_to_peer_address :: proc "contextless" (native: ^posix.sockaddr_storage) -> Peer_Address {
+		peer_address: Peer_Address
+		#partial switch native.ss_family {
+		case .INET:
+			internet4 := (^posix.sockaddr_in)(native)
+			peer_address.family = .AF_INET
+			peer_address.port = u16(u16be(internet4.sin_port))
+			address := transmute([4]u8)internet4.sin_addr
+			peer_address_set_inet4_address(&peer_address, address)
+		case .INET6:
+			internet6 := (^posix.sockaddr_in6)(native)
+			peer_address.family = .AF_INET6
+			peer_address.port = u16(u16be(internet6.sin6_port))
+			peer_address.flow_info = internet6.sin6_flowinfo
+			peer_address.scope_id = internet6.sin6_scope_id
+			peer_address.address_data = transmute([16]u8)internet6.sin6_addr
+		case .UNIX:
+			peer_address.family = .AF_UNIX
+		}
+		return peer_address
+	}
+
+	@(private = "file")
+	_map_socket_option_int :: proc "contextless" (option: Socket_Option) -> (c.int, bool) {
+		#partial switch option {
+		case .SO_REUSEADDR:
+			return c.int(posix.SO_REUSEADDR), true
+		case .SO_KEEPALIVE:
+			return c.int(posix.SO_KEEPALIVE), true
+		case .SO_RCVBUF:
+			return c.int(posix.SO_RCVBUF), true
+		case .SO_SNDBUF:
+			return c.int(posix.SO_SNDBUF), true
+		case .SO_LINGER:
+			return c.int(posix.SO_LINGER), true
+		case .SO_REUSEPORT:
+			// Identical numeric value across all BSD-derived kernels (incl. macOS).
+			return 0x0200, true
+		case .TCP_NODELAY:
+			return 1, true
+		case .TCP_NOTSENT_LOWAT:
+			when ODIN_OS == .Darwin {
+				return 0x201, true
+			} else when ODIN_OS == .FreeBSD {
+				return 90, true
+			} else {
+				return 0, false
+			}
+		case .IPV6_V6ONLY:
+			return 27, true
+		case:
+			return 0, false
+		}
+	}
+
+	@(test)
+	test_posix_backend_control_dup_sets_cloexec_and_returns_distinct_fd :: proc(t: ^testing.T) {
+		backend := new(Platform_Backend)
+		defer free(backend)
+
+		config := Backend_Config {
+			queue_size = DEFAULT_BACKEND_QUEUE_SIZE,
+		}
+		backend_init_error := backend_init(backend, config)
+		testing.expect_value(t, backend_init_error, Backend_Error.None)
+		defer backend_deinit(backend)
+
+		fd, socket_error := backend_control_socket(backend, .AF_INET, .STREAM, .TCP)
+		testing.expect_value(t, socket_error, Backend_Error.None)
+
+		dup_fd, dup_error := backend_control_dup(backend, fd)
+		testing.expect_value(t, dup_error, Backend_Error.None)
+		testing.expect(t, dup_fd != fd, "dup must return a distinct descriptor")
+
+		flags := posix.fcntl(posix.FD(dup_fd), .GETFD)
+		testing.expect(t, flags > 0, "dup fd must have close-on-exec set")
+
+		close_error := backend_control_close(backend, fd)
+		testing.expect_value(t, close_error, Backend_Error.None)
+		close_dup_error := backend_control_close(backend, dup_fd)
+		testing.expect_value(t, close_dup_error, Backend_Error.None)
+	}
+
+	// Regression test for the kqueue buffer-leak fix.
+	// On kqueue, close() silently removes kevents without firing events,
+	// and a kernel-side cancel is not delivered. Both _backend_cancel
+	// and _sweep_pending_for_fd must therefore synthesize a
+	// .Synthesized completion with result = -ECANCELED, so that
+	// reactor_collect_completions can reclaim the buffer instead of
+	// orphaning it.
+	@(test)
+	test_bsd_backend_cancel_synthesizes_completion :: proc(t: ^testing.T) {
+		backend := new(Platform_Backend)
+		defer free(backend)
+
+		config := Backend_Config{queue_size = DEFAULT_BACKEND_QUEUE_SIZE}
+		backend_init_error := backend_init(backend, config)
+		testing.expect_value(t, backend_init_error, Backend_Error.None)
+		defer backend_deinit(backend)
+
+		// We do not need real FDs to test the synthesis path; the
+		// synthesis logic never invokes a syscall. Use a sentinel FD.
+		fake_fd :: OS_FD(7)
+
+		test_token := submission_token_pack(
+			0,      // type_index
+			0,      // slot_index
+			1,      // generation
+			7,      // sequence
+			0,      // buffer_index
+			.Recv_Complete,
+		)
+
+		backend.pending[0].submission.token = test_token
+		backend.pending[0].submission.operation = Submission_Op_Recv {
+			fd_socket = fake_fd,
+		}
+		backend.pending[0].subject_fd = fake_fd
+		backend.pending[0].kqueue_filter = .Read
+		backend.pending_count = 1
+
+		cancel_error := backend_cancel(backend, test_token)
+		testing.expect_value(t, cancel_error, Backend_Error.None)
+
+		// The pending entry must be removed.
+		testing.expect_value(t, backend.pending_count, 0)
+
+		// A synthesized completion must be enqueued.
+		testing.expect_value(t, backend.completed_count, 1)
+
+		completion := &backend.completed[0]
+		testing.expect_value(t, completion.token, test_token)
+		failure, failed := completion.outcome.(Completion_Failure)
+		testing.expect(t, failed, "cancellation should produce a failed completion")
+		testing.expect_value(t, failure.error_code, -i32(posix.Errno.ECANCELED))
+		testing.expect(
+			t,
+			.Synthesized in completion.flags,
+			"cancellation completion must have .Synthesized flag",
+		)
+	}
+
+	// Regression test for the kqueue close-submit fix.
+	// _sweep_pending_for_fd (called before posix.close() in
+	// _try_syscall:case Submission_Op_Close) must synthesize
+	// .Synthesized completions so their buffers are reclaimed.
+	@(test)
+	test_bsd_sweep_pending_for_fd_synthesizes_completions :: proc(t: ^testing.T) {
+		backend := new(Platform_Backend)
+		defer free(backend)
+
+		config := Backend_Config{queue_size = DEFAULT_BACKEND_QUEUE_SIZE}
+		backend_init_error := backend_init(backend, config)
+		testing.expect_value(t, backend_init_error, Backend_Error.None)
+		defer backend_deinit(backend)
+
+		// Two pending entries on a sentinel FD with distinct tokens.
+		fake_fd :: OS_FD(7)
+
+		token_a := submission_token_pack(0, 0, 1, 3, 0, .Recv_Complete)
+		token_b := submission_token_pack(0, 1, 1, 4, 0, .Recv_Complete)
+
+		backend.pending[0].submission.token = token_a
+		backend.pending[0].submission.operation = Submission_Op_Recv {
+			fd_socket = fake_fd,
+		}
+		backend.pending[0].subject_fd = fake_fd
+		backend.pending[0].kqueue_filter = .Read
+
+		backend.pending[1].submission.token = token_b
+		backend.pending[1].submission.operation = Submission_Op_Recv {
+			fd_socket = fake_fd,
+		}
+		backend.pending[1].subject_fd = fake_fd
+		backend.pending[1].kqueue_filter = .Read
+		backend.pending_count = 2
+
+		_sweep_pending_for_fd(backend, fake_fd)
+
+		// Both pending entries on the FD must be removed.
+		testing.expect_value(t, backend.pending_count, 0)
+
+		// Both synthesized completions must be enqueued with the
+		// .Synthesized flag.
+		testing.expect_value(t, backend.completed_count, 2)
+		for i in 0 ..< backend.completed_count {
+			testing.expect(
+				t,
+				.Synthesized in backend.completed[i].flags,
+				"sweep completion must have .Synthesized flag",
+			)
+			failure, failed := backend.completed[i].outcome.(Completion_Failure)
+			testing.expect(t, failed, "sweep should produce failed completions")
+			testing.expect_value(t, failure.error_code, -i32(posix.Errno.ECANCELED))
+		}
+	}
+
+}
