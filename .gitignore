@@ -1,14 +1,9 @@
-# Dependencies and build output
-node_modules/
-
 # Nix
 .direnv/
 result
 result-*
-.go/
 build/
 bin/
-.task/
 
 # Environment variables
 .env
@@ -27,6 +22,3 @@ infra/tfplan
 
 # Operating system files
 .DS_Store
-
-# air
-tmp
