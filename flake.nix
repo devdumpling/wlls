@@ -3,10 +3,22 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+
+    # Change the ref below to use another Odin tag/branch, e.g.:
+    #   github:odin-lang/Odin/dev-2026-06
+    #   github:odin-lang/Odin/master
+    # odin-src = {
+    #   url = "github:odin-lang/Odin/dev-2026-06";
+    #   flake = false;
+    # };
   };
 
   outputs =
-    { self, nixpkgs }:
+    {
+      self,
+      nixpkgs,
+      ...
+    }:
     let
       systems = [
         "aarch64-darwin"
@@ -77,10 +89,8 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              # Application development.
-              go
-              gopls
-              delve
+              # Application developmodinent.
+              odin
 
               # Runtime and infrastructure.
               caddy
@@ -95,14 +105,6 @@
               direnv
               shellcheck
             ];
-
-            shellHook = ''
-              # Keep Go toolchains and installed Go tools inside the project shell.
-              export GOTOOLCHAIN=local
-              export GOPATH="''${GOPATH:-$PWD/.go}"
-              export GOBIN="$GOPATH/bin"
-              export PATH="$GOBIN:$PATH"
-            '';
           };
         }
       );
