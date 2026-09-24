@@ -1,14 +1,15 @@
 # Deployment
 
-See the [`operations runbook`](../docs/operations.md) for production cutover,
-monitoring, rollback, security, and backup guidance.
+See the [`infrastructure runbook`](../infra/README.md) for provisioning and DNS
+cutover. This branch currently serves a placeholder page; deploy the completed
+blog before directing production traffic here.
 
 ## Local Caddy proxy
 
 Run the application and Caddy in separate terminals:
 
 ```bash
-go run ./cmd/wlls
+just run
 caddy run --config deploy/Caddyfile
 ```
 
@@ -49,7 +50,7 @@ The command:
 4. Validates the staged Caddyfile with the new runtime.
 5. Backs up and promotes the runtime, Caddyfile, and systemd units as one
    release operation.
-6. Restarts the Go service and checks `127.0.0.1:8080/healthz`.
+6. Restarts the Odin service and checks `127.0.0.1:8080/healthz`.
 7. Reloads an active Caddy service rather than restarting it.
 8. Restores the previous runtime and configuration if activation fails.
 
@@ -70,7 +71,6 @@ nix build .#runtime-linux-amd64  # Droplet runtime, cross-built locally
 /nix/var/nix/profiles/wlls  # active runtime and previous generations
 /etc/wlls/Caddyfile
 /etc/wlls/caddy.env         # optional Caddy overrides
-/etc/wlls/wlls.env          # optional application configuration
 /var/lib/caddy              # certificates and Caddy state
-/var/lib/wlls               # application state (currently empty)
+/var/lib/wlls               # reserved application state (currently empty)
 ```

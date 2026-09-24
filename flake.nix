@@ -3,14 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-
-    # Change the ref below to use another Odin tag/branch, e.g.:
-    #   github:odin-lang/Odin/dev-2026-06
-    #   github:odin-lang/Odin/master
-    # odin-src = {
-    #   url = "github:odin-lang/Odin/dev-2026-06";
-    #   flake = false;
-    # };
   };
 
   outputs =
@@ -46,17 +38,36 @@
           linuxPkgs = if system == "x86_64-linux" then pkgs else pkgs.pkgsCross.gnu64;
           mkWlls =
             buildPkgs:
-            buildPkgs.buildGoModule {
+            let
+              cross = buildPkgs.stdenv.buildPlatform != buildPkgs.stdenv.hostPlatform;
+            in
+            buildPkgs.stdenv.mkDerivation {
               pname = "wlls";
               version = "0.1.0";
               src = self;
-              vendorHash = "sha256-Jr3sTnyz1qixLtoB3wvsQ7SRUK0D9vMb5qHFxOUefyA=";
-              subPackages = [ "cmd/wlls" ];
-              env.CGO_ENABLED = 0;
-              ldflags = [
-                "-s"
-                "-w"
-              ];
+              nativeBuildInputs = [ buildPkgs.buildPackages.odin ];
+              dontConfigure = true;
+
+              buildPhase = ''
+                runHook preBuild
+                ${
+                  if cross then
+                    ''
+                      odin build src -target:linux_amd64 -build-mode:obj -out:wlls.obj -o:speed -define:TINA_ASSERTS=false
+                      $CC wlls.obj -o wlls -lm -ldl -pthread
+                    ''
+                  else
+                    ''odin build src -out:wlls -o:speed -define:TINA_ASSERTS=false''
+                }
+                runHook postBuild
+              '';
+
+              installPhase = ''
+                runHook preInstall
+                mkdir -p "$out/bin"
+                install -m 0755 wlls "$out/bin/wlls"
+                runHook postInstall
+              '';
             };
           wlls = mkWlls pkgs;
           wllsLinuxAmd64 = mkWlls linuxPkgs;
@@ -89,8 +100,9 @@
         {
           default = pkgs.mkShell {
             packages = with pkgs; [
-              # Application developmodinent.
+              # Application development (pinned by flake.lock).
               odin
+              just
 
               # Runtime and infrastructure.
               caddy
@@ -102,6 +114,7 @@
               openssh
               curl
               jq
+              lsof
               direnv
               shellcheck
             ];

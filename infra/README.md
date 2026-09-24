@@ -1,14 +1,13 @@
 # Infrastructure runbook
 
-The site runs as a Go service behind Caddy on one DigitalOcean Droplet.
+The site runs as an Odin/Tina service behind Caddy on one DigitalOcean Droplet.
 Terraform owns the DigitalOcean resources; cloud-init bootstraps the machine;
 Nix builds and installs the runtime.
 
 Cloudflare remains the registrar, authoritative DNS provider, web proxy, and
 home of the existing email records. Caddy terminates the Cloudflare-to-origin
 TLS connection and Cloudflare SSL/TLS mode must be **Full (strict)**. See the
-[`operations runbook`](../docs/operations.md) for cutover, maintenance, and
-rollback procedures.
+[`deployment guide`](../deploy/README.md) for release and rollback procedures.
 
 ## What Terraform creates
 

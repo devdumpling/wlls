@@ -1,73 +1,48 @@
-<img src="internal/assets/static/images/avatars/dev.webp" alt="pixelated avatar" width="64" align="left" />
-
 # wlls.dev
 
-Server-rendered personal site and blog built with Go, Chi, Templ,
-embedded Markdown, and plain CSS.
-
-**[about](https://wlls.dev/about)** · **[linkedin](https://www.linkedin.com/in/devon-a-wells/)** · **[bluesky](https://bsky.app/profile/wlls.dev)**
+Personal site and blog in the process of moving to Odin, Tina, and Datastar.
+This branch currently serves a small, self-contained HTML page with Tina HTTP;
+the Markdown blog and lab will be restored in subsequent steps.
 
 ## Development
 
-Enter the pinned Nix development environment:
+Enter the Nix shell with `direnv allow` (or `nix develop`). `flake.lock` pins
+the development toolchain to a revision compatible with the vendored Tina.
+Then:
 
-```bash
-direnv allow
+```sh
+just run             # build and listen on 127.0.0.1:8080
+just check           # check and vet application code
+just build           # write bin/wlls
 ```
 
-Without direnv, use `nix develop` explicitly.
+Local and release builds listen on 8080. If the port is already occupied,
+`just run` reports the process using it before starting Tina.
 
-Start Templ's live-reload proxy and Air:
+The local build enables Tina's internal assertions. Bounds checks stay enabled
+in both development and production. The HTML file is embedded at compile time,
+so run the binary from any working directory; rebuild after editing
+`src/static/index.html`.
 
-```bash
-go tool task
-```
+To exercise the local reverse proxy, run `just run` and, in another terminal:
 
-The application listens on <http://127.0.0.1:8080>; the Templ proxy opens on
-<http://127.0.0.1:7331>. Go, Templ, CSS, JavaScript, Markdown, and embedded asset
-changes are rebuilt automatically.
-
-Run all local checks with:
-
-```bash
-go tool task check
-```
-
-Useful commands:
-
-```text
-go tool task dev       Live development
-go tool task generate  Generate Templ Go source
-go tool task build     Build ./bin/wlls
-go tool task run       Build and run
-go tool task debug     Run with Delve
-go tool task test      Race-enabled tests
-go tool task check     Generate, vet, test, and build
-go tool task fmt       Format Templ and Go
-go tool task tidy      Synchronize modules
-go tool task deploy    Check and deploy
-```
-
-## Runtime
-
-The Go process embeds authored Markdown, CSS, fonts, images, and the Datastar
-browser module. At startup it validates and renders content into an immutable
-post index. The newest post is served at `/`, the archive at `/blog`, individual
-posts at `/blog/{slug}`, and the about page at `/about`.
-
-Eligible text responses negotiate zstd compression with Brotli fallback.
-Fingerprinted assets are cached immutably; HTML is cached for a short browser
-lifetime and a longer shared-cache lifetime. Health endpoints are never cached.
-
-For local reverse-proxy testing, run the application and Caddy separately:
-
-```bash
-go run ./cmd/wlls
+```sh
 caddy run --config deploy/Caddyfile
+curl --fail http://localhost:3000/healthz
 ```
 
-Then open <http://localhost:3000>.
+## Release builds
 
-SQLite, NATS, NATSrpc, and Datastar SSE will be introduced with the first real
-interactive feature rather than as unused platform placeholders. See
-[`docs/architecture.md`](docs/architecture.md),
+```sh
+nix build .#wlls --no-link
+nix build .#runtime-linux-amd64 --no-link
+```
+
+The runtime contains the Odin application and Caddy. Nix builds the Linux AMD64
+object using the pinned native Odin compiler, then links it with the Nix Linux
+cross-toolchain; Odin cannot directly cross-link macOS to Linux. The resulting
+release runs behind Caddy on the DigitalOcean Droplet. See
+[`deploy/README.md`](deploy/README.md) for deployment details.
+
+The application binds to loopback only. `/healthz` and `/readyz` return
+uncacheable health responses; `/` serves the embedded placeholder document.

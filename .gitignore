@@ -2,8 +2,10 @@
 .direnv/
 result
 result-*
+.go/
 build/
 bin/
+tmp/
 
 # Environment variables
 .env
