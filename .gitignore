@@ -6,6 +6,7 @@ result-*
 build/
 bin/
 tmp/
+src/views/*_gen.odin
 
 # Environment variables
 .env

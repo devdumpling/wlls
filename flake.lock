@@ -18,7 +18,25 @@
     },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "tempo-src": "tempo-src"
+      }
+    },
+    "tempo-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1768198707,
+        "narHash": "sha256-AgXhpm2pfzc84zDnN3yyuSdbd6HGA0FD7jMe7IXHq2s=",
+        "owner": "kalsprite",
+        "repo": "tempo",
+        "rev": "9ed296f1f98340bffa9cd237e0403b1e0963a9ae",
+        "type": "github"
+      },
+      "original": {
+        "owner": "kalsprite",
+        "repo": "tempo",
+        "rev": "9ed296f1f98340bffa9cd237e0403b1e0963a9ae",
+        "type": "github"
       }
     }
   },

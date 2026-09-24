@@ -1,0 +1,20 @@
+package views
+
+// Reused for a full HTML response and a Datastar patch-elements SSE event.
+article_element :: templ(article: Article) {
+	<article id="article-preview">
+		<header>
+			<time datetime={ article.date }>{ article.date }</time>
+			<h1>{ article.title }</h1>
+			<p>{ article.description }</p>
+		</header>
+		<div class="article-body">{! string(article.body) }</div>
+	</article>
+}
+
+article_page :: templ(article: Article) {
+	@document(article.title, article.description, true) {
+		<p><button type="button" data-on:click="@get('/template-preview/events')">Refresh the article with Datastar</button></p>
+		@article_element(article)
+	}
+}

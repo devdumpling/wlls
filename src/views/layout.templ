@@ -1,0 +1,23 @@
+package views
+
+// Shared document; its default slot accepts any page component.
+document :: templ(title: string, description: string, noindex: bool) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<title>{ title }</title>
+			<meta name="description" content={ description }/>
+			if noindex {
+				<meta name="robots" content="noindex"/>
+			}
+			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.4/bundles/datastar.js"></script>
+		</head>
+		<body>
+			<a href="#main-content">Skip to content</a>
+			<header><a href="/">wlls.dev</a></header>
+			<main id="main-content">{#slot}</main>
+		</body>
+	</html>
+}

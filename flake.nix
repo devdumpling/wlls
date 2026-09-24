@@ -3,12 +3,17 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    tempo-src = {
+      url = "github:kalsprite/tempo/9ed296f1f98340bffa9cd237e0403b1e0963a9ae";
+      flake = false;
+    };
   };
 
   outputs =
     {
       self,
       nixpkgs,
+      tempo-src,
       ...
     }:
     let
@@ -27,6 +32,27 @@
           config.allowUnfreePredicate = pkg: builtins.elem (nixpkgs.lib.getName pkg) [ "terraform" ];
         }
       );
+      mkTempo =
+        pkgs:
+        pkgs.stdenv.mkDerivation {
+          pname = "odin-tempo";
+          version = "9ed296f";
+          src = tempo-src;
+          patches = [ ./patches/tempo-core-os.patch ];
+          nativeBuildInputs = [ pkgs.odin ];
+          dontConfigure = true;
+          buildPhase = ''
+            runHook preBuild
+            odin build src -out:tempo
+            runHook postBuild
+          '';
+          installPhase = ''
+            runHook preInstall
+            mkdir -p "$out/bin"
+            install -m 0755 tempo "$out/bin/tempo"
+            runHook postInstall
+          '';
+        };
     in
     {
       formatter = forAllSystems (system: packagesFor.${system}.nixfmt);
@@ -36,6 +62,7 @@
         let
           pkgs = packagesFor.${system};
           linuxPkgs = if system == "x86_64-linux" then pkgs else pkgs.pkgsCross.gnu64;
+          tempo = mkTempo pkgs;
           mkWlls =
             buildPkgs:
             let
@@ -45,19 +72,20 @@
               pname = "wlls";
               version = "0.1.0";
               src = self;
-              nativeBuildInputs = [ buildPkgs.buildPackages.odin ];
+              nativeBuildInputs = [ buildPkgs.buildPackages.odin tempo ];
               dontConfigure = true;
 
               buildPhase = ''
                 runHook preBuild
+                tempo generate src/views -runtime=tempo:runtime
                 ${
                   if cross then
                     ''
-                      odin build src -target:linux_amd64 -build-mode:obj -out:wlls.obj -o:speed -define:TINA_ASSERTS=false
+                      odin build src -collection:tempo=${tempo-src} -target:linux_amd64 -build-mode:obj -out:wlls.obj -o:speed -define:TINA_ASSERTS=false -thread-count:1
                       $CC wlls.obj -o wlls -lm -ldl -pthread
                     ''
                   else
-                    ''odin build src -out:wlls -o:speed -define:TINA_ASSERTS=false''
+                    ''odin build src -collection:tempo=${tempo-src} -out:wlls -o:speed -define:TINA_ASSERTS=false -thread-count:1''
                 }
                 runHook postBuild
               '';
@@ -96,10 +124,11 @@
         system:
         let
           pkgs = packagesFor.${system};
+          tempo = mkTempo pkgs;
         in
         {
           default = pkgs.mkShell {
-            packages = with pkgs; [
+            packages = [ tempo ] ++ (with pkgs; [
               # Application development (pinned by flake.lock).
               odin
               just
@@ -117,7 +146,10 @@
               lsof
               direnv
               shellcheck
-            ];
+            ]);
+            shellHook = ''
+              export TEMPO_SRC=${tempo-src}
+            '';
           };
         }
       );

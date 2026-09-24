@@ -1,0 +1,42 @@
+diff --git a/src/main.odin b/src/main.odin
+--- a/src/main.odin
++++ b/src/main.odin
+@@ -141 +141 @@
+-    info, err := os.stat(path)
++    info, err := os.stat(path, context.allocator)
+@@ -149,2 +149,2 @@
+-    mode := u32(info.mode)
+-    if os.S_ISREG(mode) {
++    defer os.file_info_delete(info, context.allocator)
++    if info.type == .Regular {
+@@ -155 +155 @@
+-    } else if os.S_ISDIR(mode) {
++    } else if info.type == .Directory {
+@@ -169 +169 @@
+-    entries, read_err := os.read_dir(handle, -1)
++    entries, read_err := os.read_dir(handle, -1, context.allocator)
+@@ -175 +175 @@
+-        full_path := filepath.join({dir, entry.name})
++        full_path := strings.concatenate({dir, "/", entry.name})
+@@ -177 +177 @@
+-        if entry.is_dir {
++        if entry.type == .Directory {
+@@ -190,2 +190,2 @@
+-    data, ok := os.read_entire_file(filename)
+-    if !ok {
++    data, err := os.read_entire_file_from_path(filename, context.allocator)
++    if err != os.ERROR_NONE {
+@@ -195,0 +196 @@
++    defer delete(data)
+@@ -223,2 +224,2 @@
+-    write_ok := os.write_entire_file(out_path, transmute([]u8)output)
+-    if !write_ok {
++    write_err := os.write_entire_file_from_bytes(out_path, transmute([]u8)output)
++    if write_err != os.ERROR_NONE {
+@@ -242,2 +243,2 @@
+-    data, ok := os.read_entire_file(filename)
+-    if !ok {
++    data, err := os.read_entire_file_from_path(filename, context.allocator)
++    if err != os.ERROR_NONE {
+@@ -247,0 +249 @@
++    defer delete(data)
