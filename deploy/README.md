@@ -1,8 +1,8 @@
 # Deployment
 
 See the [`infrastructure runbook`](../infra/README.md) for provisioning and DNS
-cutover. This branch currently serves a placeholder page; deploy the completed
-blog before directing production traffic here.
+cutover. The Odin service serves the Markdown blog; the interactive lab and
+production-path checks are still in progress before DNS cutover.
 
 ## Local Caddy proxy
 

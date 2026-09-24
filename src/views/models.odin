@@ -1,12 +1,18 @@
 package views
 
-// The Markdown content pipeline may construct Trusted_HTML only after rendering
-// authored Markdown with raw HTML disabled. Template expressions escape by default.
-Trusted_HTML :: distinct string
-
-Article :: struct {
+// Metadata and Asset_URLs are the small shared contract between feature routes
+// and the common document shell. URL fingerprints are built by src/assets.
+Metadata :: struct {
 	title:       string,
 	description: string,
-	date:        string,
-	body:        Trusted_HTML,
+	canonical:   string,
+	open_graph:  string,
+	noindex:     bool,
+}
+
+Asset_URLs :: struct {
+	stylesheet: string,
+	datastar:   string,
+	favicon:    string,
+	feed:       string,
 }

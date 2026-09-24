@@ -1,0 +1,98 @@
+package content
+
+import "core:c"
+import "core:strings"
+
+foreign import cmark_gfm "system:cmark-gfm"
+foreign import cmark_gfm_extensions "system:cmark-gfm-extensions"
+foreign import libc "system:c"
+
+@(default_calling_convention = "c")
+foreign cmark_gfm {
+	cmark_parser_new :: proc(options: c.int) -> ^Cmark_Parser ---
+	cmark_parser_free :: proc(parser: ^Cmark_Parser) ---
+	cmark_parser_feed :: proc(parser: ^Cmark_Parser, source: cstring, size: c.size_t) ---
+	cmark_parser_finish :: proc(parser: ^Cmark_Parser) -> ^Cmark_Node ---
+	cmark_parser_attach_syntax_extension :: proc(parser: ^Cmark_Parser, extension: ^Cmark_Extension) -> c.int ---
+	cmark_parser_get_syntax_extensions :: proc(parser: ^Cmark_Parser) -> ^Cmark_Extension_List ---
+	cmark_find_syntax_extension :: proc(name: cstring) -> ^Cmark_Extension ---
+	cmark_render_html :: proc(root: ^Cmark_Node, options: c.int, extensions: ^Cmark_Extension_List) -> cstring ---
+	cmark_node_free :: proc(root: ^Cmark_Node) ---
+}
+
+@(default_calling_convention = "c")
+foreign cmark_gfm_extensions {
+	cmark_gfm_core_extensions_ensure_registered :: proc() ---
+}
+
+@(default_calling_convention = "c")
+foreign libc {
+	free :: proc(pointer: rawptr) ---
+}
+
+// Cmark owns these objects. Odin only needs opaque pointer types at this
+// boundary, keeping the parser's internal node structures in the C library.
+Cmark_Parser :: struct {}
+Cmark_Node :: struct {}
+Cmark_Extension :: struct {}
+Cmark_Extension_List :: struct {}
+
+Markdown_HTML :: distinct string
+
+Markdown_Error :: enum {
+	None,
+	Parser_Allocation,
+	Output_Allocation,
+	Missing_Extension,
+	Extension_Attachment,
+	Parse_Failed,
+	Render_Failed,
+}
+
+// Cmark's extension registry is process-wide. Register it during Odin package
+// initialization, before Tina starts dispatching requests or tests run in
+// parallel; parser instances are then independent per render operation.
+@(init)
+register_gfm_extensions :: proc "contextless" () {
+	cmark_gfm_core_extensions_ensure_registered()
+}
+
+// render_markdown uses the upstream CommonMark/GFM parser so authored content
+// is handled consistently without growing a project-specific Markdown parser.
+// Cmark's safe default replaces raw HTML and unsafe URL schemes in its output.
+render_markdown :: proc(source: string) -> (html: Markdown_HTML, error: Markdown_Error) {
+	parser := cmark_parser_new(c.int(CMARK_OPTIONS))
+	if parser == nil do return html, .Parser_Allocation
+	defer cmark_parser_free(parser)
+
+	for name in GFM_EXTENSIONS {
+		extension := cmark_find_syntax_extension(strings.unsafe_string_to_cstring(name))
+		if extension == nil do return html, .Missing_Extension
+		if cmark_parser_attach_syntax_extension(parser, extension) == 0 {
+			return html, .Extension_Attachment
+		}
+	}
+
+	// Cmark accepts a pointer plus an explicit byte count, so UTF-8 Markdown does
+	// not need a temporary NUL-terminated copy at the FFI boundary.
+	cmark_parser_feed(parser, strings.unsafe_string_to_cstring(source), c.size_t(len(source)))
+	root := cmark_parser_finish(parser)
+	if root == nil do return html, .Parse_Failed
+	defer cmark_node_free(root)
+
+	rendered := cmark_render_html(root, 0, cmark_parser_get_syntax_extensions(parser))
+	if rendered == nil do return html, .Render_Failed
+	defer free(rawptr(rendered))
+
+	// Cmark owns its NUL-terminated return buffer. Clone it before the deferred
+	// free so the repository can retain the rendered fragment after this call.
+	owned_html, allocation_error := strings.clone(string(rendered))
+	if allocation_error != nil do return html, .Output_Allocation
+	return Markdown_HTML(owned_html), .None
+}
+
+@(private = "file")
+CMARK_OPTIONS :: 1 << 13 // CMARK_OPT_FOOTNOTES
+
+@(private = "file")
+GFM_EXTENSIONS :: []string{"table", "strikethrough", "autolink", "tagfilter", "tasklist"}

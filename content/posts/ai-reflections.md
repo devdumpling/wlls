@@ -139,7 +139,7 @@ If your goal, like mine, is _true craftsmanship_, and your value to my company i
 
 Finally, questioning whether our tools are building this up or diminishing it should be at the forefront of our attention.
 
-<hr />
+---
 
 ## Afterward
 

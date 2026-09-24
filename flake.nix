@@ -73,6 +73,7 @@
               version = "0.1.0";
               src = self;
               nativeBuildInputs = [ buildPkgs.buildPackages.odin tempo ];
+              buildInputs = [ buildPkgs.cmark-gfm ];
               dontConfigure = true;
 
               buildPhase = ''
@@ -81,11 +82,11 @@
                 ${
                   if cross then
                     ''
-                      odin build src -collection:tempo=${tempo-src} -target:linux_amd64 -build-mode:obj -out:wlls.obj -o:speed -define:TINA_ASSERTS=false -thread-count:1
-                      $CC wlls.obj -o wlls -lm -ldl -pthread
+                      odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"-L${buildPkgs.cmark-gfm}/lib" -target:linux_amd64 -build-mode:obj -out:wlls.obj -o:speed -define:TINA_ASSERTS=false -thread-count:1
+                      $CC wlls.obj -o wlls -L${buildPkgs.cmark-gfm}/lib -lcmark-gfm-extensions -lcmark-gfm -lm -ldl -pthread
                     ''
                   else
-                    ''odin build src -collection:tempo=${tempo-src} -out:wlls -o:speed -define:TINA_ASSERTS=false -thread-count:1''
+                    ''odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"-L${buildPkgs.cmark-gfm}/lib" -out:wlls -o:speed -define:TINA_ASSERTS=false -thread-count:1''
                 }
                 runHook postBuild
               '';
@@ -128,7 +129,7 @@
         in
         {
           default = pkgs.mkShell {
-            packages = [ tempo ] ++ (with pkgs; [
+            packages = [ tempo pkgs.cmark-gfm ] ++ (with pkgs; [
               # Application development (pinned by flake.lock).
               odin
               just
@@ -149,6 +150,7 @@
             ]);
             shellHook = ''
               export TEMPO_SRC=${tempo-src}
+              export CMARK_GFM_LIB=${pkgs.cmark-gfm}/lib
             '';
           };
         }

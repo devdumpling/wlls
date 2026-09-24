@@ -1,9 +1,8 @@
 # wlls.dev
 
-Personal site and blog in the process of moving to Odin, Tina, and Datastar.
-This branch currently renders a small homepage and a template preview with
-Odin, Tina HTTP, and Tempo; the Markdown blog and lab will be restored in
-subsequent steps.
+Personal site and blog moving to Odin, Tina, and Datastar. The Odin service
+now renders the homepage, Markdown blog, and about page with Tempo. The
+interactive lab is next.
 
 ## Development
 
@@ -13,7 +12,7 @@ Then:
 
 ```sh
 just run             # build and listen on 127.0.0.1:8080
-just check           # generate views, check Odin and test components
+just check           # generate views, check Odin, test rendering and content
 just build           # write bin/wlls
 just generate        # compile authored src/views/*.templ to Odin
 ```
@@ -22,8 +21,11 @@ Local and release builds listen on 8080. If the port is already occupied,
 `just run` reports the process using it before starting Tina.
 
 The local build enables Tina's internal assertions. Bounds checks stay enabled
-in both development and production. Author HTML components in
-`src/views/*.templ`; `just` and Nix regenerate them before compilation.
+in both development and production. Nix pins the cmark-gfm Markdown parser
+alongside the Odin/Tempo toolchain. Author HTML components in
+`src/views/*.templ` and posts in `content/posts/*.md`; `just` and Nix regenerate
+the components before compilation and embed the content and assets into the
+binary.
 See [`docs/templating.md`](docs/templating.md) for the authoring model and the
 Tina/Datastar rendering boundary.
 
@@ -47,7 +49,10 @@ cross-toolchain; Odin cannot directly cross-link macOS to Linux. The resulting
 release runs behind Caddy on the DigitalOcean Droplet. See
 [`deploy/README.md`](deploy/README.md) for deployment details.
 
-The application binds to loopback only. `/healthz` and `/readyz` return
-uncacheable health responses. `/` is the temporary homepage;
-`/template-preview` shows the article layout; its button patches the same
-article component through Tina's Datastar SSE SDK.
+The application binds to loopback only. `/` is a dedicated homepage;
+`/blog` lists all 10 published posts, `/blog/{slug}` serves each post,
+and `/about` serves the original page. `/feed.xml`, `/sitemap.xml`, and
+`/robots.txt` provide discovery; `/rss.xml` redirects to the feed. CSS,
+browser code, fonts, and images are embedded, including legacy `/images/*`,
+`/fonts/*`, and `/favicon.svg` paths. `/healthz` and `/readyz` return
+uncacheable health responses.

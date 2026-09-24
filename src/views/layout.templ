@@ -1,23 +1,60 @@
 package views
 
-// Shared document; its default slot accepts any page component.
-document :: templ(title: string, description: string, noindex: bool) {
+// The document shell owns site-wide metadata and navigation. Feature templates
+// compose their page-specific resource inside the main landmark.
+document :: templ(metadata: Metadata, assets: Asset_URLs) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
-			<title>{ title }</title>
-			<meta name="description" content={ description }/>
-			if noindex {
+			<meta name="color-scheme" content="light dark"/>
+			<title>{ metadata.title }</title>
+			<meta name="description" content={ metadata.description }/>
+			if metadata.canonical != "" {
+				<link rel="canonical" href={ metadata.canonical }/>
+				<meta property="og:url" content={ metadata.canonical }/>
+			}
+			<meta property="og:title" content={ metadata.title }/>
+			<meta property="og:description" content={ metadata.description }/>
+			if metadata.open_graph != "" {
+				<meta property="og:type" content={ metadata.open_graph }/>
+			}
+			if metadata.noindex {
 				<meta name="robots" content="noindex"/>
 			}
-			<script type="module" src="https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.4/bundles/datastar.js"></script>
+			<link rel="alternate" type="application/rss+xml" title="wlls.dev" href={ assets.feed }/>
+			<link rel="icon" href={ assets.favicon } type="image/svg+xml"/>
+			<link rel="stylesheet" href={ assets.stylesheet }/>
+			<script type="module" src={ assets.datastar }></script>
 		</head>
 		<body>
-			<a href="#main-content">Skip to content</a>
-			<header><a href="/">wlls.dev</a></header>
-			<main id="main-content">{#slot}</main>
+			<a class="skip-link" href="#main-content">Skip to content</a>
+			<header class="site-header">
+				<a class="site-name" href="/">wlls.dev</a>
+				<nav aria-label="Primary">
+					<a href="/blog">Writing</a>
+					<a href="/about">About</a>
+				</nav>
+			</header>
+			<main id="main-content">
+				{#slot}
+			</main>
 		</body>
 	</html>
+}
+
+not_found :: templ() {
+	<section class="message-page">
+		<p class="eyebrow">404</p>
+		<h1>Page not found</h1>
+		<p>The requested page does not exist.</p>
+		<a href="/">Back to the homepage</a>
+	</section>
+}
+
+not_found_document :: templ(metadata: Metadata, assets: Asset_URLs) {
+	@document(metadata, assets) {
+		@not_found()
+	}
 }
