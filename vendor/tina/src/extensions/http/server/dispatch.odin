@@ -189,7 +189,8 @@ _make_route_context :: proc (state: ^HTTP_Connection_State) -> Route_Context {
 		assert(state != nil, "_make_route_context: state is nil")
 	}
 	return Route_Context {
-		connection_state = state,
+		connection_state    = state,
+		application_context = state.shard_runtime.server.application_context,
 	}
 }
 

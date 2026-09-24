@@ -90,6 +90,9 @@ Response :: struct {
 // functions that need Tina messaging or the connection state.
 Route_Context :: struct {
 	connection_state: ^HTTP_Connection_State,
+	// The optional pointer supplied through App.application_context. Its owner
+	// must keep the pointed-to value alive until the server stops.
+	application_context: rawptr,
 }
 
 @(require_results)

@@ -21,9 +21,13 @@ import "core:mem"
 // `ISOLATE_TRANSITION_WAIT_MESSAGE` here; Phase 7+ replaces them with the real state machines.
 // ═══════════════════════════════════════════════════════════════════════════
 
-// `App` holds the user-declared route table.
+// `App` holds the user-declared routes and immutable data shared with handlers.
 App :: struct {
 	routes: []Route,
+	// Optional application data is borrowed by event handlers through
+	// Route_Context. The caller owns it and must keep it alive while tina_start
+	// can dispatch requests; Tina stores this pointer but never frees it.
+	application_context: rawptr,
 }
 
 // Multi-shard ingress strategy. `Coordinator` is the primary path; one
@@ -83,6 +87,8 @@ Server :: struct {
 @(private = "package")
 Server_Runtime :: struct {
 	address:                tina.Socket_Address,
+	// Shared with route contexts; this is borrowed, not copied application data.
+	application_context:    rawptr,
 	backlog:                u32,
 	ingress_mode:           Ingress_Mode,
 	parse_budget:           Parse_Budget,
@@ -950,6 +956,7 @@ _make_server_runtime :: proc(
 ) -> Server_Runtime {
 	return Server_Runtime {
 		address                = server.address,
+		application_context    = server.app.application_context,
 		backlog                = server.backlog,
 		ingress_mode           = server.ingress_mode,
 		parse_budget           = parse_budget,

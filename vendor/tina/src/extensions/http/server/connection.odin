@@ -746,8 +746,10 @@ _connection_continue_after_non_final_flush :: proc(
 	}
 	state.response_flush_final = false
 
-	if .Close_After_Send in state.response.flags ||
-	   .In_Drain in state.response.flags ||
+	// `Connection: close` applies after the complete response, not after each
+	// chunk of a streaming response. Keep sending on non-final flushes; graceful
+	// server drain and an already-closing connection still stop the stream.
+	if .In_Drain in state.response.flags ||
 	   state.state == .Closing {
 		return _connection_finalize_flushed_response(connection)
 	}

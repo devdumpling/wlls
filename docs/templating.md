@@ -37,22 +37,25 @@ not Odin.
 
 ## Rendering with Tina and Datastar
 
-Generated components write to `^strings.Builder`. For these small preview
-pages, HTTP handlers use a fixed, caller-owned buffer and check the result
-before `http.respond_bytes`; real articles need an evented, chunked response
-path instead of forcing them into Tina's default 4 KiB egress buffer. Rendering
-into a fixed builder does not allocate, but it can silently reject writes that
-exceed its 16 KiB capacity. The preview guards against a missing document or
-article end marker; a production streaming adapter must propagate overflow
-explicitly rather than silently serving truncated markup.
+Generated components write to `^strings.Builder`. Small fragments can use a
+fixed builder when their maximum size is known. Full documents use
+`httpx.Document_Stream`: a heap-backed growable render builder followed by
+bounded writes through Tina's evented HTTP response API. The builder is
+independent of Tina's small request allocator and stays alive across send-ready
+callbacks. This keeps the whole page out of Tina's 4 KiB egress buffer while
+preserving a simple component signature.
+Tina's `write_bytes` reports how much it accepted; the handler flushes and
+continues on `Send_Ready`, then releases the render buffer once all bytes have
+been copied into Tina's egress buffer. Event handlers can read immutable
+startup data through `Route_Context.application_context`; its owner keeps the
+data alive for the server lifetime.
 
 The same `article_element` component is used for the initial article page,
 the HTML fragment response, and SSE patches at `/template-preview/events`.
 That handler uses Tina's Datastar extension: `datastar.start_sse`,
 `datastar.patch_elements`, `http.flush()`, `datastar.resume`, and
 `http.flush(final = true)`. Keep-alive clients receive a loading element and
-then the rendered article in separate flushes. Tina currently ends streams
-marked `Connection: close` after the first flush, so those clients receive
-the rendered article in one final event. The preview document loads a
-version-pinned Datastar browser bundle; the server remains the source of
-truth for its rendered element.
+then the rendered article in separate flushes. Tina completes all non-final
+flushes before honoring `Connection: close` at the end of the response. The
+preview document loads a version-pinned Datastar browser bundle; the server
+remains the source of truth for its rendered element.
