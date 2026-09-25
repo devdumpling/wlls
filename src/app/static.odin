@@ -14,7 +14,7 @@ static_asset :: proc(
 	route_context: http.Route_Context,
 	state: rawptr,
 ) -> http.Route_Step {
-	stream := cast(^Static_Stream_State)state
+	stream := cast(^Stream_State)state
 	switch _ in event {
 	case http.Request_Start:
 		ctx := cast(^Application_Context)route_context.application_context

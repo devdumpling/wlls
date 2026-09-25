@@ -19,7 +19,7 @@ discovery_event :: proc(
 	content_type: string,
 	render: Discovery_Renderer,
 ) -> http.Route_Step {
-	stream := cast(^Page_Stream_State)state
+	stream := cast(^Stream_State)state
 	switch _ in event {
 	case http.Request_Start:
 		ctx := cast(^Application_Context)route_context.application_context

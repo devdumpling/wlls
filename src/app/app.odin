@@ -19,17 +19,14 @@ Application_Context :: struct {
 	view_assets: views.Asset_URLs,
 }
 
-Page_Stream_State :: struct {
+Stream_State :: struct {
 	document: httpx.Document_Stream,
 }
 
-Static_Stream_State :: struct {
-	document: httpx.Document_Stream,
-}
-
-// run validates all authored data before opening the listener. The values stay
-// live on this stack frame while tina_start services requests.
+// Load and validate content before accepting requests. tina_start blocks until
+// shutdown, so the application context remains valid for every route callback.
 run :: proc() {
+	// Load static content into memory
 	content_repository, content_error := content.load(BASE_URL)
 	if content_error != "" {
 		fmt.eprintln("wlls: content startup failed:", content_error)
@@ -37,6 +34,7 @@ run :: proc() {
 	}
 	defer content.destroy(&content_repository)
 
+	// Load assets into memory
 	asset_bundle, asset_error := assets.load()
 	if asset_error != "" {
 		fmt.eprintln("wlls: asset startup failed:", asset_error)
@@ -44,6 +42,7 @@ run :: proc() {
 	}
 	defer assets.destroy(&asset_bundle)
 
+	// Aggregate into Application_Context
 	application_context := Application_Context {
 		content = content_repository,
 		assets = asset_bundle,
@@ -58,6 +57,10 @@ run :: proc() {
 		delete(application_context.view_assets.stylesheet)
 		delete(application_context.view_assets.datastar)
 	}
+
+	// Init Tina app with our context and routes
+	// Note this is effectively route registration
+	// Edit this routes array to register new routes.
 	app := http.App {
 		application_context = rawptr(&application_context),
 		routes              = []http.Route {
@@ -93,6 +96,8 @@ run :: proc() {
 			http.head("/readyz", health),
 		},
 	}
+
+	// Init Tina server
 	server := http.Server {
 		address = tina.ipv4(127, 0, 0, 1, PORT),
 		app     = &app,
@@ -108,24 +113,24 @@ asset_url :: proc(bundle: ^assets.Bundle, path: string) -> string {
 	return fmt.aprintf("/static/%s/%s", assets.version(bundle), path)
 }
 
-// Event handlers need per-connection state across flushes. Keep its exact
-// size beside route registration so no handler can accidentally get nil state.
+// Event handlers need per-connection state across flushes.
+// Keep its exact size beside route registration so no handler can accidentally get nil state.
 @(private = "file")
 page_get :: proc(path: string, handler: http.Route_Event_Handler) -> http.Route {
-	return http.get_event(path, handler, state_size = u16(size_of(Page_Stream_State)))
+	return http.get_event(path, handler, state_size = u16(size_of(Stream_State)))
 }
 
 @(private = "file")
 page_head :: proc(path: string, handler: http.Route_Event_Handler) -> http.Route {
-	return http.head_event(path, handler, state_size = u16(size_of(Page_Stream_State)))
+	return http.head_event(path, handler, state_size = u16(size_of(Stream_State)))
 }
 
 @(private = "file")
 asset_get :: proc(path: string) -> http.Route {
-	return http.get_event(path, static_asset, state_size = u16(size_of(Static_Stream_State)))
+	return http.get_event(path, static_asset, state_size = u16(size_of(Stream_State)))
 }
 
 @(private = "file")
 asset_head :: proc(path: string) -> http.Route {
-	return http.head_event(path, static_asset, state_size = u16(size_of(Static_Stream_State)))
+	return http.head_event(path, static_asset, state_size = u16(size_of(Stream_State)))
 }

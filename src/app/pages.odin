@@ -23,7 +23,7 @@ document_event :: proc(
 	state: rawptr,
 	render: Page_Renderer,
 ) -> http.Route_Step {
-	page_state := cast(^Page_Stream_State)state
+	page_state := cast(^Stream_State)state
 	switch _ in event {
 	case http.Request_Start:
 		application_context := cast(^Application_Context)route_context.application_context
