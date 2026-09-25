@@ -2,8 +2,11 @@ package main
 
 import app "app"
 
-// main stays deliberately small: app owns validated content, the Tina route
-// table, and the server's startup context.
+/**
+	Main is our thin entrypoint into the app, typical odin style.
+	The app package is what ultimately handles everything.
+	In the future I might move some more code into main itself, but for now this separation makes sense to me.
+*/
 main :: proc() {
 	app.run()
 }
