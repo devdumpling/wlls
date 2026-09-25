@@ -22,7 +22,7 @@ split_front_matter :: proc(path, source: string) -> (metadata, body, error: stri
 	rest := source[4:]
 	end := strings.index(rest, "\n---\n")
 	if end < 0 do return "", "", fmt.tprintf("content %s is missing its closing --- front-matter line", path)
-	return rest[:end], rest[end+5:], ""
+	return rest[:end], rest[end + 5:], ""
 }
 
 @(private)
@@ -33,7 +33,7 @@ parse_metadata :: proc(path, source: string) -> (fields: Front_Matter, error: st
 		line := remaining
 		if line_end >= 0 {
 			line = remaining[:line_end]
-			remaining = remaining[line_end+1:]
+			remaining = remaining[line_end + 1:]
 		} else {
 			remaining = ""
 		}
@@ -44,9 +44,14 @@ parse_metadata :: proc(path, source: string) -> (fields: Front_Matter, error: st
 			return fields, fmt.tprintf("content %s has invalid metadata", path)
 		}
 		key := strings.trim_space(line[:separator])
-		value, value_error := metadata_value(line[separator+1:])
+		value, value_error := metadata_value(line[separator + 1:])
 		if value_error != "" {
-			return fields, fmt.tprintf("content %s has invalid %s metadata: %s", path, key, value_error)
+			return fields, fmt.tprintf(
+				"content %s has invalid %s metadata: %s",
+				path,
+				key,
+				value_error,
+			)
 		}
 		switch key {
 		case "title":
@@ -64,8 +69,8 @@ parse_metadata :: proc(path, source: string) -> (fields: Front_Matter, error: st
 				return fields, fmt.tprintf("content %s draft metadata must be true or false", path)
 			}
 		case "layout":
-			// Older posts carry a book-layout hint; blog rendering is linear, so
-			// accept but deliberately do not interpret this legacy field.
+		// Older posts carry a book-layout hint; blog rendering is linear, so
+		// accept but deliberately do not interpret this legacy field.
 		case:
 			return fields, fmt.tprintf("content %s has unknown metadata field %s", path, key)
 		}
@@ -78,24 +83,26 @@ metadata_value :: proc(source: string) -> (value, error: string) {
 	value = strings.trim_space(source)
 	if len(value) == 0 do return "", "value is empty"
 	if value[0] == '"' || value[0] == '\'' {
-		if len(value) < 2 || value[len(value)-1] != value[0] {
+		if len(value) < 2 || value[len(value) - 1] != value[0] {
 			return "", "quoted value is not closed"
 		}
 		// Authored front matter only needs plain scalars and surrounding quotes;
 		// Markdown remains the rich-text format for multiline values.
-		return value[1 : len(value)-1], ""
+		return value[1:len(value) - 1], ""
 	}
 	return value, ""
 }
 
 @(private)
 valid_slug :: proc(slug: string) -> bool {
-	if len(slug) == 0 || slug[0] == '-' || slug[len(slug)-1] == '-' do return false
+	if len(slug) == 0 || slug[0] == '-' || slug[len(slug) - 1] == '-' do return false
 	previous_was_hyphen := false
 	for character in slug {
 		is_hyphen := character == '-'
 		if is_hyphen && previous_was_hyphen do return false
-		if !is_hyphen && !(character >= 'a' && character <= 'z') && !(character >= '0' && character <= '9') {
+		if !is_hyphen &&
+		   !(character >= 'a' && character <= 'z') &&
+		   !(character >= '0' && character <= '9') {
 			return false
 		}
 		previous_was_hyphen = is_hyphen

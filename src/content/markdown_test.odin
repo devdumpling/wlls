@@ -5,7 +5,8 @@ import "core:testing"
 
 @(test)
 test_markdown_renders_commonmark_and_gfm_without_raw_html :: proc(t: ^testing.T) {
-	source := "## Heading\n\nA **strong** word and ~~deleted~~ text.\n\n" +
+	source :=
+		"## Heading\n\nA **strong** word and ~~deleted~~ text.\n\n" +
 		"| key | value |\n| --- | --- |\n| one | two |\n\n" +
 		"<script>alert('raw')</script>\n"
 	html, error := render_markdown(source)

@@ -1,9 +1,9 @@
 package assets
 
+import "base:runtime"
 import "core:crypto/sha2"
 import "core:fmt"
 import "core:strings"
-import "base:runtime"
 
 // Odin embeds all browser resources in the binary. A change to any file
 // changes the URL prefix, making immutable caching safe without a manifest
@@ -30,8 +30,12 @@ load_static_files :: proc() -> []runtime.Load_Directory_File {
 load_css :: proc() -> []runtime.Load_Directory_File {return #load_directory("static/css")}
 load_fonts :: proc() -> []runtime.Load_Directory_File {return #load_directory("static/fonts")}
 load_js :: proc() -> []runtime.Load_Directory_File {return #load_directory("static/js")}
-load_avatars :: proc() -> []runtime.Load_Directory_File {return #load_directory("static/images/avatars")}
-load_post_images :: proc() -> []runtime.Load_Directory_File {return #load_directory("static/images/posts")}
+load_avatars :: proc() -> []runtime.Load_Directory_File {return #load_directory(
+		"static/images/avatars",
+	)}
+load_post_images :: proc() -> []runtime.Load_Directory_File {return #load_directory(
+		"static/images/posts",
+	)}
 
 Asset_Group :: struct {
 	prefix: string,
@@ -39,7 +43,7 @@ Asset_Group :: struct {
 }
 
 load :: proc() -> (bundle: Bundle, error: string) {
-	groups := [?]Asset_Group{
+	groups := [?]Asset_Group {
 		{prefix = "", files = load_static_files()},
 		{prefix = "css/", files = load_css()},
 		{prefix = "fonts/", files = load_fonts()},
@@ -56,11 +60,10 @@ load :: proc() -> (bundle: Bundle, error: string) {
 				return bundle, fmt.tprintf("duplicate embedded asset path: %s", path)
 			}
 			bundle.by_path[path] = len(bundle.files)
-			append(&bundle.files, Embedded_Asset{
-				path         = path,
-				bytes        = file.data,
-				content_type = media_type(path),
-			})
+			append(
+				&bundle.files,
+				Embedded_Asset{path = path, bytes = file.data, content_type = media_type(path)},
+			)
 		}
 	}
 	if len(bundle.files) == 0 do return bundle, "no usable static assets were embedded"
@@ -69,8 +72,8 @@ load :: proc() -> (bundle: Bundle, error: string) {
 	for index in 1 ..< len(bundle.files) {
 		asset := bundle.files[index]
 		position := index
-		for position > 0 && asset.path < bundle.files[position-1].path {
-			bundle.files[position] = bundle.files[position-1]
+		for position > 0 && asset.path < bundle.files[position - 1].path {
+			bundle.files[position] = bundle.files[position - 1]
 			position -= 1
 		}
 		bundle.files[position] = asset
@@ -92,8 +95,8 @@ load :: proc() -> (bundle: Bundle, error: string) {
 	sha2.final(&hash, digest[:])
 	digits := HEX_DIGITS
 	for value, index in digest[:8] {
-		bundle.finger[index*2+0] = digits[int(value >> 4)]
-		bundle.finger[index*2+1] = digits[int(value & 0x0f)]
+		bundle.finger[index * 2 + 0] = digits[int(value >> 4)]
+		bundle.finger[index * 2 + 1] = digits[int(value & 0x0f)]
 	}
 	for &asset in bundle.files {
 		asset.etag = fmt.aprintf(`"%s-%s"`, version(&bundle), asset.path)

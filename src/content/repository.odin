@@ -1,9 +1,9 @@
 package content
 
+import embedded "../../content"
 import "core:fmt"
 import "core:strings"
 import "core:time"
-import embedded "../../content"
 
 // Odin embeds the authored files into the executable at compile time. The
 // repository parses and renders them once during startup, then handlers only
@@ -29,9 +29,9 @@ Page :: struct {
 }
 
 Repository :: struct {
-	posts:  [dynamic]Post,
+	posts:   [dynamic]Post,
 	by_slug: map[string]int,
-	about:  Page,
+	about:   Page,
 }
 
 // published_posts borrows the sorted immutable slice for one render pass.
@@ -81,8 +81,8 @@ load :: proc(base_url := "https://wlls.dev") -> (repository: Repository, error: 
 	for index in 1 ..< len(repository.posts) {
 		post := repository.posts[index]
 		position := index
-		for position > 0 && is_newer(post, repository.posts[position-1]) {
-			repository.posts[position] = repository.posts[position-1]
+		for position > 0 && is_newer(post, repository.posts[position - 1]) {
+			repository.posts[position] = repository.posts[position - 1]
 			position -= 1
 		}
 		repository.posts[position] = post
@@ -126,12 +126,12 @@ parse_post :: proc(path, source, base_url: string) -> (post: Post, draft: bool, 
 
 	filename := path
 	if slash := strings.last_index(filename, "/"); slash >= 0 {
-		filename = filename[slash+1:]
+		filename = filename[slash + 1:]
 	}
 	if !strings.has_suffix(filename, ".md") {
 		return post, false, fmt.tprintf("post %s must have a .md extension", path)
 	}
-	slug := filename[:len(filename)-3]
+	slug := filename[:len(filename) - 3]
 	if !valid_slug(slug) {
 		return post, false, fmt.tprintf("post %s must use a lowercase kebab-case filename", path)
 	}
@@ -158,15 +158,17 @@ parse_post :: proc(path, source, base_url: string) -> (post: Post, draft: bool, 
 		return post, false, fmt.tprintf("post %s could not be rendered as Markdown", path)
 	}
 	return Post {
-		slug        = slug,
-		url         = fmt.aprintf("/blog/%s", slug),
-		canonical   = fmt.aprintf("%s/blog/%s", base_url, slug),
-		title       = fields.title,
-		description = fields.description,
-		topic       = fields.topic,
-		date        = fields.date,
-		html        = html,
-	}, false, ""
+			slug = slug,
+			url = fmt.aprintf("/blog/%s", slug),
+			canonical = fmt.aprintf("%s/blog/%s", base_url, slug),
+			title = fields.title,
+			description = fields.description,
+			topic = fields.topic,
+			date = fields.date,
+			html = html,
+		},
+		false,
+		""
 }
 
 @(private = "file")
@@ -180,12 +182,13 @@ parse_page :: proc(path, source, base_url: string) -> (page: Page, error: string
 	}
 	html, markdown_error := render_markdown(body)
 	if markdown_error != .None do return page, fmt.tprintf("page %s could not be rendered as Markdown", path)
-	return Page{
-		title       = fields.title,
-		description = fields.description,
-		canonical   = fmt.aprintf("%s/about", base_url),
-		html        = html,
-	}, ""
+	return Page {
+			title = fields.title,
+			description = fields.description,
+			canonical = fmt.aprintf("%s/about", base_url),
+			html = html,
+		},
+		""
 }
 
 @(private = "file")

@@ -6,6 +6,10 @@ default:
 generate:
     tempo generate src/views -runtime=tempo:runtime
 
+# Format authored Odin files; generated views and vendored sources are excluded.
+format:
+    git ls-files --cached --others --exclude-standard -z -- 'src/*.odin' 'content/*.odin' | xargs -0 -I {} odinfmt -path:{} -w
+
 build port="8080":
     just generate
     mkdir -p bin

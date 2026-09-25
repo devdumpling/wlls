@@ -1,8 +1,8 @@
 # wlls.dev
 
-Personal site and blog moving to Odin, Tina, and Datastar. The Odin service
-now renders the homepage, Markdown blog, and about page with Tempo. The
-interactive lab is next.
+Personal site and blog moving to Odin, Tina, and Datastar.
+
+Odin service renders pages from Tempo with some custom markdown parsing.
 
 ## Development
 
@@ -15,6 +15,7 @@ just run             # build and listen on 127.0.0.1:8080
 just check           # generate views, check Odin, test rendering and content
 just build           # write bin/wlls
 just generate        # compile authored src/views/*.templ to Odin
+just format          # format authored Odin files with odinfmt on your PATH
 ```
 
 Local and release builds listen on 8080. If the port is already occupied,
