@@ -64,36 +64,21 @@ run :: proc() {
 	app := http.App {
 		application_context = rawptr(&application_context),
 		routes              = []http.Route {
-			page_get("/", home_page),
-			page_head("/", home_page),
-			page_get("/blog", blog_index),
-			page_head("/blog", blog_index),
-			page_get("/blog/:slug", blog_post),
-			page_head("/blog/:slug", blog_post),
-			page_get("/about", about_page),
-			page_head("/about", about_page),
-			page_get("/feed.xml", feed),
-			page_head("/feed.xml", feed),
+			stream_get("/", home_page),
+			stream_get("/blog", blog_index),
+			stream_get("/blog/:slug", blog_post),
+			stream_get("/about", about_page),
+			stream_get("/feed.xml", feed),
 			http.get("/rss.xml", rss_compatibility),
-			http.head("/rss.xml", rss_compatibility),
-			page_get("/sitemap.xml", sitemap),
-			page_head("/sitemap.xml", sitemap),
-			page_get("/robots.txt", robots),
-			page_head("/robots.txt", robots),
-			asset_get("/static/*"),
-			asset_head("/static/*"),
-			asset_get("/images/*"),
-			asset_head("/images/*"),
-			asset_get("/fonts/*"),
-			asset_head("/fonts/*"),
-			asset_get("/favicon.svg"),
-			asset_head("/favicon.svg"),
-			page_get("/*", not_found),
-			page_head("/*", not_found),
+			stream_get("/sitemap.xml", sitemap),
+			stream_get("/robots.txt", robots),
+			stream_get("/static/*", static_asset),
+			stream_get("/images/*", static_asset),
+			stream_get("/fonts/*", static_asset),
+			stream_get("/favicon.svg", static_asset),
+			stream_get("/*", not_found),
 			http.get("/healthz", health),
-			http.head("/healthz", health),
 			http.get("/readyz", health),
-			http.head("/readyz", health),
 		},
 	}
 
@@ -113,24 +98,9 @@ asset_url :: proc(bundle: ^assets.Bundle, path: string) -> string {
 	return fmt.aprintf("/static/%s/%s", assets.version(bundle), path)
 }
 
-// Event handlers need per-connection state across flushes.
-// Keep its exact size beside route registration so no handler can accidentally get nil state.
+// Tina routes HEAD to the GET handler when no explicit HEAD route exists.
+// Event handlers also need state across flushes; allocate it for every route.
 @(private = "file")
-page_get :: proc(path: string, handler: http.Route_Event_Handler) -> http.Route {
+stream_get :: proc(path: string, handler: http.Route_Event_Handler) -> http.Route {
 	return http.get_event(path, handler, state_size = u16(size_of(Stream_State)))
-}
-
-@(private = "file")
-page_head :: proc(path: string, handler: http.Route_Event_Handler) -> http.Route {
-	return http.head_event(path, handler, state_size = u16(size_of(Stream_State)))
-}
-
-@(private = "file")
-asset_get :: proc(path: string) -> http.Route {
-	return http.get_event(path, static_asset, state_size = u16(size_of(Stream_State)))
-}
-
-@(private = "file")
-asset_head :: proc(path: string) -> http.Route {
-	return http.head_event(path, static_asset, state_size = u16(size_of(Stream_State)))
 }
