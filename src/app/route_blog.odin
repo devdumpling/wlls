@@ -24,7 +24,7 @@ render_blog_index :: proc(
 	_ = request
 	metadata := views.Metadata {
 		title       = "Writing | wlls.dev",
-		description = "Essays and notes on software, games, and making things.",
+		description = "You can read it if you want.",
 		canonical   = CANONICAL_BLOG,
 		open_graph  = "website",
 	}

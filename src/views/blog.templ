@@ -17,11 +17,6 @@ post_link :: templ(post: content.Post) {
 post_index :: templ(posts: []content.Post, metadata: Metadata, assets: Asset_URLs) {
 	@document(metadata, assets) {
 		<section>
-			<header class="article-header">
-				<p class="eyebrow">Writing</p>
-				<h1>Ideas in progress.</h1>
-				<p class="article-dek">Essays and notes on software, games, and making things.</p>
-			</header>
 			<ol class="post-list">
 				for post in posts {
 					@post_link(post)

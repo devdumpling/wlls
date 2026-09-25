@@ -5,18 +5,9 @@ import content "../content"
 home :: templ(posts: []content.Post, metadata: Metadata, assets: Asset_URLs) {
 	@document(metadata, assets) {
 		<section class="home-intro">
-			<p class="eyebrow">Devon Wells · Engineer · Writer</p>
-			<h1>Curious about how things are made.</h1>
-			<p class="article-dek">
-				I write about software, games, craft, and the odd paths between them.
-			</p>
-			<p><a href="/about">A little more about me</a></p>
+			<h1>Dev Wells</h1>
 		</section>
 		<section aria-labelledby="recent-writing">
-			<header class="section-header">
-				<h2 id="recent-writing">Recent writing</h2>
-				<a href="/blog">All posts</a>
-			</header>
 			<ol class="post-list">
 				for post in posts {
 					@post_link(post)

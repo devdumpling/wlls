@@ -23,8 +23,8 @@ render_not_found :: proc(
 ) -> http.HTTP_Status {
 	_ = request
 	metadata := views.Metadata {
-		title       = "Page not found | wlls.dev",
-		description = "The requested page could not be found.",
+		title       = "404 | wlls.dev",
+		description = "Sorry fam it's not here idk what to tell you.",
 		noindex     = true,
 	}
 	views.not_found_document(writer, metadata, ctx.view_assets)
