@@ -1,9 +1,10 @@
 package app
 
+import http "../../vendor/tina/src/extensions/http/server"
 import content "../content"
 import httpx "../httpx"
 import views "../views"
-import http "../../vendor/tina/src/extensions/http/server"
+
 import "core:strings"
 
 Page_Renderer :: #type proc(
@@ -12,8 +13,8 @@ Page_Renderer :: #type proc(
 	application_context: ^Application_Context,
 ) -> http.HTTP_Status
 
-// document_event is the shared HTTP lifecycle for complete server-rendered
-// pages. Feature renderers only choose data, metadata, and their Tempo view;
+// document_event handles the shared HTTP lifecycle for complete server-rendered pages.
+// feature renderers only choose data, metadata, and their Tempo view.
 // this adapter handles chunking, headers, backpressure, and disconnect cleanup.
 document_event :: proc(
 	event: http.Route_Event,
@@ -29,11 +30,7 @@ document_event :: proc(
 		application_context := cast(^Application_Context)route_context.application_context
 		if application_context == nil do return http.close()
 
-		httpx.document_begin(
-			&page_state.document,
-			http.HTTP_STATUS_OK,
-			"text/html; charset=utf-8",
-		)
+		httpx.document_begin(&page_state.document, http.HTTP_STATUS_OK, "text/html; charset=utf-8")
 		status := render(&page_state.document.body, request, application_context)
 		page_state.document.status = status
 		set_security_headers(response)
@@ -101,15 +98,19 @@ not_found :: proc(
 }
 
 @(private = "file")
-render_home :: proc(writer: ^strings.Builder, request: ^http.Request, ctx: ^Application_Context) -> http.HTTP_Status {
+render_home :: proc(
+	writer: ^strings.Builder,
+	request: ^http.Request,
+	ctx: ^Application_Context,
+) -> http.HTTP_Status {
 	_ = request
 	posts := content.published_posts(&ctx.content)
 	posts = posts[:min(len(posts), 5)]
-	metadata := views.Metadata{
-		title = "Devon Wells | wlls.dev",
+	metadata := views.Metadata {
+		title       = "Devon Wells | wlls.dev",
 		description = "Writing about software, games, craft, and the odd paths between them.",
-		canonical = BASE_URL + "/",
-		open_graph = "website",
+		canonical   = BASE_URL + "/",
+		open_graph  = "website",
 	}
 	views.home(writer, posts, metadata, ctx.view_assets)
 	return http.HTTP_STATUS_OK
@@ -122,11 +123,11 @@ render_blog_index :: proc(
 	ctx: ^Application_Context,
 ) -> http.HTTP_Status {
 	_ = request
-	metadata := views.Metadata{
-		title = "Writing | wlls.dev",
+	metadata := views.Metadata {
+		title       = "Writing | wlls.dev",
 		description = "Essays and notes on software, games, and making things.",
-		canonical = CANONICAL_BLOG,
-		open_graph = "website",
+		canonical   = CANONICAL_BLOG,
+		open_graph  = "website",
 	}
 	views.post_index(writer, content.published_posts(&ctx.content), metadata, ctx.view_assets)
 	return http.HTTP_STATUS_OK
@@ -144,11 +145,11 @@ render_blog_post :: proc(
 		render_not_found(writer, request, ctx)
 		return http.HTTP_STATUS_NOT_FOUND
 	}
-	metadata := views.Metadata{
-		title = post.title,
+	metadata := views.Metadata {
+		title       = post.title,
 		description = post.description,
-		canonical = post.canonical,
-		open_graph = "article",
+		canonical   = post.canonical,
+		open_graph  = "article",
 	}
 	views.post_page(writer, post^, metadata, ctx.view_assets)
 	return http.HTTP_STATUS_OK
@@ -162,11 +163,11 @@ render_about :: proc(
 ) -> http.HTTP_Status {
 	_ = request
 	page := content.about_page(&ctx.content)
-	metadata := views.Metadata{
-		title = page.title,
+	metadata := views.Metadata {
+		title       = page.title,
 		description = page.description,
-		canonical = page.canonical,
-		open_graph = "website",
+		canonical   = page.canonical,
+		open_graph  = "website",
 	}
 	views.about_page(writer, page^, metadata, ctx.view_assets)
 	return http.HTTP_STATUS_OK
@@ -179,10 +180,10 @@ render_not_found :: proc(
 	ctx: ^Application_Context,
 ) -> http.HTTP_Status {
 	_ = request
-	metadata := views.Metadata{
-		title = "Page not found | wlls.dev",
+	metadata := views.Metadata {
+		title       = "Page not found | wlls.dev",
 		description = "The requested page could not be found.",
-		noindex = true,
+		noindex     = true,
 	}
 	views.not_found_document(writer, metadata, ctx.view_assets)
 	return http.HTTP_STATUS_NOT_FOUND
