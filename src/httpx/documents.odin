@@ -8,26 +8,22 @@ import "core:strings"
 // its connection buffer. The body can therefore be much larger than that
 // buffer, while each individual write remains bounded by Tina's egress size.
 Document_Stream :: struct {
-	body:         strings.Builder,
-	bytes:        []u8,
-	offset:       int,
-	content_type: string,
-	status:       http.HTTP_Status,
-	initialized:  bool,
-	owns_body:    bool,
+	body:          strings.Builder,
+	bytes:         []u8,
+	offset:        int,
+	content_type:  string,
+	status:        http.HTTP_Status,
+	initialized:   bool,
+	owns_body:     bool,
 	render_failed: bool,
-	started:      bool,
+	started:       bool,
 }
 
 // document_begin prepares an owned, growable render buffer before a view is
 // rendered. Tempo components write into this builder just as they do into a
 // fixed one, but long posts no longer get silently truncated at a capacity.
-document_begin :: proc(
-	stream: ^Document_Stream,
-	status: http.HTTP_Status,
-	content_type: string,
-) {
-	stream^ = Document_Stream{
+document_begin :: proc(stream: ^Document_Stream, status: http.HTTP_Status, content_type: string) {
+	stream^ = Document_Stream {
 		content_type = content_type,
 		status       = status,
 		initialized  = true,
@@ -36,7 +32,10 @@ document_begin :: proc(
 	// Tina's request allocator is deliberately small. This response-owned
 	// builder uses the heap instead; the wrapper records allocation failures
 	// even though Tempo's generated write calls discard their return values.
-	allocator := runtime.Allocator{procedure = tracked_heap, data = &stream.render_failed}
+	allocator := runtime.Allocator {
+		procedure = tracked_heap,
+		data      = &stream.render_failed,
+	}
 	_, error := strings.builder_init(&stream.body, allocator)
 	if error != nil do stream.render_failed = true
 }
@@ -49,8 +48,19 @@ tracked_heap :: proc(
 	old_memory: rawptr,
 	old_size: int,
 	location := #caller_location,
-) -> ([]byte, runtime.Allocator_Error) {
-	bytes, error := runtime.heap_allocator_proc(nil, mode, size, alignment, old_memory, old_size, location)
+) -> (
+	[]byte,
+	runtime.Allocator_Error,
+) {
+	bytes, error := runtime.heap_allocator_proc(
+		nil,
+		mode,
+		size,
+		alignment,
+		old_memory,
+		old_size,
+		location,
+	)
 	if error != nil {
 		failed := cast(^bool)data
 		failed^ = true
@@ -58,14 +68,19 @@ tracked_heap :: proc(
 	return bytes, error
 }
 
-// Static assets are already immutable embedded bytes. Borrow them directly
-// instead of allocating and copying a multi-megabyte image for every request.
-bytes_begin :: proc(stream: ^Document_Stream, status: http.HTTP_Status, content_type: string, bytes: []u8) {
+// Static assets are already immutable embedded bytes.
+// We borrow them directly instead of allocating and copying a huge image for every request.
+bytes_begin :: proc(
+	stream: ^Document_Stream,
+	status: http.HTTP_Status,
+	content_type: string,
+	bytes: []u8,
+) {
 	stream^ = Document_Stream {
-		bytes = bytes,
+		bytes        = bytes,
 		content_type = content_type,
-		status = status,
-		initialized = true,
+		status       = status,
+		initialized  = true,
 	}
 }
 
@@ -78,7 +93,11 @@ document_send :: proc(response: ^http.Response, stream: ^Document_Stream) -> htt
 		// No response headers have been sent yet; report a render failure
 		// instead of quietly serving partial HTML with a 200 status.
 		document_destroy(stream)
-		return http.respond_text(response, http.HTTP_STATUS_INTERNAL_SERVER_ERROR, "page rendering failed\n")
+		return http.respond_text(
+			response,
+			http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+			"page rendering failed\n",
+		)
 	}
 
 	body := stream.bytes
@@ -87,7 +106,12 @@ document_send :: proc(response: ^http.Response, stream: ^Document_Stream) -> htt
 		// The body is already rendered, so advertise the exact length. Tina
 		// still sends it incrementally; HEAD can report the same length without
 		// sending the document, and clients can detect an interrupted response.
-		if result := http.begin_fixed_stream(response, stream.status, stream.content_type, u64(len(body))); result != .Begun {
+		if result := http.begin_fixed_stream(
+			response,
+			stream.status,
+			stream.content_type,
+			u64(len(body)),
+		); result != .Begun {
 			document_destroy(stream)
 			// begin_stream stages a bounded 500 response if its own header commit
 			// fails, so let Tina send that response as the final flush.
