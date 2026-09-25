@@ -4,9 +4,6 @@ import content "../content"
 
 home :: templ(posts: []content.Post, metadata: Metadata, assets: Asset_URLs) {
 	@document(metadata, assets) {
-		<section class="home-intro">
-			<h1>Dev Wells</h1>
-		</section>
 		<section aria-labelledby="recent-writing">
 			<ol class="post-list">
 				for post in posts {
