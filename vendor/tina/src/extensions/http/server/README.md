@@ -4,15 +4,15 @@ A strict, secure, and zero-allocation-at-runtime HTTP/1.1 server library for Odi
 
 > **Compliance:** 33/33 passing on `uNetworking/h1spec`. See [Compliance Check](./compliance_check/README.md).
 
-Tina HTTP is designed for high-throughput web server workloads with a predictable p99 latency. By layering on Tina's Thread-per-Core architecture, it guarantees deterministic memory bounds, cross-core routing, and completely isolated connection lifecycles. 
+Tina HTTP is designed for high-throughput web server workloads with a predictable p99 latency. By layering on Tina's Thread-per-Core architecture, it guarantees deterministic memory bounds, cross-core routing, and completely isolated connection lifecycles.
 
-Run your web server on dedicated [Shards](/docs/concepts/thread_per_core.md), and seamlessly dispatch background tasks or Pub/Sub events to other Shards using native Tina messaging.
+Run your web server on dedicated [Shards](/docs/concepts/thread_per_core), and seamlessly dispatch background tasks or Pub/Sub events to other Shards using native Tina messaging.
 
 ## The Architectural Mental Model
 
-*   **One Connection = One Isolate:** Every accepted socket becomes a lightweight Tina Isolate. A crash in one connection affects only that connection.
-*   **Zero Dynamic Allocation**.
-*   **Event-Driven, Not Callback Spaghetti:** Complex flows (like Server-Sent Events or downstream database calls) suspend the connection via the `Route_Step` enum and resume natively on `Route_Event` arrivals.
+- **One Connection = One Isolate:** Every accepted socket becomes a lightweight Tina Isolate. A crash in one connection affects only that connection.
+- **Zero Dynamic Allocation**.
+- **Event-Driven, Not Callback Spaghetti:** Complex flows (like Server-Sent Events or downstream database calls) suspend the connection via the `Route_Step` enum and resume natively on `Route_Event` arrivals.
 
 ```
       [ OS Network Stack ]
@@ -32,7 +32,7 @@ Run your web server on dedicated [Shards](/docs/concepts/thread_per_core.md), an
 
 ## Quick Start
 
-A complete, production-ready HTTP server with routing requires minimal boilerplate. 
+A complete, production-ready HTTP server with routing requires minimal boilerplate.
 
 ```odin
 package main
@@ -68,13 +68,14 @@ main :: proc() {
 }
 ```
 
-*For advanced use-cases like **Server-Sent Events (SSE)** or downstream I/O ops, see the [`/examples`](/examples) directory.*
+_For advanced use-cases like **Server-Sent Events (SSE)** or downstream I/O ops, see the [`/examples`](/examples) directory._
 
 ## API Reference
 
 The API is intentionally flat and explicit. Handlers are simple functions that read from `Request`, write to `Response`, and return a `Route_Step` to instruct the framework on what to do next.
 
 ### Routing & Setup
+
 ```odin
 // Route Builders
 http.get(pattern: string, handler: Request_Handler, body_size_max: u32 = 0, body_mode: Route_Body_Mode = .None) -> Route
@@ -89,7 +90,9 @@ http.install(server: ^Server, shard_count: u8, connection_slot_count: u32) -> ti
 ```
 
 ### Request Reading
+
 Helpers to extract data from the incoming `Request`. Slices returned by these functions are valid for the lifetime of the handler call.
+
 ```odin
 http.method(request: ^Request) -> Method
 http.path(request: ^Request) ->[]u8
@@ -99,16 +102,18 @@ http.query_value(request: ^Request, name: string) -> []u8
 http.query_value_decoded(request: ^Request, name: string) -> (decoded: []u8, result: Query_Value_Result)
 
 // For .Buffered routes only: returns the complete body
-http.body_buffered(request: ^Request) ->[]u8  
+http.body_buffered(request: ^Request) ->[]u8
 ```
 
 ### Response Writing (Simple)
+
 Helpers that construct a full response and return `.Flush_Final`. Headers staged
 with `header_set` / `header_add` before these calls are preserved, except
 `Content-Type` which each helper sets to its own value (`text/plain; charset=utf-8`,
 `application/json`, etc.). Framework-owned headers (`Date`, `Content-Length`,
 `Transfer-Encoding`, `Connection`) are ignored by policy and reported as
 `.Reserved_Name`.
+
 ```odin
 http.header_set(response: ^Response, name: string, value: string) -> Header_Result
 http.header_add(response: ^Response, name: string, value: string) -> Header_Result
@@ -125,10 +130,12 @@ http.continue_100(response: ^Response)
 ```
 
 ### Response Writing (Streaming & SSE)
+
 For chunked transfer encoding or manual flushing. Stage application headers first,
 then begin the response. `begin_stream` commits the HTTP response head and uses
 HTTP/1.1 chunked transfer encoding; Tina owns `Connection`, `Content-Length`, and
 `Transfer-Encoding` so callers cannot create invalid framing.
+
 ```odin
 http.header_set(response: ^Response, name: string, value: string) -> Header_Result
 http.header_add(response: ^Response, name: string, value: string) -> Header_Result
@@ -163,7 +170,9 @@ return http.flush()
 ```
 
 ### Downstream Messaging & Async Events
+
 Available only in `Route_Event_Handler` routes. Use these to pause the HTTP connection while waiting for background workers, database shards, or any downstream I/O.
+
 ```odin
 // Send a message to another isolate, and park the HTTP connection waiting for a reply.
 http.expect_reply(ctx: Route_Context, target: tina.Handle, tag: tina.Message_Tag, payload:[]u8, timeout_ns: u64) -> tina.Send_Result
@@ -179,13 +188,13 @@ http.route_send(ctx: Route_Context, to: tina.Handle, tag: Message_Tag, payload:[
 
 Preliminary local benchmarks demonstrate highly stable throughput under load, which you can preview [on Twitter/X](https://x.com/p_mbanugo/status/2052130653076947133?s=20). A formal, reproducible benchmark suite comparing Tina HTTP against other library/framework is gradually being built.
 
-*Note: You can run your own benchmark and share the result. Make sure you set the right config/limits when setting up Tina. Although it should be minimal for a simple test using e.g. `spec := http.install(&server, 1, 512)` if you expect around 250 - 500 simultaneous connections*
+_Note: You can run your own benchmark and share the result. Make sure you set the right config/limits when setting up Tina. Although it should be minimal for a simple test using e.g. `spec := http.install(&server, 1, 512)` if you expect around 250 - 500 simultaneous connections_
 
 ## Non-Goals (Never In Scope)
 
 To maintain absolute structural safety and performance, the following are explicitly out of scope for this library:
 
-- **TLS/SSL:** Terminate TLS at your reverse proxy or load balancer. 
+- **TLS/SSL:** Terminate TLS at your reverse proxy or load balancer.
 - **Compression (deflate/gzip):** Rely on a CDN/proxy, or compress your response payloads in application code before passing them to the response buffer.
 - **WebSocket Protocol**.
 - **HTTP/2**. If HTTP/3 is supported in the future, it will be added as a separate extension, not retrofitted into this HTTP/1.1 parser.
