@@ -1,8 +1,8 @@
 package app
 
+import http "../../vendor/tina/src/extensions/http/server"
 import content "../content"
 import httpx "../httpx"
-import http "../../vendor/tina/src/extensions/http/server"
 import "core:fmt"
 import "core:strings"
 import "core:time"
@@ -48,7 +48,14 @@ feed :: proc(
 	state: rawptr,
 ) -> http.Route_Step {
 	_ = request
-	return discovery_event(event, response, route_context, state, "application/rss+xml; charset=utf-8", render_feed)
+	return discovery_event(
+		event,
+		response,
+		route_context,
+		state,
+		"application/rss+xml; charset=utf-8",
+		render_feed,
+	)
 }
 
 sitemap :: proc(
@@ -59,7 +66,14 @@ sitemap :: proc(
 	state: rawptr,
 ) -> http.Route_Step {
 	_ = request
-	return discovery_event(event, response, route_context, state, "application/xml; charset=utf-8", render_sitemap)
+	return discovery_event(
+		event,
+		response,
+		route_context,
+		state,
+		"application/xml; charset=utf-8",
+		render_sitemap,
+	)
 }
 
 robots :: proc(
@@ -70,7 +84,14 @@ robots :: proc(
 	state: rawptr,
 ) -> http.Route_Step {
 	_ = request
-	return discovery_event(event, response, route_context, state, "text/plain; charset=utf-8", render_robots)
+	return discovery_event(
+		event,
+		response,
+		route_context,
+		state,
+		"text/plain; charset=utf-8",
+		render_robots,
+	)
 }
 
 rss_compatibility :: proc(request: ^http.Request, response: ^http.Response) -> http.Route_Step {
@@ -91,9 +112,15 @@ health :: proc(request: ^http.Request, response: ^http.Response) -> http.Route_S
 @(private = "file")
 render_feed :: proc(writer: ^strings.Builder, ctx: ^Application_Context) {
 	strings.write_string(writer, `<?xml version="1.0" encoding="UTF-8"?>`)
-	strings.write_string(writer, `<rss version="2.0"><channel><title>wlls.dev</title><description>Devon Wells</description><link>`)
+	strings.write_string(
+		writer,
+		`<rss version="2.0"><channel><title>wlls.dev</title><description>Devon Wells</description><link>`,
+	)
 	write_absolute_url(writer, "/")
-	strings.write_string(writer, `</link><atom:link xmlns:atom="http://www.w3.org/2005/Atom" href="`)
+	strings.write_string(
+		writer,
+		`</link><atom:link xmlns:atom="http://www.w3.org/2005/Atom" href="`,
+	)
 	write_absolute_url(writer, "/feed.xml")
 	strings.write_string(writer, `" rel="self" type="application/rss+xml"/>`)
 
@@ -117,7 +144,7 @@ render_feed :: proc(writer: ^strings.Builder, ctx: ^Application_Context) {
 render_sitemap :: proc(writer: ^strings.Builder, ctx: ^Application_Context) {
 	strings.write_string(writer, `<?xml version="1.0" encoding="UTF-8"?>`)
 	strings.write_string(writer, `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
-	static_paths := [?]string{ "/", "/blog", "/about" }
+	static_paths := [?]string{"/", "/blog", "/about"}
 	for path in static_paths {
 		write_sitemap_url(writer, path, "")
 	}
@@ -186,13 +213,26 @@ write_rss_date :: proc(writer: ^strings.Builder, date: string) {
 	published, _ := time.iso8601_to_time_utc(string(buffer[:]))
 	datetime, _ := time.time_to_datetime(published)
 	weekday := [?]string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
-	month := [?]string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+	month := [?]string {
+		"Jan",
+		"Feb",
+		"Mar",
+		"Apr",
+		"May",
+		"Jun",
+		"Jul",
+		"Aug",
+		"Sep",
+		"Oct",
+		"Nov",
+		"Dec",
+	}
 	fmt.sbprintf(
 		writer,
 		"%s, %02d %s %04d 00:00:00 GMT",
 		weekday[int(time.weekday(published))],
 		int(datetime.day),
-		month[int(datetime.month)-1],
+		month[int(datetime.month) - 1],
 		int(datetime.year),
 	)
 }

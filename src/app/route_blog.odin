@@ -1,8 +1,8 @@
 package app
 
+import http "../../vendor/tina/src/extensions/http/server"
 import content "../content"
 import views "../views"
-import http "../../vendor/tina/src/extensions/http/server"
 import "core:strings"
 
 blog_index :: proc(
