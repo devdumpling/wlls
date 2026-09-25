@@ -85,7 +85,8 @@ Terraform leaves an initialized but empty server. The deployment process will:
 3. Activate `/nix/var/nix/profiles/wlls`.
 4. Install the Caddyfile and systemd units.
 5. Start `wlls.service` and `caddy.service`.
-6. Check `/healthz` through the Reserved IP or domain.
+6. Check the application's `/healthz` on the Droplet's loopback address; after
+   DNS cutover, check it through `https://wlls.dev` as well.
 
 See [`../deploy/README.md`](../deploy/README.md), then run:
 

@@ -10,6 +10,12 @@
 		X-Frame-Options "DENY"
 	}
 
+	# HEAD must keep the upstream's actual length. Even small SSE events need
+	# compression to start on the first flush, regardless of request method.
+	@not_head not method HEAD
+	encode @not_head zstd gzip {
+		minimum_length 1
+	}
 	reverse_proxy {$WLLS_UPSTREAM:127.0.0.1:8080}
 }
 

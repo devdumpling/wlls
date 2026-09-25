@@ -49,7 +49,8 @@ cross-toolchain; Odin cannot directly cross-link macOS to Linux. The resulting
 release runs behind Caddy on the DigitalOcean Droplet. See
 [`deploy/README.md`](deploy/README.md) for deployment details.
 
-The application binds to loopback only. `/` is a dedicated homepage;
+The application binds to loopback only; Caddy provides compression and the
+public HTTPS endpoint. `/` is a dedicated homepage;
 `/blog` lists all 10 published posts, `/blog/{slug}` serves each post,
 and `/about` serves the original page. `/feed.xml`, `/sitemap.xml`, and
 `/robots.txt` provide discovery; `/rss.xml` redirects to the feed. CSS,

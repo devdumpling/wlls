@@ -1,8 +1,8 @@
 # Deployment
 
 See the [`infrastructure runbook`](../infra/README.md) for provisioning and DNS
-cutover. The Odin service serves the Markdown blog; the interactive lab and
-production-path checks are still in progress before DNS cutover.
+cutover. The Odin service serves the Markdown blog behind Caddy. The lab is
+planned for after the site redesign and code walkthrough.
 
 ## Local Caddy proxy
 
@@ -13,8 +13,24 @@ just run
 caddy run --config deploy/Caddyfile
 ```
 
-Open <http://localhost:3000>. Production environment values switch the site to
-`wlls.dev` and redirect `www.wlls.dev` to the apex domain.
+Open <http://localhost:3000>. Caddy negotiates zstd or gzip for compressible
+responses to all methods except HEAD, including Datastar SSE streams on POST,
+PATCH, or PUT. Small SSE events start streaming immediately when flushed;
+HEAD retains the upstream's uncompressed content length. Images and fonts are
+served from the embedded assets. Production environment values switch the site
+to `wlls.dev` and redirect `www.wlls.dev` to the apex domain.
+
+For a quick proxy check while both processes are running:
+
+```bash
+curl --fail http://localhost:3000/healthz
+curl -sD - -o /dev/null -H 'Accept-Encoding: gzip' http://localhost:3000/blog
+curl -I --resolve www.localhost:3000:127.0.0.1 http://www.localhost:3000/blog
+```
+
+The blog GET response should have `Content-Encoding: gzip`; HEAD keeps its
+uncompressed `Content-Length`. The `www.localhost` response should redirect to
+`http://localhost:3000/blog`.
 
 ## Deploy to DigitalOcean
 
@@ -56,6 +72,9 @@ The command:
 
 Caddy may log certificate errors until Cloudflare DNS points `wlls.dev` to the
 Reserved IP. It will obtain and renew certificates automatically after cutover.
+After cutover, check `/`, `/blog`, a post, and `/healthz` through
+`https://wlls.dev`, plus the `https://www.wlls.dev` redirect. A local proxy
+check does not exercise Cloudflare, DNS, or certificate issuance.
 
 ## Builds
 
