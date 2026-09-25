@@ -1,23 +1,21 @@
 package app
 
-import content "../content"
 import assets "../assets"
+import content "../content"
 import httpx "../httpx"
 import views "../views"
+
 import tina "../../vendor/tina/src"
 import http "../../vendor/tina/src/extensions/http/server"
+
 import "core:fmt"
 import "core:os"
-
-PORT :: #config(WLLS_PORT, 8080)
-BASE_URL :: #config(WLLS_BASE_URL, "https://wlls.dev")
-CANONICAL_BLOG :: BASE_URL + "/blog"
 
 // Application_Context is the read-only view that Tina's route callbacks borrow.
 // run owns the underlying startup-loaded content and assets until shutdown.
 Application_Context :: struct {
-	content:    content.Repository,
-	assets:     assets.Bundle,
+	content:     content.Repository,
+	assets:      assets.Bundle,
 	view_assets: views.Asset_URLs,
 }
 
@@ -46,10 +44,10 @@ run :: proc() {
 	}
 	defer assets.destroy(&asset_bundle)
 
-	application_context := Application_Context{
+	application_context := Application_Context {
 		content = content_repository,
 		assets = asset_bundle,
-		view_assets = views.Asset_URLs{
+		view_assets = views.Asset_URLs {
 			stylesheet = asset_url(&asset_bundle, "css/site.css"),
 			datastar = asset_url(&asset_bundle, "js/datastar.js"),
 			favicon = "/favicon.svg",
@@ -60,9 +58,9 @@ run :: proc() {
 		delete(application_context.view_assets.stylesheet)
 		delete(application_context.view_assets.datastar)
 	}
-	app := http.App{
+	app := http.App {
 		application_context = rawptr(&application_context),
-		routes = []http.Route{
+		routes              = []http.Route {
 			page_get("/", home_page),
 			page_head("/", home_page),
 			page_get("/blog", blog_index),
@@ -95,9 +93,9 @@ run :: proc() {
 			http.head("/readyz", health),
 		},
 	}
-	server := http.Server{
+	server := http.Server {
 		address = tina.ipv4(127, 0, 0, 1, PORT),
-		app = &app,
+		app     = &app,
 	}
 
 	fmt.printfln("wlls.dev — listening on http://127.0.0.1:%d", PORT)
