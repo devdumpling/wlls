@@ -15,22 +15,22 @@ just run             # build and listen on 127.0.0.1:8080
 just check           # generate views, check Odin, test rendering and content
 just build           # write bin/wlls
 just generate        # compile authored src/views/*.templ to Odin
-just format          # format authored Odin files with odinfmt on your PATH
+just format          # format authored Odin files with odinfmt on PATH
 ```
 
-Local and release builds listen on 8080. If the port is already occupied,
-`just run` reports the process using it before starting Tina.
+Local and release builds listen on 8080.
 
 The local build enables Tina's internal assertions. Bounds checks stay enabled
 in both development and production. Nix pins the cmark-gfm Markdown parser
 alongside the Odin/Tempo toolchain. Author HTML components in
-`src/views/*.templ` and posts in `content/posts/*.md`; `just` and Nix regenerate
-the components before compilation and embed the content and assets into the
-binary.
-See [`docs/templating.md`](docs/templating.md) for the authoring model and the
-Tina/Datastar rendering boundary.
+`src/views/*.templ` and posts in `content/posts/*.md`.
 
-To exercise the local reverse proxy, run `just run` and, in another terminal:
+`just` and Nix regenerate the components before compilation and embed the content and assets into the binary.
+
+> See [`docs/templating.md`](docs/templating.md) for the authoring model and the
+> Tina/Datastar rendering boundary.
+
+To use the local reverse proxy, run `just run` and, in another terminal:
 
 ```sh
 caddy run --config deploy/Caddyfile
@@ -52,8 +52,8 @@ release runs behind Caddy on the DigitalOcean Droplet. See
 
 The application binds to loopback only; Caddy provides compression and the
 public HTTPS endpoint. `/` is a dedicated homepage;
-`/blog` lists all 10 published posts, `/blog/{slug}` serves each post,
-and `/about` serves the original page. `/feed.xml`, `/sitemap.xml`, and
+`/blog` lists all posts, `/blog/{slug}` serves each post,
+and `/about` serves about. `/feed.xml`, `/sitemap.xml`, and
 `/robots.txt` provide discovery; `/rss.xml` redirects to the feed. CSS,
 browser code, fonts, and images are embedded, including legacy `/images/*`,
 `/fonts/*`, and `/favicon.svg` paths. `/healthz` and `/readyz` return
