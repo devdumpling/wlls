@@ -4,12 +4,17 @@ import content "../content"
 
 home :: templ(posts: []content.Post, metadata: Metadata, assets: Asset_URLs) {
 	@document(metadata, assets) {
-		<section aria-labelledby="recent-writing">
+		<header class="home-intro">
+			<h1>wlls.dev</h1>
+			<p class="article-dek">Just my corner of the internet. Feel free to stay a while.</p>
+		</header>
+		<section class="post-section" aria-label="Recent posts">
 			<ol class="post-list">
 				for post in posts {
 					@post_link(post)
 				}
 			</ol>
+			<a class="more-link" href="/blog">All posts</a>
 		</section>
 	}
 }

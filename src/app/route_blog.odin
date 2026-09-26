@@ -23,7 +23,8 @@ render_blog_index :: proc(
 ) -> http.HTTP_Status {
 	_ = request
 	metadata := views.Metadata {
-		title       = "Writing | wlls.dev",
+		page        = "blog",
+		title       = "Posts | wlls.dev",
 		description = "You can read it if you want.",
 		canonical   = CANONICAL_BLOG,
 		open_graph  = "website",
@@ -55,6 +56,7 @@ render_blog_post :: proc(
 		return http.HTTP_STATUS_NOT_FOUND
 	}
 	metadata := views.Metadata {
+		page        = "post",
 		title       = post.title,
 		description = post.description,
 		canonical   = post.canonical,

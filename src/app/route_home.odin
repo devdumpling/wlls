@@ -25,6 +25,7 @@ render_home :: proc(
 	posts := content.published_posts(&ctx.content)
 	posts = posts[:min(len(posts), 5)]
 	metadata := views.Metadata {
+		page        = "home",
 		title       = "Home | wlls.dev",
 		description = "Just my corner of the internet. Feel free to stay a while.",
 		canonical   = BASE_URL + "/",

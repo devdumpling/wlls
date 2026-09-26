@@ -1,4 +1,7 @@
-@layer reset, base, components;
+/* Structure: layout, rhythm, and component anatomy. Color, type, texture,
+   and ornament belong to garden.css, which layers over these neutral
+   defaults and can be swapped wholesale without touching markup. */
+@layer reset, tokens, base, layout, prose, components, garden;
 
 @layer reset {
   *,
@@ -8,23 +11,30 @@
   }
   html {
     text-size-adjust: none;
+    -webkit-text-size-adjust: none;
   }
   body,
   h1,
   h2,
   h3,
+  h4,
   p,
   ul,
   ol,
+  li,
+  figure,
   blockquote,
-  pre {
-    margin-block-start: 0;
+  pre,
+  hr {
+    margin: 0;
   }
   img,
   picture,
-  svg {
+  svg,
+  video {
     display: block;
     max-inline-size: 100%;
+    block-size: auto;
   }
   input,
   button,
@@ -34,130 +44,232 @@
   }
 }
 
-@layer base {
+@layer tokens {
   :root {
     color-scheme: light dark;
-    --background: light-dark(#faf9f6, #171716);
-    --surface: light-dark(#f0eee8, #232321);
-    --text: light-dark(#252521, #eceae4);
-    --muted: light-dark(#67675f, #aaa89f);
-    --accent: light-dark(#7d351d, #e49b7d);
-    --border: light-dark(#d8d5cc, #3e3d39);
-    --measure: 44rem;
-    --space: clamp(1rem, 3vw, 1.5rem);
-    font-family: Literata, Georgia, serif;
-    font-synthesis: none;
-    line-height: 1.65;
-  }
+    --paper: light-dark(#fafafa, #161616);
+    --surface: light-dark(#f0f0f0, #222);
+    --ink: light-dark(#222, #eee);
+    --ink-soft: light-dark(#666, #aaa);
+    --accent: light-dark(#0b57d0, #8ab4f8);
+    --link: var(--accent);
+    --rule: light-dark(#ddd, #333);
+    --rule-strong: light-dark(#bbb, #555);
+    --highlight: light-dark(#fff3a3, #4a4320);
 
-  @font-face {
-    font-family: Literata;
-    src: url("../fonts/literata-latin.woff2") format("woff2");
-    font-style: normal;
-    font-display: swap;
-  }
+    --font-prose: Georgia, serif;
+    --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
-  @font-face {
-    font-family: Literata;
-    src: url("../fonts/literata-latin-italic.woff2") format("woff2");
-    font-style: italic;
-    font-display: swap;
-  }
+    --measure: 40rem;
+    --wide-extra: 6rem;
+    --gutter: clamp(1.25rem, 4vw, 2rem);
+    --flow: 1.25em;
+    --radius: 0.4rem;
 
+    --page-columns:
+      [full-start] minmax(var(--gutter), 1fr)
+      [wide-start] minmax(0, var(--wide-extra))
+      [text-start] min(var(--measure), 100% - 2 * var(--gutter))
+      [text-end] minmax(0, var(--wide-extra))
+      [wide-end] minmax(var(--gutter), 1fr)
+      [full-end];
+  }
+}
+
+@layer base {
   html {
-    background: var(--background);
-    color: var(--text);
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-prose);
+    font-size: clamp(1.0625rem, 0.98rem + 0.3vw, 1.1875rem);
+    line-height: 1.65;
+    font-synthesis: none;
+    hanging-punctuation: first last;
   }
   body {
-    margin: 0;
     min-block-size: 100dvh;
   }
-  a {
-    color: var(--accent);
-    text-underline-offset: 0.18em;
-  }
-  a:hover {
-    text-decoration-thickness: 0.12em;
-  }
-  :focus-visible {
-    outline: 0.16rem solid var(--accent);
-    outline-offset: 0.2rem;
-  }
-
-  .site-header,
-  main {
-    inline-size: min(calc(100% - 2 * var(--space)), var(--measure));
-    margin-inline: auto;
-  }
-
-  .site-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 1rem;
-    padding-block: 1.5rem;
-  }
-
-  .site-header nav {
-    display: flex;
-    gap: 1rem;
-  }
-  .site-header a {
-    font-family: monospace;
-    color: inherit;
-  }
-  .site-name {
-    font-family: monospace;
-    font-weight: 600;
-    text-decoration: none;
-  }
-  main {
-    padding-block: clamp(2.5rem, 8vw, 5rem);
-  }
-
   h1,
   h2,
-  h3 {
+  h3,
+  h4 {
     line-height: 1.15;
     text-wrap: balance;
   }
-  h1 {
-    font-size: clamp(2rem, 7vw, 3.5rem);
-  }
-  h2 {
-    margin-block-start: 2.5rem;
-  }
   p,
-  li {
+  li,
+  dd,
+  figcaption {
     text-wrap: pretty;
   }
-  blockquote {
-    margin-inline: 0;
-    padding-inline-start: 1rem;
-    border-inline-start: 0.2rem solid var(--accent);
-    color: var(--muted);
+  a {
+    color: var(--link);
   }
+  :focus-visible {
+    outline: 0.15rem solid var(--accent);
+    outline-offset: 0.2rem;
+    border-radius: 0.15rem;
+  }
+  code,
+  kbd,
+  samp,
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+  }
+  ::selection {
+    background: var(--highlight);
+    color: var(--ink);
+  }
+}
+
+@layer layout {
+  body {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  /* Header and footer align to the wide track of the page grid. */
+  .site-header,
+  .site-footer {
+    --wide: min(
+      var(--measure) + 2 * var(--wide-extra),
+      100% - 2 * var(--gutter)
+    );
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    padding-inline: calc((100% - var(--wide)) / 2);
+  }
+  .site-header {
+    padding-block: clamp(1.25rem, 3vw, 2rem);
+  }
+  .site-header nav,
+  .site-footer nav {
+    display: flex;
+    gap: 1.25rem;
+  }
+  .site-footer {
+    padding-block: 2.5rem;
+    margin-block-start: clamp(3rem, 10vw, 6rem);
+  }
+
+  /* Main is a named-line grid: prose sits on the text track, and any
+     descendant can break out to wide or full through subgrid. */
+  main {
+    display: grid;
+    grid-template-columns: var(--page-columns);
+    align-content: start;
+    padding-block: clamp(2rem, 6vw, 4rem);
+  }
+  main > *,
+  .article > *,
+  .article-body > * {
+    grid-column: text;
+  }
+  main > .article,
+  .article > .article-body {
+    grid-column: full;
+    display: grid;
+    grid-template-columns: subgrid;
+  }
+  .post-section {
+    grid-column: text;
+  }
+  .article-body > :is(pre, table) {
+    grid-column: wide;
+  }
+}
+
+@layer prose {
+  .article-body > * + * {
+    margin-block-start: var(--flow);
+  }
+  .article-body > :is(h2, h3, h4) {
+    margin-block-start: 2.2em;
+  }
+  .article-body > :is(h2, h3, h4) + * {
+    margin-block-start: 0.75em;
+  }
+  /* Grid items never collapse margins, so set-pieces space themselves
+     from what precedes them and push away what follows. */
+  .article-body > :where(hr, pre, table, .callout, blockquote),
+  .article-body > :where(hr, pre, table, .callout, blockquote) + * {
+    margin-block-start: 2em;
+  }
+  .article-body > :is(h2, h3, h4, *):first-child {
+    margin-block-start: 0;
+  }
+  .article-body > blockquote + blockquote {
+    margin-block-start: 0.75em;
+  }
+  .article-body :is(ul, ol) {
+    padding-inline-start: 1.35em;
+  }
+  .article-body li + li,
+  .article-body li > :is(ul, ol) {
+    margin-block-start: 0.4em;
+  }
+  .article-body li > p + p {
+    margin-block-start: 0.6em;
+  }
+  .article-body blockquote > * + * {
+    margin-block-start: 0.75em;
+  }
+  .article-body img {
+    border-radius: var(--radius);
+  }
+
   pre {
     overflow-x: auto;
-    padding: 1rem;
-    border: 1px solid var(--border);
-    border-radius: 0.35rem;
-    background: var(--surface);
-    line-height: 1.45;
+    padding: 1rem 1.25rem;
+    line-height: 1.5;
+    tab-size: 2;
   }
-  code {
-    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
-    font-size: 0.9em;
+  pre code {
+    font-size: inherit;
   }
   :not(pre) > code {
     padding: 0.1em 0.3em;
-    border-radius: 0.2rem;
-    background: var(--surface);
+    border-radius: 0.25rem;
+    overflow-wrap: anywhere;
   }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  th,
+  td {
+    padding: 0.5em 0.9em;
+    text-align: start;
+    vertical-align: top;
+  }
+
   hr {
-    margin-block: 3rem;
     border: 0;
-    border-block-start: 1px solid var(--border);
+    block-size: 1px;
+    background: var(--rule);
+  }
+  /* The footnote section draws its own divider. */
+  .article-body > hr:has(+ .footnotes) {
+    display: none;
+  }
+  .footnotes {
+    font-size: 0.88em;
+  }
+  .footnotes ol {
+    padding-inline-start: 1.5em;
+  }
+  .footnotes li + li {
+    margin-block-start: 0.6em;
+  }
+  sup {
+    line-height: 0;
   }
 }
 
@@ -169,68 +281,76 @@
     z-index: 10;
     translate: 0 -200%;
     padding: 0.5rem 0.75rem;
-    background: var(--text);
-    color: var(--background);
+    background: var(--ink);
+    color: var(--paper);
   }
   .skip-link:focus {
     translate: 0;
   }
+
   .eyebrow,
-  .post-meta {
-    color: var(--muted);
-    font-size: 0.85rem;
-    letter-spacing: 0.04em;
+  .callout-label {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
+    line-height: 1.4;
   }
+
+  .home-intro,
+  .page-header,
   .article-header {
-    margin-block-end: 2.5rem;
+    margin-block-end: clamp(2rem, 6vw, 3.5rem);
   }
-  .article-header h1 {
-    margin-block-end: 0.75rem;
-  }
-  .article-dek {
-    color: var(--muted);
-    font-size: 1.15rem;
-  }
-  .article-body > :first-child {
-    margin-block-start: 0;
+  .home-intro > * + *,
+  .page-header > * + *,
+  .article-header > * + * {
+    margin-block-start: 0.9rem;
   }
   .article-footer {
     margin-block-start: 4rem;
   }
+
+  /* Entries are separated by space alone; the garden decides how a
+     hovered entry announces itself. */
   .post-list {
+    display: grid;
+    gap: 0.25rem;
     padding: 0;
     list-style: none;
   }
-  .post-list li {
-    padding-block: 1.25rem;
-    border-block-start: 1px solid var(--border);
+  .post-entry {
+    position: relative;
+    display: grid;
+    gap: 0.2rem;
+    padding-block: 0.8rem;
   }
-  .post-list h2 {
-    margin: 0 0 0.25rem;
-    font-size: 1.25rem;
+  .post-entry h2 {
+    font-size: 1.1rem;
   }
-  .post-list p {
-    margin: 0;
-    color: var(--muted);
+  /* The title link covers the whole entry. */
+  .post-entry h2 a::after {
+    content: "";
+    position: absolute;
+    inset: 0;
   }
-  .post-list a {
-    color: inherit;
-    text-decoration: none;
+  .more-link {
+    display: inline-block;
+    margin-block-start: 1.5rem;
   }
-  .post-list a:hover h2 {
-    color: var(--accent);
+
+  .callout {
+    padding: 1rem 1.25rem;
   }
+  .callout > * + * {
+    margin-block-start: 0.6em;
+  }
+
   .message-page {
     min-block-size: 45vh;
     display: grid;
     align-content: center;
     justify-items: start;
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a {
-    transition: color 150ms ease;
+    gap: 1rem;
   }
 }

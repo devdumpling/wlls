@@ -48,6 +48,7 @@ run :: proc() {
 		assets = asset_bundle,
 		view_assets = views.Asset_URLs {
 			stylesheet = asset_url(&asset_bundle, "css/site.css"),
+			garden = asset_url(&asset_bundle, "css/garden.css"),
 			datastar = asset_url(&asset_bundle, "js/datastar.js"),
 			favicon = "/favicon.svg",
 			feed = "/feed.xml",

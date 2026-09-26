@@ -24,6 +24,7 @@ render_about :: proc(
 	_ = request
 	page := content.about_page(&ctx.content)
 	metadata := views.Metadata {
+		page        = "about",
 		title       = page.title,
 		description = page.description,
 		canonical   = page.canonical,

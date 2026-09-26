@@ -1,5 +1,6 @@
 package content
 
+import "base:runtime"
 import "core:c"
 import "core:strings"
 
@@ -84,11 +85,99 @@ render_markdown :: proc(source: string) -> (html: Markdown_HTML, error: Markdown
 	if rendered == nil do return html, .Render_Failed
 	defer free(rawptr(rendered))
 
-	// Cmark owns its NUL-terminated return buffer. Clone it before the deferred
-	// free so the repository can retain the rendered fragment after this call.
-	owned_html, allocation_error := strings.clone(string(rendered))
+	// Cmark owns its NUL-terminated return buffer. Copy it out through the
+	// post-render pass before the deferred free so the repository can retain it.
+	owned_html, allocation_error := transform_alerts(string(rendered))
 	if allocation_error != nil do return html, .Output_Allocation
 	return Markdown_HTML(owned_html), .None
+}
+
+// transform_alerts rewrites GitHub-style alerts (`> [!NOTE]`) into callout
+// asides. cmark-gfm has no alert extension, so it renders them as blockquotes
+// whose first paragraph starts with the literal marker. Raw HTML is escaped
+// upstream, so every literal <blockquote> tag here came from cmark itself.
+@(private)
+transform_alerts :: proc(
+	source: string,
+	allocator := context.allocator,
+) -> (
+	output: string,
+	error: runtime.Allocator_Error,
+) {
+	OPEN :: "<blockquote>"
+	CLOSE :: "</blockquote>"
+	MARKER :: "\n<p>[!"
+
+	builder := strings.builder_make(0, len(source) + 128, allocator) or_return
+	// Each open blockquote records whether it became an aside, so nested
+	// quotes close with the matching tag.
+	is_alert := make([dynamic]bool, 0, 8, context.temp_allocator)
+
+	rest := source
+	for {
+		open := strings.index(rest, OPEN)
+		close := strings.index(rest, CLOSE)
+		if open < 0 && close < 0 do break
+		if close < 0 || (open >= 0 && open < close) {
+			strings.write_string(&builder, rest[:open])
+			rest = rest[open + len(OPEN):]
+			kind, label, marker_length := alert_marker(rest, MARKER)
+			if marker_length == 0 {
+				strings.write_string(&builder, OPEN)
+				append(&is_alert, false)
+				continue
+			}
+			strings.write_string(&builder, `<aside class="callout" data-kind="`)
+			strings.write_string(&builder, kind)
+			strings.write_string(&builder, `"><p class="callout-label">`)
+			strings.write_string(&builder, label)
+			strings.write_string(&builder, "</p>\n<p>")
+			rest = rest[marker_length:]
+			// The marker usually ends its own line; drop the soft break, or the
+			// whole paragraph when the marker stood alone.
+			if strings.has_prefix(rest, "\n") {
+				rest = rest[1:]
+			} else if strings.has_prefix(rest, "</p>\n") {
+				strings.pop_byte(&builder)
+				strings.pop_byte(&builder)
+				strings.pop_byte(&builder)
+				rest = rest[len("</p>\n"):]
+			}
+			append(&is_alert, true)
+			continue
+		}
+		strings.write_string(&builder, rest[:close])
+		rest = rest[close + len(CLOSE):]
+		was_alert := len(is_alert) > 0 && pop(&is_alert)
+		strings.write_string(&builder, was_alert ? "</aside>" : CLOSE)
+	}
+	strings.write_string(&builder, rest)
+	return strings.to_string(builder), nil
+}
+
+// alert_marker recognizes `\n<p>[!KIND]` at the start of a blockquote body and
+// returns the callout kind, its display label, and the marker's byte length.
+@(private = "file")
+alert_marker :: proc(body, prefix: string) -> (kind, label: string, length: int) {
+	if !strings.has_prefix(body, prefix) do return
+	after := body[len(prefix):]
+	end := strings.index_byte(after, ']')
+	if end <= 0 do return
+	switch after[:end] {
+	case "NOTE":
+		kind, label = "note", "Note"
+	case "TIP":
+		kind, label = "tip", "Tip"
+	case "IMPORTANT":
+		kind, label = "important", "Important"
+	case "WARNING":
+		kind, label = "warning", "Warning"
+	case "CAUTION":
+		kind, label = "caution", "Caution"
+	case:
+		return "", "", 0
+	}
+	return kind, label, len(prefix) + end + 1
 }
 
 @(private = "file")

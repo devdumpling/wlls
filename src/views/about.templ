@@ -4,9 +4,8 @@ import content "../content"
 
 about_page :: templ(page: content.Page, metadata: Metadata, assets: Asset_URLs) {
 	@document(metadata, assets) {
-		<article>
+		<article class="article">
 			<header class="article-header">
-				<p class="eyebrow">About</p>
 				<h1>{ page.title }</h1>
 				<p class="article-dek">{ page.description }</p>
 			</header>

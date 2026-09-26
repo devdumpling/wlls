@@ -1,0 +1,349 @@
+/* Garden: "Field Notes". Paper and ink with a quiet digital layer.
+   Organic: paper grain, hand-cut edges, contour lines.
+   Digital: monospace subtitles and labels, precise motion on touch.
+   Only tokens, ornament, and interaction live here; site.css owns
+   structure. */
+
+@font-face {
+  font-family: Literata;
+  src: url("../fonts/literata-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: Literata;
+  src: url("../fonts/literata-latin-italic.woff2") format("woff2");
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../fonts/jetbrains-mono-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+@layer garden {
+  /* Palette: the warm cream paper and brown ink of the original site,
+     with a soft lavender accent. */
+  :root {
+    --paper: light-dark(#f5f1e8, #1b1815);
+    --surface: light-dark(#ebe5da, #27221e);
+    --ink: light-dark(#454038, #d7cdc0);
+    --ink-soft: light-dark(#756e63, #a99f93);
+    --rust: light-dark(#7d432e, #cf9278);
+    --rule: light-dark(#d8d0c3, #403933);
+    --rule-strong: light-dark(#c3b8a6, #564c43);
+
+    --accent: light-dark(oklch(53% 0.1 290), oklch(79% 0.08 290));
+    --link: var(--ink);
+    --highlight: color-mix(in oklch, var(--accent) 22%, transparent);
+
+    --font-prose: Literata, Georgia, "Iowan Old Style", serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo,
+      monospace;
+
+    --radius: 0.5rem;
+    /* A hand-cut edge: every corner a slightly different curve. */
+    --radius-organic: 0.35rem 1.1rem 0.5rem 0.9rem / 0.9rem 0.4rem 1rem 0.35rem;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .24 0 0 0 0 .14 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    --grain-opacity: 0.1;
+    --grain-blend: multiply;
+
+    /* Three drifting contour lines, used as a mask so the stroke takes
+       whatever color the element paints. */
+    --contour: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 24' preserveAspectRatio='none'%3E%3Cg fill='none' stroke='black' stroke-width='1' stroke-linecap='round' vector-effect='non-scaling-stroke'%3E%3Cpath vector-effect='non-scaling-stroke' d='M1 6C30 2 50 10 80 6S130 1 160 6s50 5 79-1'/%3E%3Cpath vector-effect='non-scaling-stroke' d='M1 12c34-4 54 4 84 0s50-5 80 0 50 5 74-1'/%3E%3Cpath vector-effect='non-scaling-stroke' d='M1 18c27-3 59 4 89 0s50-5 80 0 50 4 69-1'/%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      --grain-opacity: 0.06;
+      --grain-blend: screen;
+    }
+  }
+
+  /* Paper with grain over everything. */
+  html {
+    scrollbar-color: var(--rule-strong) transparent;
+    font-size: 1.0625rem;
+    line-height: 1.68;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--grain);
+    opacity: var(--grain-opacity);
+    mix-blend-mode: var(--grain-blend);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-weight: 450;
+  }
+  h1 {
+    font-size: clamp(2rem, 7vw, 3.5rem);
+  }
+  .article-body h2 {
+    font-size: 1.55rem;
+  }
+  .article-body h3 {
+    font-size: 1.2rem;
+  }
+
+  /* Subtitles belong to the digital layer. */
+  .article-dek,
+  .post-dek {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    letter-spacing: -0.01em;
+  }
+  .article-dek {
+    font-size: 0.92rem;
+    line-height: 1.6;
+  }
+  .post-dek {
+    font-size: 0.76rem;
+    line-height: 1.55;
+  }
+
+  /* Links: a resting hairline, and an accent line that draws in from the
+     left on touch and retracts to the right on release. */
+  a {
+    --underline-rest: color-mix(in oklch, var(--accent) 45%, transparent);
+    --underline-at: 100%;
+    --underline-size: 0%;
+    text-decoration: none;
+    background:
+      linear-gradient(var(--accent) 0 0) var(--underline-at) 100% /
+        var(--underline-size) 0.1em no-repeat,
+      linear-gradient(var(--underline-rest) 0 0) 0 100% / 100% 1px no-repeat;
+    padding-block-end: 0.08em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  a:is(:hover, :focus-visible) {
+    --underline-at: 0%;
+    --underline-size: 100%;
+  }
+
+  /* Site chrome is monospace and quiet. */
+  .site-name,
+  .site-header nav a,
+  .site-footer a,
+  .more-link,
+  .article-footer a {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.02em;
+  }
+  .site-name {
+    --underline-rest: transparent;
+    color: var(--ink);
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+  .site-name span {
+    color: var(--ink-soft);
+    font-weight: 400;
+    transition: color 300ms var(--ease-out);
+  }
+  .site-name:hover span {
+    color: var(--accent);
+  }
+  .site-header nav a,
+  .site-footer a {
+    --underline-rest: transparent;
+    color: var(--ink-soft);
+    text-transform: lowercase;
+    transition: color 300ms var(--ease-out);
+  }
+  .site-header nav a:hover,
+  .site-footer a:hover,
+  .site-header nav a[aria-current="page"] {
+    color: var(--ink);
+  }
+  .site-header nav a[aria-current="page"] {
+    --underline-at: 0%;
+    --underline-size: 100%;
+  }
+  .site-footer {
+    background: linear-gradient(var(--rule) 0 0) 50% 0 / var(--wide) 1px
+      no-repeat;
+  }
+  .more-link,
+  .article-footer a {
+    --underline-rest: transparent;
+    color: var(--ink-soft);
+  }
+  .more-link::after,
+  .article-footer a::before {
+    display: inline-block;
+    transition: translate 400ms var(--ease-out);
+  }
+  .more-link::after {
+    content: "→";
+    margin-inline-start: 0.6ch;
+  }
+  .article-footer a::before {
+    content: "←";
+    margin-inline-end: 0.6ch;
+  }
+  .more-link:hover::after {
+    translate: 0.3em 0;
+  }
+  .article-footer a:hover::before {
+    translate: -0.3em 0;
+  }
+
+  /* Contour lines close each header and replace plain rules. */
+  .article-header::after,
+  .page-header::after,
+  .home-intro::after,
+  hr {
+    content: "";
+    display: block;
+    block-size: 1.3rem;
+    border: 0;
+    background: var(--rule-strong);
+    mask: var(--contour) center / 100% 100% no-repeat;
+  }
+  .article-header::after,
+  .page-header::after,
+  .home-intro::after {
+    margin-block-start: clamp(1.75rem, 4vw, 2.5rem);
+  }
+
+  /* Post list: touching an entry draws its title's underline, the same
+     gesture as every other link. */
+  .post-entry h2 a {
+    --underline-rest: transparent;
+    color: var(--ink);
+  }
+  .post-entry:hover h2 a {
+    --underline-at: 0%;
+    --underline-size: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a {
+      transition: background-size 450ms var(--ease-in-out);
+    }
+  }
+
+  /* Prose. */
+  .article-body ul > li::marker {
+    color: var(--accent);
+  }
+  .article-body ol > li::marker {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+  }
+  .article-body blockquote {
+    padding-inline-start: 1.25rem;
+    border-inline-start: 2px solid var(--rule-strong);
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  .article-body strong {
+    font-weight: 600;
+  }
+  input[type="checkbox"] {
+    accent-color: var(--accent);
+  }
+
+  pre {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  :not(pre) > code {
+    background: var(--surface);
+  }
+
+  th {
+    border-block-end: 1px solid var(--rule-strong);
+    font-family: var(--font-mono);
+    font-size: 0.75em;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  td {
+    border-block-end: 1px solid var(--rule);
+  }
+
+  /* Callouts read as notes pinned into the page. */
+  .callout {
+    --tone: var(--accent);
+    border: 1px solid color-mix(in oklch, var(--tone) 28%, var(--rule));
+    border-radius: var(--radius-organic);
+    background: color-mix(in oklch, var(--tone) 6%, var(--paper));
+  }
+  .callout:is([data-kind="warning"], [data-kind="caution"]) {
+    --tone: var(--rust);
+  }
+  .callout-label {
+    color: var(--tone);
+    font-weight: 600;
+  }
+
+  /* Footnotes become a notes section with bracketed references. */
+  .footnotes {
+    padding-block-start: 1.5rem;
+    border-block-start: 1px solid var(--rule);
+    color: var(--ink-soft);
+  }
+  .footnotes::before {
+    content: "Notes";
+    display: block;
+    margin-block-end: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .footnotes ol > li::marker {
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+  }
+  a[data-footnote-ref],
+  .footnote-backref {
+    color: var(--accent);
+    background: none;
+  }
+  a[data-footnote-ref] {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+  }
+  a[data-footnote-ref]::before {
+    content: "[";
+  }
+  a[data-footnote-ref]::after {
+    content: "]";
+  }
+  .footnotes li:target,
+  a[data-footnote-ref]:target {
+    background: var(--highlight);
+    border-radius: 0.25rem;
+  }
+
+  .skip-link {
+    background: var(--ink);
+  }
+  .message-page .eyebrow {
+    color: var(--rust);
+  }
+}

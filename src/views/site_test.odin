@@ -15,6 +15,7 @@ test_post_document_escapes_metadata_and_inserts_rendered_markdown :: proc(t: ^te
 		html        = content.Markdown_HTML("<p><strong>Rendered Markdown</strong></p>"),
 	}
 	metadata := Metadata {
+		page        = "post",
 		title       = post.title,
 		description = post.description,
 		canonical   = "https://wlls.dev/blog/sample-post",
@@ -22,6 +23,7 @@ test_post_document_escapes_metadata_and_inserts_rendered_markdown :: proc(t: ^te
 	}
 	assets := Asset_URLs {
 		stylesheet = "/static/test/css/site.css",
+		garden     = "/static/test/css/garden.css",
 		datastar   = "/static/test/js/datastar.js",
 		favicon    = "/favicon.svg",
 		feed       = "/feed.xml",
@@ -37,5 +39,8 @@ test_post_document_escapes_metadata_and_inserts_rendered_markdown :: proc(t: ^te
 	)
 	testing.expect(t, strings.contains(page, `content="Quotes &quot; &amp; &lt;angle&gt;"`))
 	testing.expect(t, strings.contains(page, `<strong>Rendered Markdown</strong>`))
+	testing.expect(t, strings.contains(page, `<body data-page="post">`))
+	testing.expect(t, strings.contains(page, `<a href="/blog" aria-current="page">Posts</a>`))
+	testing.expect(t, strings.contains(page, `href="/static/test/css/garden.css"`))
 	testing.expect(t, strings.has_suffix(page, "</html>"))
 }

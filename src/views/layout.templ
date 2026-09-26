@@ -26,28 +26,35 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 			<link rel="alternate" type="application/rss+xml" title="wlls.dev" href={ assets.feed }/>
 			<link rel="icon" href={ assets.favicon } type="image/svg+xml"/>
 			<link rel="stylesheet" href={ assets.stylesheet }/>
+			<link rel="stylesheet" href={ assets.garden }/>
 			<script type="module" src={ assets.datastar }></script>
 		</head>
-		<body>
+		<body data-page={ metadata.page }>
 			<a class="skip-link" href="#main-content">Skip to content</a>
 			<header class="site-header">
-				<a class="site-name" href="/">wlls.dev</a>
+				<a class="site-name" href="/" aria-label="wlls.dev home">wlls<span>.dev</span></a>
 				<nav aria-label="Primary">
-					<a href="/blog">Writing</a>
-					<a href="/about">About</a>
+					<a href="/blog" if metadata.page == "blog" || metadata.page == "post" { aria-current="page" }>Posts</a>
+					<a href="/about" if metadata.page == "about" { aria-current="page" }>About</a>
 				</nav>
 			</header>
 			<main id="main-content">
 				{#slot}
 			</main>
+			<footer class="site-footer">
+				<nav aria-label="Elsewhere">
+					<a href="https://github.com/devdumpling">GitHub</a>
+					<a href={ assets.feed }>RSS</a>
+				</nav>
+			</footer>
 		</body>
 	</html>
 }
 
 not_found :: templ() {
 	<section class="message-page">
-		<p class="eyebrow">404</p>
-		<h1>404</h1>
+		<p class="eyebrow">404 · Off trail</p>
+		<h1>Nothing grows here</h1>
 		<p>Sorry fam this this page doesn't exist. Idk either.</p>
 		<a href="/">Take me away</a>
 	</section>
