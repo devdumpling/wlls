@@ -6,10 +6,16 @@
 	# The app sets security headers on every response (src/httpx/headers.odin).
 	header -Server
 
+	# zstd only. Cloudflare proxies wlls.dev and asks this origin for
+	# "gzip, br", never zstd; offering gzip here made Cloudflare pass gzip
+	# through to visitors for SSE and assets. Without it, Cloudflare receives
+	# identity and compresses for each visitor itself (zstd, then br). Clients
+	# that reach Caddy directly and accept zstd (local dev) still get it.
+	#
 	# HEAD must keep the upstream's actual length. Even small SSE events need
 	# compression to start on the first flush, regardless of request method.
 	@not_head not method HEAD
-	encode @not_head zstd gzip {
+	encode @not_head zstd {
 		minimum_length 1
 	}
 	reverse_proxy {$WLLS_UPSTREAM:127.0.0.1:8080}
