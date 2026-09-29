@@ -66,6 +66,16 @@ first section.
 
 ## Code health
 
+- [ ] **Tina busy-polls at idle.** The shard loop (`vendor/tina/src/bootstrap_shard.odin`,
+      `for { scheduler_tick(shard) }`) never blocks, so `tina-shard-0` pins the
+      droplet's one vCPU at 100% even with no traffic. It's harmless for now
+      (flat billing, Caddy still gets scheduled), but it makes CPU graphs and
+      alerts useless. Fix: an opt-in idle park. After a tick with no work, block
+      in `_backend_collect` until `timer_earliest_deadline`, capped at a few ms,
+      and wake early with `backend_wake`. Keep the park well under the watchdog's
+      heartbeat threshold, or update the heartbeat before parking. Worth
+      proposing upstream.
+
 - [ ] **Tests**: the terminal endpoint (command in, expected patches out),
       `views.breadcrumbs` path splitting, and a full landing render.
 - [ ] **Docs**: a short CSS section in `docs/templating.md` on the
