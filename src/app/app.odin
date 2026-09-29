@@ -8,7 +8,9 @@ import views "../views"
 import tina "../../vendor/tina/src"
 import http "../../vendor/tina/src/extensions/http/server"
 
+import "base:runtime"
 import "core:fmt"
+import "core:mem/virtual"
 import "core:os"
 import "core:strings"
 
@@ -27,46 +29,19 @@ Stream_State :: struct {
 // Load and validate content before accepting requests. tina_start blocks until
 // shutdown, so the application context remains valid for every route callback.
 run :: proc() {
-	// Load assets first: content rendering sizes and validates images from them.
-	asset_bundle, asset_error := assets.load()
-	if asset_error != "" {
-		fmt.eprintln("wlls: asset startup failed:", asset_error)
+	// Everything loaded at startup lives until shutdown, so one arena owns it
+	// and releases it in a single call instead of per-field destroy procs.
+	startup: virtual.Arena
+	if error := virtual.arena_init_growing(&startup); error != nil {
+		fmt.eprintln("wlls: startup arena failed:", error)
 		os.exit(1)
 	}
-	defer assets.destroy(&asset_bundle)
+	defer virtual.arena_destroy(&startup)
 
-	// Load static content into memory
-	images := content.Image_Sizes {
-		data   = &asset_bundle,
-		lookup = embedded_image_size,
-	}
-	content_repository, content_error := content.load(BASE_URL, images)
-	if content_error != "" {
-		fmt.eprintln("wlls: content startup failed:", content_error)
+	application_context, load_error := load(virtual.arena_allocator(&startup))
+	if load_error != "" {
+		fmt.eprintln("wlls: startup failed:", load_error)
 		os.exit(1)
-	}
-	defer content.destroy(&content_repository)
-
-	// Aggregate into Application_Context
-	application_context := Application_Context {
-		content = content_repository,
-		assets = asset_bundle,
-		view_assets = views.Asset_URLs {
-			stylesheet = asset_url(&asset_bundle, "css/site.css"),
-			garden = asset_url(&asset_bundle, "css/garden.css"),
-			datastar = asset_url(&asset_bundle, "js/datastar-rocket.js"),
-			footnotes = asset_url(&asset_bundle, "js/footnotes.js"),
-			terminal = asset_url(&asset_bundle, "js/terminal.js"),
-			favicon = "/favicon.svg",
-			feed = "/feed.xml",
-		},
-	}
-	defer {
-		delete(application_context.view_assets.stylesheet)
-		delete(application_context.view_assets.garden)
-		delete(application_context.view_assets.datastar)
-		delete(application_context.view_assets.footnotes)
-		delete(application_context.view_assets.terminal)
 	}
 
 	// Init Tina app with our context and routes
@@ -110,9 +85,32 @@ run :: proc() {
 	tina.tina_start(&spec)
 }
 
+// load builds the immutable application context. Assets load first: content
+// rendering sizes and validates images from them.
 @(private = "file")
-asset_url :: proc(bundle: ^assets.Bundle, path: string) -> string {
-	return fmt.aprintf("/static/%s/%s", assets.version(bundle), path)
+load :: proc(allocator: runtime.Allocator) -> (ctx: Application_Context, error: string) {
+	context.allocator = allocator
+
+	ctx.assets, error = assets.load()
+	if error != "" do return
+
+	images := content.Image_Sizes {
+		data   = &ctx.assets,
+		lookup = embedded_image_size,
+	}
+	ctx.content, error = content.load(BASE_URL, images)
+	if error != "" do return
+
+	ctx.view_assets = views.Asset_URLs {
+		stylesheet = assets.url(&ctx.assets, "css/site.css"),
+		garden     = assets.url(&ctx.assets, "css/garden.css"),
+		datastar   = assets.url(&ctx.assets, "js/datastar-rocket.js"),
+		footnotes  = assets.url(&ctx.assets, "js/footnotes.js"),
+		terminal   = assets.url(&ctx.assets, "js/terminal.js"),
+		favicon    = "/favicon.svg",
+		feed       = "/feed.xml",
+	}
+	return
 }
 
 // Tina routes HEAD to the GET handler when no explicit HEAD route exists.

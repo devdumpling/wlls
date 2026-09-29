@@ -1,16 +1,20 @@
 package content
 
+import "core:mem/virtual"
 import "core:strings"
 import "core:testing"
 
 @(test)
 test_embedded_blog_content_loads_and_sorts_by_publication_date :: proc(t: ^testing.T) {
-	repository, error := load()
+	arena: virtual.Arena
+	defer virtual.arena_destroy(&arena)
+	context.allocator = virtual.arena_allocator(&arena)
+
+	repository, error := load("https://wlls.dev")
 	if error != "" {
 		testing.expect(t, false, error)
 		return
 	}
-	defer destroy(&repository)
 
 	testing.expect_value(t, len(repository.posts), 10)
 	if len(repository.posts) > 0 {

@@ -2,6 +2,7 @@ package content
 
 import embedded "../../content"
 import "core:fmt"
+import "core:slice"
 import "core:strings"
 import "core:time"
 
@@ -17,7 +18,8 @@ Post :: struct {
 	title:       string,
 	description: string,
 	topic:       string,
-	date:        string,
+	date:        string, // as authored, YYYY-MM-DD
+	published:   time.Time, // date at midnight UTC
 	html:        Markdown_HTML,
 }
 
@@ -51,15 +53,16 @@ about_page :: proc(repository: ^Repository) -> ^Page {
 
 // load validates every published post before startup succeeds. A bad filename,
 // date, required field, or duplicate slug becomes an immediate startup error
-// rather than an intermittent request-time failure.
+// rather than an intermittent request-time failure. Everything it allocates
+// comes from context.allocator: callers pass a startup arena and free it once.
+@(require_results)
 load :: proc(
-	base_url := "https://wlls.dev",
+	base_url: string,
 	images := Image_Sizes{},
 ) -> (
 	repository: Repository,
 	error: string,
 ) {
-	repository.by_slug = make(map[string]int)
 	embedded_posts := embedded.load_posts()
 	if len(embedded_posts) == 0 do return repository, "no Markdown posts were embedded"
 
@@ -70,62 +73,21 @@ load :: proc(
 			base_url,
 			images,
 		)
-		if parse_error != "" {
-			destroy(&repository)
-			return repository, parse_error
-		}
-		if is_draft do continue
+		if parse_error != "" do return repository, parse_error
+		if !is_draft do append(&repository.posts, post)
+	}
+	if len(repository.posts) == 0 do return repository, "no published Markdown posts were found"
+
+	slice.sort_by(repository.posts[:], is_newer)
+	for post, index in repository.posts {
 		if _, exists := repository.by_slug[post.slug]; exists {
-			destroy(&repository)
 			return repository, fmt.tprintf("duplicate post slug: %s", post.slug)
 		}
-		repository.by_slug[post.slug] = len(repository.posts)
-		append(&repository.posts, post)
-	}
-	if len(repository.posts) == 0 {
-		destroy(&repository)
-		return repository, "no published Markdown posts were found"
-	}
-
-	// There are few posts, so insertion sort keeps date ordering visible and
-	// avoids hiding a tiny bit of startup work behind a generic sorting layer.
-	for index in 1 ..< len(repository.posts) {
-		post := repository.posts[index]
-		position := index
-		for position > 0 && is_newer(post, repository.posts[position - 1]) {
-			repository.posts[position] = repository.posts[position - 1]
-			position -= 1
-		}
-		repository.posts[position] = post
-	}
-	for post, index in repository.posts {
 		repository.by_slug[post.slug] = index
 	}
 
-	page, page_error := parse_page("pages/about.md", string(EMBEDDED_ABOUT), base_url, images)
-	if page_error != "" {
-		destroy(&repository)
-		return repository, page_error
-	}
-	repository.about = page
-	return repository, ""
-}
-
-// destroy frees generated URLs, rendered Markdown, and startup indexes.
-// Front-matter text itself borrows bytes from the embedded sources.
-destroy :: proc(repository: ^Repository) {
-	for post in repository.posts {
-		delete(string(post.html))
-		delete(post.url)
-		delete(post.canonical)
-	}
-	if repository.about.html != Markdown_HTML("") {
-		delete(string(repository.about.html))
-		delete(repository.about.canonical)
-	}
-	delete(repository.posts)
-	delete(repository.by_slug)
-	repository^ = Repository{}
+	repository.about, error = parse_page("pages/about.md", string(EMBEDDED_ABOUT), base_url, images)
+	return repository, error
 }
 
 @(private)
@@ -163,7 +125,7 @@ parse_post :: proc(
 	copy(date_buffer[:10], transmute([]u8)fields.date)
 	copy(date_buffer[10:], "T00:00:00Z")
 	date_text := string(date_buffer[:20])
-	_, consumed := time.iso8601_to_time_utc(date_text)
+	published, consumed := time.iso8601_to_time_utc(date_text)
 	if consumed != len(date_text) {
 		return post, false, fmt.tprintf("post %s has invalid date %s", path, fields.date)
 	}
@@ -183,6 +145,7 @@ parse_post :: proc(
 			description = fields.description,
 			topic = fields.topic,
 			date = fields.date,
+			published = published,
 			html = html,
 		},
 		false,
@@ -226,6 +189,8 @@ markdown_error_message :: proc(path: string, error: Markdown_Error, detail: stri
 	return fmt.tprintf("%s could not be rendered as Markdown", path)
 }
 
+// is_newer orders posts newest first; the slug breaks ties so the order never
+// depends on how the embedded directory happens to be enumerated.
 @(private = "file")
 is_newer :: proc(candidate, existing: Post) -> bool {
 	if candidate.date != existing.date do return candidate.date > existing.date

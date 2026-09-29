@@ -134,7 +134,7 @@ render_feed :: proc(writer: ^strings.Builder, ctx: ^Application_Context) {
 		strings.write_string(writer, `</link><guid isPermaLink="true">`)
 		write_xml_text(writer, post.canonical)
 		strings.write_string(writer, `</guid><pubDate>`)
-		write_rss_date(writer, post.date)
+		write_rss_date(writer, post.published)
 		strings.write_string(writer, `</pubDate></item>`)
 	}
 	strings.write_string(writer, `</channel></rss>`)
@@ -205,34 +205,18 @@ write_xml_text :: proc(writer: ^strings.Builder, value: string) {
 	}
 }
 
+// write_rss_date formats RFC 822 dates, as RSS 2.0 requires.
 @(private = "file")
-write_rss_date :: proc(writer: ^strings.Builder, date: string) {
-	buffer: [20]byte
-	copy(buffer[:10], transmute([]byte)date)
-	copy(buffer[10:], "T00:00:00Z")
-	published, _ := time.iso8601_to_time_utc(string(buffer[:]))
-	datetime, _ := time.time_to_datetime(published)
-	weekday := [?]string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
-	month := [?]string {
-		"Jan",
-		"Feb",
-		"Mar",
-		"Apr",
-		"May",
-		"Jun",
-		"Jul",
-		"Aug",
-		"Sep",
-		"Oct",
-		"Nov",
-		"Dec",
-	}
+write_rss_date :: proc(writer: ^strings.Builder, published: time.Time) {
+	weekdays := [?]string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
+	months := [?]string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+	year, month, day := time.date(published)
 	fmt.sbprintf(
 		writer,
 		"%s, %02d %s %04d 00:00:00 GMT",
-		weekday[int(time.weekday(published))],
-		int(datetime.day),
-		month[int(datetime.month) - 1],
-		int(datetime.year),
+		weekdays[int(time.weekday(published))],
+		day,
+		months[int(month) - 1],
+		year,
 	)
 }

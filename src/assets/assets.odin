@@ -3,6 +3,7 @@ package assets
 import "base:runtime"
 import "core:crypto/sha2"
 import "core:fmt"
+import "core:slice"
 import "core:strings"
 
 // Odin embeds all browser resources in the binary. A change to any file
@@ -39,6 +40,10 @@ Asset_Group :: struct {
 	files:  []runtime.Load_Directory_File,
 }
 
+// load indexes and fingerprints every embedded file. Asset bytes are borrowed
+// from the executable; paths, ETags, and the index come from context.allocator,
+// which callers point at a startup arena and free once.
+@(require_results)
 load :: proc() -> (bundle: Bundle, error: string) {
 	groups := [?]Asset_Group {
 		{prefix = "", files = load_static_files()},
@@ -47,15 +52,9 @@ load :: proc() -> (bundle: Bundle, error: string) {
 		{prefix = "js/", files = load_js()},
 		{prefix = "images/avatars/", files = load_avatars()},
 	}
-
-	bundle.by_path = make(map[string]int)
 	for group in groups {
 		for file in group.files {
 			path := fmt.aprintf("%s%s", group.prefix, file.name)
-			if _, duplicate := bundle.by_path[path]; duplicate {
-				return bundle, fmt.tprintf("duplicate embedded asset path: %s", path)
-			}
-			bundle.by_path[path] = len(bundle.files)
 			append(
 				&bundle.files,
 				Embedded_Asset{path = path, bytes = file.data, content_type = media_type(path)},
@@ -65,16 +64,11 @@ load :: proc() -> (bundle: Bundle, error: string) {
 	if len(bundle.files) == 0 do return bundle, "no usable static assets were embedded"
 
 	// Stable ordering makes the digest independent of filesystem enumeration.
-	for index in 1 ..< len(bundle.files) {
-		asset := bundle.files[index]
-		position := index
-		for position > 0 && asset.path < bundle.files[position - 1].path {
-			bundle.files[position] = bundle.files[position - 1]
-			position -= 1
-		}
-		bundle.files[position] = asset
-	}
+	slice.sort_by(bundle.files[:], proc(a, b: Embedded_Asset) -> bool {return a.path < b.path})
 	for asset, index in bundle.files {
+		if _, duplicate := bundle.by_path[asset.path]; duplicate {
+			return bundle, fmt.tprintf("duplicate embedded asset path: %s", asset.path)
+		}
 		bundle.by_path[asset.path] = index
 	}
 
@@ -100,18 +94,14 @@ load :: proc() -> (bundle: Bundle, error: string) {
 	return bundle, ""
 }
 
-destroy :: proc(bundle: ^Bundle) {
-	for asset in bundle.files {
-		delete(asset.path)
-		delete(asset.etag)
-	}
-	delete(bundle.files)
-	delete(bundle.by_path)
-	bundle^ = Bundle{}
-}
-
 version :: proc(bundle: ^Bundle) -> string {
 	return transmute(string)bundle.finger[:]
+}
+
+// url is the fingerprinted, immutable-cacheable URL for an embedded path,
+// for example /static/<version>/css/site.css.
+url :: proc(bundle: ^Bundle, path: string) -> string {
+	return fmt.aprintf("/static/%s/%s", version(bundle), path)
 }
 
 find :: proc(bundle: ^Bundle, path: string) -> (^Embedded_Asset, bool) {
