@@ -29,8 +29,7 @@ terminal_command :: proc(
 	if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid command")
 
 	writer := httpx.begin_patches(stream)
-	result := run_command(writer, strings.trim_space(line), &ctx.content)
-	if result.clear {
+	if run_command(writer, strings.trim_space(line), &ctx.content) == .Clear {
 		httpx.queue_elements(stream) // an empty log, morphed over the old one
 	} else {
 		httpx.queue_elements(stream, {selector = "#terminal-output", mode = .Append})
@@ -41,15 +40,6 @@ terminal_command :: proc(
 	views.terminal_prompt(writer)
 	httpx.queue_elements(stream, {selector = "#terminal-prompt", mode = .Replace})
 
-	if result.navigate != "" {
-		httpx.queue_script(
-			stream,
-			strings.concatenate(
-				{"location.assign('", result.navigate, "')"},
-				context.temp_allocator,
-			),
-		)
-	}
 	return httpx.send_patches(response, stream)
 }
 
@@ -58,13 +48,14 @@ terminal_command :: proc(
 TERMINAL_STATE_SIZE :: u16(size_of(httpx.Patch_Stream))
 
 @(private)
-Command_Result :: struct {
-	clear:    bool,
-	navigate: string, // a site path known to be safe to assign
+Command_Result :: enum {
+	Append, // output is appended to the log
+	Clear, // output is an empty log that replaces the old one
 }
 
 // run_command renders a command's echo and result into output. clear renders
-// an empty log instead, which replaces the old one.
+// an empty log instead, which replaces the old one; cd appends an element that
+// navigates once Datastar patches it in.
 @(private)
 run_command :: proc(
 	output: ^strings.Builder,
@@ -78,7 +69,7 @@ run_command :: proc(
 	argument := strings.trim_space(rest)
 	if name == "clear" {
 		views.terminal_output(output)
-		return {clear = true}
+		return .Clear
 	}
 
 	views.terminal_echo(output, line)
@@ -104,7 +95,7 @@ run_command :: proc(
 			return
 		}
 		views.terminal_line(output, target)
-		result.navigate = target
+		views.terminal_navigate(output, target)
 	case "play":
 		views.terminal_line(output, "not yet. it's still being built. soon.")
 	case:

@@ -51,7 +51,15 @@ test_post_document_escapes_metadata_and_inserts_rendered_markdown :: proc(t: ^te
 			`<li><a href="/">wlls.dev</a></li><li><a href="/blog">blog</a></li><li><a href="/blog/sample-post" aria-current="page">sample-post</a></li>`,
 		),
 	)
-	testing.expect(t, strings.contains(page, `"datastar":"/static/test/js/datastar-rocket.js"`))
+	testing.expect(
+		t,
+		strings.contains(page, `<script type="module" src="/static/test/js/datastar-rocket.js">`),
+	)
+	// The CSP allows no inline scripts.
+	testing.expect(
+		t,
+		!strings.contains(page, "<script>") && !strings.contains(page, `type="importmap"`),
+	)
 	testing.expect(t, strings.contains(page, `href="/static/test/css/garden.css"`))
 	testing.expect(t, strings.contains(page, `src="/static/test/js/footnotes.js"`))
 	testing.expect(t, strings.has_suffix(page, "</html>"))

@@ -33,7 +33,7 @@ static_asset :: proc(
 		_ = http.header_set(response, "Cache-Control", "public, max-age=3600")
 	}
 	_ = http.header_set(response, "ETag", asset.etag)
-	if string(http.header(request, "If-None-Match")) == asset.etag {
+	if httpx.etag_matches(request, asset.etag) {
 		return httpx.not_modified(response, asset.content_type)
 	}
 	httpx.begin_bytes(stream, http.HTTP_STATUS_OK, asset.content_type, asset.bytes)

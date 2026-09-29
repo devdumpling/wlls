@@ -17,6 +17,10 @@ import "core:strings"
 // Patch_Stream holds a response's events until each is sent: queue them all
 // on Request_Start, then send_patches drains as far as Tina allows. Event
 // bodies live in one Render_Buffer and are referenced by byte range.
+//
+// There is deliberately no execute-script event: the SDK sends it as an inline
+// <script>, which the Content-Security-Policy forbids. Patch in an element with
+// a data-* expression instead (see views.terminal_navigate).
 PATCH_STREAM_MAX :: 8
 
 // EGRESS_BUFFER_SIZE reads the same build define as Tina's (private)
@@ -34,13 +38,7 @@ Patch_Stream :: struct {
 	started: bool,
 }
 
-Patch_Kind :: enum u8 {
-	Elements,
-	Script,
-}
-
 Patch_Event :: struct {
-	kind:       Patch_Kind,
 	start, end: int, // byte range of the event body in the render buffer
 	options:    datastar.Patch_Elements_Options,
 }
@@ -56,24 +54,12 @@ begin_patches :: proc(stream: ^Patch_Stream) -> ^strings.Builder {
 // queue_elements queues everything rendered since the previous queue call as
 // one patch-elements event.
 queue_elements :: proc(stream: ^Patch_Stream, options: datastar.Patch_Elements_Options = {}) {
-	queue(stream, .Elements, options)
-}
-
-// queue_script queues a script for the browser to run once.
-queue_script :: proc(stream: ^Patch_Stream, script: string) {
-	strings.write_string(&stream.render.builder, script)
-	queue(stream, .Script, {})
-}
-
-@(private = "file")
-queue :: proc(stream: ^Patch_Stream, kind: Patch_Kind, options: datastar.Patch_Elements_Options) {
 	end := strings.builder_len(stream.render.builder)
 	if stream.count == len(stream.events) {
 		stream.failed = true
 		return
 	}
 	stream.events[stream.count] = {
-		kind    = kind,
 		start   = stream.mark,
 		end     = end,
 		options = options,
@@ -107,14 +93,7 @@ send_patches :: proc(response: ^http.Response, stream: ^Patch_Stream) -> http.Ro
 	body := string(render_buffer_bytes(&stream.render))
 	for stream.next < stream.count {
 		event := stream.events[stream.next]
-		text := body[event.start:event.end]
-		error: datastar.SSE_Send_Error
-		switch event.kind {
-		case .Elements:
-			error = datastar.patch_elements(&sse, text, event.options)
-		case .Script:
-			error = datastar.execute_script(&sse, text)
-		}
+		error := datastar.patch_elements(&sse, body[event.start:event.end], event.options)
 		#partial switch error {
 		case .None:
 			stream.next += 1

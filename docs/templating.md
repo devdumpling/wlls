@@ -89,8 +89,19 @@ Tina's model.
 
 The blog's initial document responses work without JavaScript. The bundled
 Datastar + Rocket module (`datastar-rocket.js`) is served from a fingerprinted
-local asset URL, and an import map lets components `import { rocket } from
-"datastar"`.
+local asset URL. Components in the same directory import it relatively
+(`import { rocket } from "./datastar-rocket.js"`), which resolves to the URL
+the page already loaded, so there is one module instance and no import map.
+
+**Content-Security-Policy.** `httpx.CONTENT_SECURITY_POLICY` is static, so
+pages can be rendered once and cached: same-origin resources only, and no
+inline scripts or styles. It allows `'unsafe-eval'` because Datastar compiles
+`data-*` expressions with `Function()`; Datastar's nonce mode avoids that, but
+a nonce must change per response, which pre-rendered, edge-cached pages cannot
+do. Two consequences for new code: never send Datastar execute-script events
+(they arrive as inline scripts; patch in an element with a `data-init`
+expression instead, as `views.terminal_navigate` does), and give a Rocket
+component's `css` a hash in the policy.
 
 Interactive resources follow the Tao of Datastar: the server renders HTML with
 the same Tempo components the page uses and patches it in over SSE (Caddy
