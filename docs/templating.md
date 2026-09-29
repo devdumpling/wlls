@@ -52,5 +52,15 @@ access immutable startup data through `Route_Context.application_context`,
 owned for the lifetime of the server.
 
 The blog's initial document responses work without JavaScript. The bundled
-Datastar browser module is served from a fingerprinted local asset URL; the
-lab will use Tina's Datastar SSE SDK for interactive resources.
+Datastar + Rocket module (`datastar-rocket.js`) is served from a fingerprinted
+local asset URL, and an import map lets components `import { rocket } from
+"datastar"`.
+
+Interactive resources follow the Tao of Datastar: the server renders HTML with
+the same Tempo components the page uses and patches it in over SSE (Caddy
+compresses the stream with zstd). Signals are kept for client feedback only.
+The landing terminal is the model: `POST /terminal` receives the command as a
+form, and `src/app/route_terminal.odin` answers with patches that append the
+result and replace the prompt. The `<wlls-terminal>` Rocket component in
+`src/assets/static/js/terminal.js` adds only browser concerns: focus, history,
+and scroll-follow.

@@ -34,9 +34,6 @@ post_page :: templ(post: content.Post, metadata: Metadata, assets: Asset_URLs) {
 				<p class="article-dek">{ post.description }</p>
 			</header>
 			<div class="article-body">{! string(post.html) }</div>
-			<footer class="article-footer">
-				<a href="/blog">All posts</a>
-			</footer>
 		</article>
 	}
 }

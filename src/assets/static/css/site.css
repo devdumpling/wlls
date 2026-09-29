@@ -61,18 +61,13 @@
     --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
     --measure: 40rem;
-    --wide-extra: 6rem;
-    --gutter: clamp(1.25rem, 4vw, 2rem);
+    --wide-extra: 8rem;
+    --pad-inline: clamp(1.25rem, 6vw, 7rem);
+    --pad-block: clamp(1.25rem, 4vh, 2.75rem);
+    --rail-width: clamp(15rem, 22vw, 21rem);
     --flow: 1.25em;
     --radius: 0.4rem;
 
-    --page-columns:
-      [full-start] minmax(var(--gutter), 1fr)
-      [wide-start] minmax(0, var(--wide-extra))
-      [text-start] min(var(--measure), 100% - 2 * var(--gutter))
-      [text-end] minmax(0, var(--wide-extra))
-      [wide-end] minmax(var(--gutter), 1fr)
-      [full-end];
   }
 }
 
@@ -124,45 +119,51 @@
 }
 
 @layer layout {
-  body {
+  /* The shell: content on the left, a navigation rail on the right. On
+     narrow screens the rail drops below the content. */
+  .shell {
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    grid-template-columns: minmax(0, 1fr);
+    min-block-size: 100dvh;
+  }
+  .column {
+    display: flex;
+    flex-direction: column;
+    min-inline-size: 0;
+    padding-block: var(--pad-block);
+    padding-inline: var(--pad-inline);
+  }
+  .rail nav {
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+    padding-block: var(--pad-block);
+    padding-inline: var(--pad-inline);
+  }
+  @media (min-width: 60rem) {
+    .shell {
+      grid-template-columns: minmax(0, 1fr) var(--rail-width);
+    }
+    .rail nav {
+      position: sticky;
+      inset-block-start: 0;
+      block-size: 100dvh;
+      padding-inline: clamp(1.5rem, 2.5vw, 2.5rem);
+    }
   }
 
-  /* Header and footer align to the wide track of the page grid. */
-  .site-header,
-  .site-footer {
-    --wide: min(
-      var(--measure) + 2 * var(--wide-extra),
-      100% - 2 * var(--gutter)
-    );
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.5rem 1.5rem;
-    padding-inline: calc((100% - var(--wide)) / 2);
-  }
-  .site-header {
-    padding-block: clamp(1.25rem, 3vw, 2rem);
-  }
-  .site-header nav,
-  .site-footer nav {
-    display: flex;
-    gap: 1.25rem;
-  }
-  .site-footer {
-    padding-block: 2.5rem;
-    margin-block-start: clamp(3rem, 10vw, 6rem);
-  }
-
-  /* Main is a named-line grid: prose sits on the text track, and any
-     descendant can break out to wide or full through subgrid. */
+  /* Main is a named-line grid anchored left: prose sits on the text track,
+     and wide content breaks out to the right through subgrid. */
   main {
+    flex: 1;
     display: grid;
-    grid-template-columns: var(--page-columns);
+    grid-template-columns:
+      [full-start text-start wide-start] min(var(--measure), 100%)
+      [text-end] minmax(0, var(--wide-extra))
+      [wide-end] minmax(0, 1fr)
+      [full-end];
     align-content: start;
-    padding-block: clamp(2rem, 6vw, 4rem);
+    padding-block-start: clamp(3rem, 10vh, 7rem);
   }
   main > *,
   .article > *,
@@ -175,11 +176,59 @@
     display: grid;
     grid-template-columns: subgrid;
   }
-  .post-section {
-    grid-column: text;
-  }
-  .article-body > :is(pre, table) {
+  .article-body > :is(pre, table, .plates, .plate[data-size="wide"]) {
     grid-column: wide;
+  }
+  .article-body > .plate[data-size="full"] {
+    grid-column: full;
+  }
+
+  /* Landing: exactly one screen. The intro sits high in the open space;
+     the terminal owns everything below it, its log growing upward from the
+     prompt at the bottom of the column. */
+  [data-page="home"] main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    padding-block-start: 0;
+  }
+  main > .landing {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: clamp(2rem, 6vh, 4rem);
+  }
+  /* The landing is exactly one screen tall at every width, so the
+     terminal's row has a ceiling and its log scrolls within it. When the
+     rail stacks below on small screens, it keeps its own row and the column
+     takes what is left, so the links never leave the viewport. */
+  [data-page="home"] .shell {
+    block-size: 100dvh;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  [data-page="home"] :is(.column, main) {
+    min-block-size: 0;
+  }
+  @media (min-width: 60rem) {
+    [data-page="home"] .shell {
+      grid-template-rows: minmax(0, 1fr);
+    }
+  }
+  @media (max-width: 59.99rem) {
+    [data-page="home"] .landing-intro {
+      padding-block-start: clamp(1rem, 7vh, 4rem);
+    }
+    [data-page="home"] .rail nav {
+      padding-block: 0.75rem clamp(0.75rem, 3vh, 1.5rem);
+    }
+    [data-page="home"] .rail-links a {
+      padding-block: 0.6rem;
+    }
+  }
+  .landing-intro {
+    display: grid;
+    align-content: start;
+    gap: clamp(1.75rem, 5vh, 3rem);
+    padding-block-start: clamp(1.5rem, 18vh, 13rem);
   }
 }
 
@@ -195,8 +244,8 @@
   }
   /* Grid items never collapse margins, so set-pieces space themselves
      from what precedes them and push away what follows. */
-  .article-body > :where(hr, pre, table, .callout, blockquote),
-  .article-body > :where(hr, pre, table, .callout, blockquote) + * {
+  .article-body > :where(hr, pre, table, .callout, blockquote, .plate, .plates),
+  .article-body > :where(hr, pre, table, .callout, blockquote, .plate, .plates) + * {
     margin-block-start: 2em;
   }
   .article-body > :is(h2, h3, h4, *):first-child {
@@ -218,8 +267,51 @@
   .article-body blockquote > * + * {
     margin-block-start: 0.75em;
   }
-  .article-body img {
+  /* Section permalinks hang in the left margin of their heading. */
+  .article-body :is(h2, h3, h4) {
+    position: relative;
+    scroll-margin-block-start: 2rem;
+  }
+  .heading-anchor {
+    position: absolute;
+    inset-inline-end: 100%;
+    inset-block-start: 0;
+    padding-inline-end: 0.45em;
+  }
+
+  /* Plates: figures built from image-only paragraphs. */
+  .article-body {
+    counter-reset: plate;
+  }
+  .plate {
+    counter-increment: plate;
+    display: grid;
+    gap: 0.6rem;
+    justify-items: center;
+  }
+  .plate img {
     border-radius: var(--radius);
+  }
+  .plate[data-size="full"] img {
+    inline-size: 100%;
+    border-radius: 0;
+  }
+  .plate[data-pixel] img {
+    image-rendering: pixelated;
+  }
+  .plate figcaption {
+    justify-self: stretch;
+  }
+  .plates {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+    gap: 1rem;
+    align-items: start;
+  }
+  .plates img {
+    inline-size: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
   }
 
   pre {
@@ -297,18 +389,110 @@
     line-height: 1.4;
   }
 
-  .home-intro,
   .page-header,
   .article-header {
     margin-block-end: clamp(2rem, 6vw, 3.5rem);
   }
-  .home-intro > * + *,
   .page-header > * + *,
   .article-header > * + * {
     margin-block-start: 0.9rem;
   }
-  .article-footer {
-    margin-block-start: 4rem;
+
+  .breadcrumb ol {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0;
+    list-style: none;
+  }
+  .breadcrumb li + li::before {
+    content: "/";
+    padding-inline: 0.75ch;
+  }
+
+  .rail-links {
+    padding: 0;
+    list-style: none;
+  }
+  .rail-links a {
+    display: grid;
+    grid-template-columns: 2.75rem 1fr;
+    align-items: center;
+    padding: 0.85rem 0.5rem;
+  }
+
+  .latest {
+    display: grid;
+    gap: 0.35rem;
+    justify-items: start;
+    max-inline-size: 36rem;
+  }
+
+  .terminal {
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+    min-block-size: 0;
+  }
+  .terminal-output {
+    flex: 0 1 auto;
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .terminal[data-collapsed] .terminal-output {
+    max-block-size: 3lh;
+    scrollbar-width: none;
+  }
+  .terminal-bar {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+  }
+  .terminal-toggle {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  .terminal:not([data-engaged]) .terminal-toggle {
+    visibility: hidden;
+  }
+  .terminal-output > * + * {
+    margin-block-start: 0.2rem;
+  }
+  .terminal-prompt {
+    flex: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 1ch;
+    padding-block-start: 0.35rem;
+  }
+  .terminal-prompt input {
+    flex: 1;
+    min-inline-size: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: inherit;
+  }
+  .terminal-echo .terminal-ps1 {
+    margin-inline-end: 1ch;
+  }
+  .terminal-list {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.1rem 2ch;
+    margin: 0.2rem 0 0.4rem;
+    padding: 0;
+    list-style: none;
+  }
+  .terminal-list dd {
+    margin: 0;
+  }
+  .terminal-posts {
+    grid-template-columns: 1fr;
   }
 
   /* Entries are separated by space alone; the garden decides how a
@@ -334,16 +518,24 @@
     position: absolute;
     inset: 0;
   }
-  .more-link {
-    display: inline-block;
-    margin-block-start: 1.5rem;
-  }
 
   .callout {
     padding: 1rem 1.25rem;
   }
   .callout > * + * {
     margin-block-start: 0.6em;
+  }
+
+  /* Footnote previews render in the top layer; script sets left/top. */
+  .footnote-preview {
+    position: fixed;
+    inset: auto;
+    margin: 0;
+    max-inline-size: min(24rem, 100vw - 1rem);
+    padding: 0.8rem 1rem;
+  }
+  .footnote-preview > * + * {
+    margin-block-start: 0.5em;
   }
 
   .message-page {

@@ -45,6 +45,8 @@ Markdown_Error :: enum {
 	Parser_Allocation,
 	Output_Allocation,
 	Missing_Extension,
+	Missing_Image,
+	Invalid_Image_Option,
 	Extension_Attachment,
 	Parse_Failed,
 	Render_Failed,
@@ -61,16 +63,24 @@ register_gfm_extensions :: proc "contextless" () {
 // render_markdown uses the upstream CommonMark/GFM parser so authored content
 // is handled consistently without growing a project-specific Markdown parser.
 // Cmark's safe default replaces raw HTML and unsafe URL schemes in its output.
-render_markdown :: proc(source: string) -> (html: Markdown_HTML, error: Markdown_Error) {
+// On an image error, detail names the offending URL or option.
+render_markdown :: proc(
+	source: string,
+	images := Image_Sizes{},
+) -> (
+	html: Markdown_HTML,
+	error: Markdown_Error,
+	detail: string,
+) {
 	parser := cmark_parser_new(c.int(CMARK_OPTIONS))
-	if parser == nil do return html, .Parser_Allocation
+	if parser == nil do return html, .Parser_Allocation, ""
 	defer cmark_parser_free(parser)
 
 	for name in GFM_EXTENSIONS {
 		extension := cmark_find_syntax_extension(strings.unsafe_string_to_cstring(name))
-		if extension == nil do return html, .Missing_Extension
+		if extension == nil do return html, .Missing_Extension, ""
 		if cmark_parser_attach_syntax_extension(parser, extension) == 0 {
-			return html, .Extension_Attachment
+			return html, .Extension_Attachment, ""
 		}
 	}
 
@@ -78,18 +88,33 @@ render_markdown :: proc(source: string) -> (html: Markdown_HTML, error: Markdown
 	// not need a temporary NUL-terminated copy at the FFI boundary.
 	cmark_parser_feed(parser, strings.unsafe_string_to_cstring(source), c.size_t(len(source)))
 	root := cmark_parser_finish(parser)
-	if root == nil do return html, .Parse_Failed
+	if root == nil do return html, .Parse_Failed, ""
 	defer cmark_node_free(root)
 
 	rendered := cmark_render_html(root, 0, cmark_parser_get_syntax_extensions(parser))
-	if rendered == nil do return html, .Render_Failed
+	if rendered == nil do return html, .Render_Failed, ""
 	defer free(rawptr(rendered))
 
 	// Cmark owns its NUL-terminated return buffer. Copy it out through the
-	// post-render pass before the deferred free so the repository can retain it.
-	owned_html, allocation_error := transform_alerts(string(rendered))
-	if allocation_error != nil do return html, .Output_Allocation
-	return Markdown_HTML(owned_html), .None
+	// post-render passes before the deferred free so the repository can retain it.
+	plated, plate_error, plate_detail := transform_plates(string(rendered), images)
+	switch plate_error {
+	case .None:
+	case .Allocation:
+		return html, .Output_Allocation, ""
+	// The detail borrows cmark's buffer, which is freed on return.
+	case .Missing_Image:
+		return html, .Missing_Image, strings.clone(plate_detail, context.temp_allocator)
+	case .Unknown_Option:
+		return html, .Invalid_Image_Option, strings.clone(plate_detail, context.temp_allocator)
+	}
+	defer delete(plated)
+	anchored, anchor_error := transform_headings(plated)
+	if anchor_error != nil do return html, .Output_Allocation, ""
+	defer delete(anchored)
+	owned_html, allocation_error := transform_alerts(anchored)
+	if allocation_error != nil do return html, .Output_Allocation, ""
+	return Markdown_HTML(owned_html), .None, ""
 }
 
 // transform_alerts rewrites GitHub-style alerts (`> [!NOTE]`) into callout

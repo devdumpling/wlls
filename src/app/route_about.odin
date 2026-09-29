@@ -21,10 +21,10 @@ render_about :: proc(
 	request: ^http.Request,
 	ctx: ^Application_Context,
 ) -> http.HTTP_Status {
-	_ = request
 	page := content.about_page(&ctx.content)
 	metadata := views.Metadata {
 		page        = "about",
+		path        = transmute(string)http.path(request),
 		title       = page.title,
 		description = page.description,
 		canonical   = page.canonical,

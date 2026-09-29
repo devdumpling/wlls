@@ -71,11 +71,6 @@ Over the next few months, I will alternate between 2 week "blocks". In each bloc
 
 In order to facilitate this, I built a CLI called `devex`.
 
-> [!NOTE]
-> **devex in action**
->
-> ![devex demo showing the CLI workflow](/images/posts/devex-demo.gif)
-
 `devex` is a play on my name:
 
 - dev(on) + experiments

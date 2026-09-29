@@ -52,13 +52,24 @@ about_page :: proc(repository: ^Repository) -> ^Page {
 // load validates every published post before startup succeeds. A bad filename,
 // date, required field, or duplicate slug becomes an immediate startup error
 // rather than an intermittent request-time failure.
-load :: proc(base_url := "https://wlls.dev") -> (repository: Repository, error: string) {
+load :: proc(
+	base_url := "https://wlls.dev",
+	images := Image_Sizes{},
+) -> (
+	repository: Repository,
+	error: string,
+) {
 	repository.by_slug = make(map[string]int)
 	embedded_posts := embedded.load_posts()
 	if len(embedded_posts) == 0 do return repository, "no Markdown posts were embedded"
 
 	for source in embedded_posts {
-		post, is_draft, parse_error := parse_post(source.name, string(source.data), base_url)
+		post, is_draft, parse_error := parse_post(
+			source.name,
+			string(source.data),
+			base_url,
+			images,
+		)
 		if parse_error != "" {
 			destroy(&repository)
 			return repository, parse_error
@@ -91,7 +102,7 @@ load :: proc(base_url := "https://wlls.dev") -> (repository: Repository, error: 
 		repository.by_slug[post.slug] = index
 	}
 
-	page, page_error := parse_page("pages/about.md", string(EMBEDDED_ABOUT), base_url)
+	page, page_error := parse_page("pages/about.md", string(EMBEDDED_ABOUT), base_url, images)
 	if page_error != "" {
 		destroy(&repository)
 		return repository, page_error
@@ -118,7 +129,14 @@ destroy :: proc(repository: ^Repository) {
 }
 
 @(private)
-parse_post :: proc(path, source, base_url: string) -> (post: Post, draft: bool, error: string) {
+parse_post :: proc(
+	path, source, base_url: string,
+	images := Image_Sizes{},
+) -> (
+	post: Post,
+	draft: bool,
+	error: string,
+) {
 	metadata, body, split_error := split_front_matter(path, source)
 	if split_error != "" do return post, false, split_error
 	fields, parse_error := parse_metadata(path, metadata)
@@ -153,9 +171,9 @@ parse_post :: proc(path, source, base_url: string) -> (post: Post, draft: bool, 
 		return Post{slug = slug}, true, ""
 	}
 
-	html, markdown_error := render_markdown(body)
+	html, markdown_error, detail := render_markdown(body, images)
 	if markdown_error != .None {
-		return post, false, fmt.tprintf("post %s could not be rendered as Markdown", path)
+		return post, false, markdown_error_message(path, markdown_error, detail)
 	}
 	return Post {
 			slug = slug,
@@ -172,7 +190,13 @@ parse_post :: proc(path, source, base_url: string) -> (post: Post, draft: bool, 
 }
 
 @(private = "file")
-parse_page :: proc(path, source, base_url: string) -> (page: Page, error: string) {
+parse_page :: proc(
+	path, source, base_url: string,
+	images: Image_Sizes,
+) -> (
+	page: Page,
+	error: string,
+) {
 	metadata, body, split_error := split_front_matter(path, source)
 	if split_error != "" do return page, split_error
 	fields, parse_error := parse_metadata(path, metadata)
@@ -180,8 +204,8 @@ parse_page :: proc(path, source, base_url: string) -> (page: Page, error: string
 	if fields.title == "" || fields.description == "" {
 		return page, fmt.tprintf("page %s requires title and description", path)
 	}
-	html, markdown_error := render_markdown(body)
-	if markdown_error != .None do return page, fmt.tprintf("page %s could not be rendered as Markdown", path)
+	html, markdown_error, detail := render_markdown(body, images)
+	if markdown_error != .None do return page, markdown_error_message(path, markdown_error, detail)
 	return Page {
 			title = fields.title,
 			description = fields.description,
@@ -189,6 +213,17 @@ parse_page :: proc(path, source, base_url: string) -> (page: Page, error: string
 			html = html,
 		},
 		""
+}
+
+@(private = "file")
+markdown_error_message :: proc(path: string, error: Markdown_Error, detail: string) -> string {
+	#partial switch error {
+	case .Missing_Image:
+		return fmt.tprintf("%s references an image that is not embedded: %s", path, detail)
+	case .Invalid_Image_Option:
+		return fmt.tprintf("%s uses an unknown image option: %s", path, detail)
+	}
+	return fmt.tprintf("%s could not be rendered as Markdown", path)
 }
 
 @(private = "file")

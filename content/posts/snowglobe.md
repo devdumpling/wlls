@@ -7,7 +7,7 @@ description: "Something joyful, with SvelteKit and Gleam."
 
 A few weeks ago I had a weird dream.
 
-![Pixelated avatar of Devon](/images/avatars/dev.webp)
+![Pixelated avatar of Devon](/images/avatars/dev.webp "| pixel")
 
 It was weird because it was 1.) a work dream (usually not my fave) and 2.) goofy as hell.
 

@@ -47,6 +47,7 @@
       monospace;
 
     --radius: 0.5rem;
+    --plate-tone: sepia(0.16) saturate(0.86) contrast(0.97);
     /* A hand-cut edge: every corner a slightly different curve. */
     --radius-organic: 0.35rem 1.1rem 0.5rem 0.9rem / 0.9rem 0.4rem 1rem 0.35rem;
     --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -66,6 +67,7 @@
       --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .5 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
       --grain-opacity: 0.06;
       --grain-blend: screen;
+      --plate-tone: sepia(0.16) saturate(0.8) brightness(0.88);
     }
   }
 
@@ -137,79 +139,201 @@
     --underline-size: 100%;
   }
 
-  /* Site chrome is monospace and quiet. */
-  .site-name,
-  .site-header nav a,
-  .site-footer a,
-  .more-link,
-  .article-footer a {
+  /* Breadcrumb: the page's address, quiet and monospace. */
+  .breadcrumb {
+    color: var(--ink-soft);
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     letter-spacing: 0.02em;
   }
-  .site-name {
+  .breadcrumb a {
     --underline-rest: transparent;
-    color: var(--ink);
-    font-size: 0.95rem;
-    font-weight: 600;
-  }
-  .site-name span {
     color: var(--ink-soft);
-    font-weight: 400;
-    transition: color 300ms var(--ease-out);
+    transition: color 250ms var(--ease-out);
   }
-  .site-name:hover span {
+  .breadcrumb a:hover,
+  .breadcrumb a[aria-current="page"] {
+    color: var(--ink);
+  }
+  .breadcrumb li + li::before {
+    color: var(--rule-strong);
+  }
+
+  /* Rail: menu rows between dotted rules, each marked by a small glyph.
+     Touching a row wipes an inverted ink bar across it; the current page
+     carries a small accent square. */
+  .rail {
+    border-block-start: 1px solid var(--rule);
+  }
+  @media (min-width: 60rem) {
+    .rail {
+      border-block-start: 0;
+      border-inline-start: 1px solid var(--rule);
+    }
+  }
+  /* Dotted rules: a 1px dot every 4px, crisper than a native dotted
+     border, which blurs into a solid line at 1x density. */
+  .rail-links li {
+    --dots: linear-gradient(to right, var(--rule-strong) 1px, transparent 1px)
+      0 0 / 4px 1px repeat-x;
+    padding-block: 1px 0;
+    background: var(--dots);
+  }
+  .rail-links li:last-child {
+    padding-block-end: 1px;
+    background:
+      var(--dots),
+      linear-gradient(to right, var(--rule-strong) 1px, transparent 1px) 0 100% /
+        4px 1px repeat-x;
+  }
+  .rail-links a {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: linear-gradient(var(--ink) 0 0) 0 0 / 0% 100% no-repeat;
+  }
+  .rail-links a:is(:hover, :focus-visible) {
+    background-size: 100% 100%;
+    color: var(--paper);
+    outline: none;
+  }
+  .rail-glyph {
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+  }
+  .rail-links a:is(:hover, :focus-visible) .rail-glyph {
+    color: color-mix(in srgb, var(--paper) 65%, var(--ink));
+  }
+  .rail-links a[aria-current="page"] .rail-label::after {
+    content: "";
+    display: inline-block;
+    inline-size: 0.4rem;
+    block-size: 0.4rem;
+    margin-inline-start: 0.75ch;
+    vertical-align: 0.12em;
+    background: var(--accent);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .rail-links a {
+      transition:
+        background-size 380ms var(--ease-in-out),
+        color 250ms var(--ease-out);
+    }
+  }
+
+  /* Landing. */
+  .landing h1 {
+    max-inline-size: 17ch;
+    font-size: clamp(2.3rem, 1.1rem + 3.7vw, 4.75rem);
+    font-weight: 400;
+    letter-spacing: -0.022em;
+    line-height: 1.04;
+  }
+  .landing h1 em {
     color: var(--accent);
   }
-  .site-header nav a,
-  .site-footer a {
+  .latest {
     --underline-rest: transparent;
-    color: var(--ink-soft);
-    text-transform: lowercase;
-    transition: color 300ms var(--ease-out);
-  }
-  .site-header nav a:hover,
-  .site-footer a:hover,
-  .site-header nav a[aria-current="page"] {
     color: var(--ink);
+    background: none;
   }
-  .site-header nav a[aria-current="page"] {
-    --underline-at: 0%;
-    --underline-size: 100%;
+  .latest-title {
+    font-size: 1.3rem;
+    background: linear-gradient(var(--accent) 0 0) var(--underline-at) 100% /
+      var(--underline-size) 0.08em no-repeat;
   }
-  .site-footer {
-    background: linear-gradient(var(--rule) 0 0) 50% 0 / var(--wide) 1px
-      no-repeat;
+  .latest-title::after {
+    content: "→";
+    display: inline-block;
+    margin-inline-start: 0.6ch;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.85em;
   }
-  .more-link,
-  .article-footer a {
-    --underline-rest: transparent;
+  .latest:hover .latest-title::after {
+    translate: 0.25rem 0;
+  }
+  .latest-dek {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    line-height: 1.55;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .latest-title {
+      transition: background-size 450ms var(--ease-in-out);
+    }
+    .latest-title::after {
+      transition: translate 400ms var(--ease-out);
+    }
+  }
+
+  /* Terminal: unannounced. At rest it is only a faint prompt and a slowly
+     blinking cursor, an invitation for the curious. Touch brightens it;
+     focus hands the blink to the real caret. */
+  .terminal {
+    color: var(--ink);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.65;
+  }
+  .terminal-prompt .terminal-ps1 {
+    color: var(--ink-soft);
+    opacity: 0.6;
+    transition:
+      color 300ms var(--ease-out),
+      opacity 300ms var(--ease-out);
+  }
+  .terminal-prompt:is(:hover, :focus-within) .terminal-ps1 {
+    color: var(--accent);
+    opacity: 1;
+  }
+  .terminal-prompt:not(:focus-within) .terminal-ps1::after {
+    content: "";
+    display: inline-block;
+    inline-size: 0.6em;
+    block-size: 1.15em;
+    margin-inline-start: 1ch;
+    vertical-align: -0.2em;
+    background: currentColor;
+    animation: terminal-blink 1.2s steps(1) infinite;
+  }
+  @keyframes terminal-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .terminal-prompt .terminal-ps1::after {
+      animation: none;
+    }
+  }
+  .terminal-prompt input {
+    caret-color: var(--accent);
+    caret-shape: block;
+  }
+  .terminal-echo .terminal-ps1 {
+    color: var(--accent);
+  }
+  .terminal-line,
+  .terminal-list dd {
     color: var(--ink-soft);
   }
-  .more-link::after,
-  .article-footer a::before {
-    display: inline-block;
-    transition: translate 400ms var(--ease-out);
+  .terminal-error {
+    color: var(--rust);
   }
-  .more-link::after {
-    content: "→";
-    margin-inline-start: 0.6ch;
+  .terminal-toggle {
+    color: var(--ink-soft);
+    font: inherit;
+    transition: color 250ms var(--ease-out);
   }
-  .article-footer a::before {
-    content: "←";
-    margin-inline-end: 0.6ch;
-  }
-  .more-link:hover::after {
-    translate: 0.3em 0;
-  }
-  .article-footer a:hover::before {
-    translate: -0.3em 0;
+  .terminal-toggle:hover {
+    color: var(--accent);
   }
 
   /* Contour lines close each header and replace plain rules. */
   .article-header::after,
   .page-header::after,
-  .home-intro::after,
   hr {
     content: "";
     display: block;
@@ -219,8 +343,7 @@
     mask: var(--contour) center / 100% 100% no-repeat;
   }
   .article-header::after,
-  .page-header::after,
-  .home-intro::after {
+  .page-header::after {
     margin-block-start: clamp(1.75rem, 4vw, 2.5rem);
   }
 
@@ -230,14 +353,66 @@
     --underline-rest: transparent;
     color: var(--ink);
   }
+  /* ...and eases its tracking open, a typographic breath. */
   .post-entry:hover h2 a {
     --underline-at: 0%;
     --underline-size: 100%;
+    letter-spacing: 0.012em;
   }
 
   @media (prefers-reduced-motion: no-preference) {
     a {
       transition: background-size 450ms var(--ease-in-out);
+    }
+    .post-entry h2 a {
+      transition:
+        background-size 450ms var(--ease-in-out),
+        letter-spacing 600ms var(--ease-out);
+    }
+  }
+
+  /* Section permalinks: a mono mark that surfaces when the heading is
+     touched or the link is focused. */
+  .heading-anchor {
+    --underline-rest: transparent;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.72em;
+    font-weight: 400;
+    line-height: 1.6;
+    opacity: 0;
+    transition: opacity 250ms var(--ease-out);
+  }
+  :is(h2, h3, h4):hover > .heading-anchor,
+  .heading-anchor:focus-visible {
+    opacity: 1;
+  }
+
+  /* Footnote previews: a slip of paper lifted just off the page. */
+  .footnote-preview {
+    border: 1px dashed var(--rule-strong);
+    border-radius: var(--radius-organic);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    box-shadow:
+      0 1px 2px color-mix(in oklch, var(--ink) 8%, transparent),
+      0 14px 32px -14px color-mix(in oklch, var(--ink) 30%, transparent);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .footnote-preview {
+      transition:
+        opacity 180ms var(--ease-out),
+        translate 220ms var(--ease-out),
+        display 220ms allow-discrete,
+        overlay 220ms allow-discrete;
+    }
+    @starting-style {
+      .footnote-preview:popover-open {
+        opacity: 0;
+        translate: 0 0.25rem;
+      }
     }
   }
 
@@ -283,6 +458,38 @@
   }
   td {
     border-block-end: 1px solid var(--rule);
+  }
+
+  /* Plates: every image is printed onto the same paper. A mat and hairline
+     frame hold it, and a gentle warm tone draws photos into the palette;
+     touching the image develops it back to full color. */
+  .plate:not([data-treatment="raw"], [data-size="full"]) img {
+    padding: 0.45rem;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .plate:not([data-treatment]) img {
+    filter: var(--plate-tone);
+  }
+  .plate img:hover {
+    filter: none;
+  }
+  .plate figcaption {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .plate figcaption::before {
+    content: "Fig. " counter(plate);
+    margin-inline-end: 1ch;
+    color: var(--accent);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .plate img {
+      transition: filter 700ms var(--ease-in-out);
+    }
   }
 
   /* Callouts read as notes pinned into the page. */
@@ -342,8 +549,5 @@
 
   .skip-link {
     background: var(--ink);
-  }
-  .message-page .eyebrow {
-    color: var(--rust);
   }
 }

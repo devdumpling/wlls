@@ -1,0 +1,67 @@
+package views
+
+import content "../content"
+
+// The terminal is server-driven: a command posts as a form, and the reply is
+// SSE patches rendered from these same components. <wlls-terminal> (a Rocket
+// component) adds only client behavior: focus, history, scroll-follow, and the
+// fold toggle. It is deliberately unannounced: a prompt and a blinking cursor.
+terminal :: templ() {
+	<wlls-terminal id="terminal" class="terminal">
+		@terminal_output()
+		<div class="terminal-bar">
+			@terminal_prompt()
+			<button type="button" class="terminal-toggle" aria-controls="terminal-output" aria-expanded="true" aria-label="Fold terminal output">[-]</button>
+		</div>
+	</wlls-terminal>
+}
+
+terminal_output :: templ() {
+	<div id="terminal-output" class="terminal-output" role="log" aria-live="polite" aria-label="Terminal output"></div>
+}
+
+terminal_prompt :: templ() {
+	<form id="terminal-prompt" class="terminal-prompt" data-on:submit__prevent="@post('/terminal', {contentType: 'form'})">
+		<label for="terminal-input" class="terminal-ps1">~ $</label>
+		<input id="terminal-input" name="command" value="" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="120" enterkeyhint="send"/>
+	</form>
+}
+
+terminal_echo :: templ(command: string) {
+	<p class="terminal-echo"><span class="terminal-ps1" aria-hidden="true">~ $</span> { command }</p>
+}
+
+terminal_line :: templ(text: string) {
+	<p class="terminal-line">{ text }</p>
+}
+
+terminal_error :: templ(text: string) {
+	<p class="terminal-line terminal-error">{ text }</p>
+}
+
+terminal_link :: templ(text: string, href: string) {
+	<p class="terminal-line"><a href={ href }>{ text }</a></p>
+}
+
+terminal_help :: templ() {
+	<dl class="terminal-list">
+		<dt>ls</dt>
+		<dd>list posts</dd>
+		<dt>cd &lt;place&gt;</dt>
+		<dd>go somewhere: posts, about, ~, or a post</dd>
+		<dt>whoami</dt>
+		<dd>about me</dd>
+		<dt>play</dt>
+		<dd>start the game</dd>
+		<dt>clear</dt>
+		<dd>clear the screen</dd>
+	</dl>
+}
+
+terminal_posts :: templ(posts: []content.Post) {
+	<ul class="terminal-list terminal-posts">
+		for post in posts {
+			<li><a href={ post.url }>{ post.slug }</a></li>
+		}
+	</ul>
+}

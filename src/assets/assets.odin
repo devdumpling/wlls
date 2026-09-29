@@ -33,9 +33,6 @@ load_js :: proc() -> []runtime.Load_Directory_File {return #load_directory("stat
 load_avatars :: proc() -> []runtime.Load_Directory_File {return #load_directory(
 		"static/images/avatars",
 	)}
-load_post_images :: proc() -> []runtime.Load_Directory_File {return #load_directory(
-		"static/images/posts",
-	)}
 
 Asset_Group :: struct {
 	prefix: string,
@@ -49,7 +46,6 @@ load :: proc() -> (bundle: Bundle, error: string) {
 		{prefix = "fonts/", files = load_fonts()},
 		{prefix = "js/", files = load_js()},
 		{prefix = "images/avatars/", files = load_avatars()},
-		{prefix = "images/posts/", files = load_post_images()},
 	}
 
 	bundle.by_path = make(map[string]int)

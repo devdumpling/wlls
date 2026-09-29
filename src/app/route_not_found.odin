@@ -21,9 +21,9 @@ render_not_found :: proc(
 	request: ^http.Request,
 	ctx: ^Application_Context,
 ) -> http.HTTP_Status {
-	_ = request
 	metadata := views.Metadata {
 		page        = "not-found",
+		path        = transmute(string)http.path(request),
 		title       = "404 | wlls.dev",
 		description = "Sorry fam it's not here idk what to tell you.",
 		noindex     = true,

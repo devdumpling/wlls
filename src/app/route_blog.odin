@@ -21,9 +21,9 @@ render_blog_index :: proc(
 	request: ^http.Request,
 	ctx: ^Application_Context,
 ) -> http.HTTP_Status {
-	_ = request
 	metadata := views.Metadata {
 		page        = "blog",
+		path        = transmute(string)http.path(request),
 		title       = "Posts | wlls.dev",
 		description = "You can read it if you want.",
 		canonical   = CANONICAL_BLOG,
@@ -57,6 +57,7 @@ render_blog_post :: proc(
 	}
 	metadata := views.Metadata {
 		page        = "post",
+		path        = transmute(string)http.path(request),
 		title       = post.title,
 		description = post.description,
 		canonical   = post.canonical,

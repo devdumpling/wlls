@@ -21,16 +21,15 @@ render_home :: proc(
 	request: ^http.Request,
 	ctx: ^Application_Context,
 ) -> http.HTTP_Status {
-	_ = request
 	posts := content.published_posts(&ctx.content)
-	posts = posts[:min(len(posts), 5)]
 	metadata := views.Metadata {
 		page        = "home",
+		path        = transmute(string)http.path(request),
 		title       = "Home | wlls.dev",
 		description = "Just my corner of the internet. Feel free to stay a while.",
 		canonical   = BASE_URL + "/",
 		open_graph  = "website",
 	}
-	views.home(writer, posts, metadata, ctx.view_assets)
+	views.home(writer, posts[0], metadata, ctx.view_assets)
 	return http.HTTP_STATUS_OK
 }

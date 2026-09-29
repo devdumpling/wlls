@@ -27,33 +27,78 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 			<link rel="icon" href={ assets.favicon } type="image/svg+xml"/>
 			<link rel="stylesheet" href={ assets.stylesheet }/>
 			<link rel="stylesheet" href={ assets.garden }/>
+			{! import_map(assets) }
 			<script type="module" src={ assets.datastar }></script>
+			if metadata.page == "post" {
+				<script type="module" src={ assets.footnotes }></script>
+			}
+			if metadata.page == "home" {
+				<script type="module" src={ assets.terminal }></script>
+			}
 		</head>
 		<body data-page={ metadata.page }>
 			<a class="skip-link" href="#main-content">Skip to content</a>
-			<header class="site-header">
-				<a class="site-name" href="/" aria-label="wlls.dev home">wlls<span>.dev</span></a>
-				<nav aria-label="Primary">
-					<a href="/blog" if metadata.page == "blog" || metadata.page == "post" { aria-current="page" }>Posts</a>
-					<a href="/about" if metadata.page == "about" { aria-current="page" }>About</a>
-				</nav>
-			</header>
-			<main id="main-content">
-				{#slot}
-			</main>
-			<footer class="site-footer">
-				<nav aria-label="Elsewhere">
-					<a href="https://github.com/devdumpling">GitHub</a>
-					<a href={ assets.feed }>RSS</a>
-				</nav>
-			</footer>
+			<div class="shell">
+				<div class="column">
+					@breadcrumb(metadata.path)
+					<main id="main-content">
+						{#slot}
+					</main>
+				</div>
+				@rail(metadata, assets)
+			</div>
 		</body>
 	</html>
 }
 
+// breadcrumb renders the request path as linked segments: wlls.dev / blog / devex.
+breadcrumb :: templ(path: string) {
+	{{ crumbs := breadcrumbs(path) }}
+	<nav class="breadcrumb" aria-label="Breadcrumb">
+		<ol>
+			for crumb, index in crumbs {
+				<li>
+					if index == len(crumbs) - 1 {
+						<a href={ crumb.href } aria-current="page">{ crumb.label }</a>
+					} else {
+						<a href={ crumb.href }>{ crumb.label }</a>
+					}
+				</li>
+			}
+		</ol>
+	</nav>
+}
+
+// rail is the site's only navigation, set apart on the right like a menu.
+rail :: templ(metadata: Metadata, assets: Asset_URLs) {
+	<aside class="rail">
+		<nav aria-label="Primary">
+			<ol class="rail-links">
+				<li>
+					<a href="/blog" if metadata.page == "blog" || metadata.page == "post" { aria-current="page" }>
+						<span class="rail-glyph" aria-hidden="true">¶</span>
+						<span class="rail-label">posts</span>
+					</a>
+				</li>
+				<li>
+					<a href={ assets.feed }>
+						<span class="rail-glyph" aria-hidden="true">))</span>
+						<span class="rail-label">rss</span>
+					</a>
+				</li>
+				<li>
+					<a href="https://github.com/devdumpling">
+						<span class="rail-glyph" aria-hidden="true">&lt;&gt;</span>
+						<span class="rail-label">github</span>
+					</a>
+				</li>
+			</ol>
+		</nav>
+	</aside>
+}
+
 not_found :: templ() {
 	<section class="message-page">
-		<p class="eyebrow">404 · Off trail</p>
 		<h1>Nothing grows here</h1>
 		<p>Sorry fam this this page doesn't exist. Idk either.</p>
 		<a href="/">Take me away</a>
