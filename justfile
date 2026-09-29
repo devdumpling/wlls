@@ -1,5 +1,12 @@
 app := "bin/wlls"
 
+# Build settings shared by every Odin invocation. flake.nix mirrors
+# odin_defines for release builds; src/app/conf.odin asserts the egress size,
+# so a build that forgets it fails to compile.
+odin_defines := "-define:HTTP_EGRESS_BUFFER_SIZE=16384 -define:TINA_ASSERTS=true"
+odin_flags := "-collection:tempo=" + env_var("TEMPO_SRC") + " -thread-count:1 " + odin_defines
+cmark := '-extra-linker-flags:"-L' + env_var("CMARK_GFM_LIB") + '"'
+
 default:
     @just --list
 
@@ -13,7 +20,7 @@ format:
 build port="8080":
     just generate
     mkdir -p bin
-    odin build src -collection:tempo={{env_var("TEMPO_SRC")}} -extra-linker-flags:"-L{{env_var("CMARK_GFM_LIB")}}" -out:{{app}} -define:TINA_ASSERTS=true -define:WLLS_PORT={{port}} -thread-count:1
+    odin build src {{odin_flags}} {{cmark}} -out:{{app}} -define:WLLS_PORT={{port}}
 
 run port="8080":
     @if lsof -nP -iTCP:{{port}} -sTCP:LISTEN; then \
@@ -25,7 +32,9 @@ run port="8080":
 
 check port="8080":
     just generate
-    odin check src -collection:tempo={{env_var("TEMPO_SRC")}} -vet -vet-packages:main -define:TINA_ASSERTS=true -define:WLLS_PORT={{port}} -thread-count:1
-    odin test src/views -collection:tempo={{env_var("TEMPO_SRC")}} -extra-linker-flags:"-L{{env_var("CMARK_GFM_LIB")}}" -define:ODIN_TEST_THREADS=1 -thread-count:1
-    odin test src/assets -define:ODIN_TEST_THREADS=1 -thread-count:1
-    odin test src/content -extra-linker-flags:"-L{{env_var("CMARK_GFM_LIB")}}" -define:ODIN_TEST_THREADS=1 -thread-count:1
+    odin check src {{odin_flags}} -vet -vet-packages:main -define:WLLS_PORT={{port}}
+    odin test src/app {{odin_flags}} {{cmark}} -define:ODIN_TEST_THREADS=1
+    odin test src/httpx {{odin_flags}} -define:ODIN_TEST_THREADS=1
+    odin test src/views {{odin_flags}} {{cmark}} -define:ODIN_TEST_THREADS=1
+    odin test src/assets {{odin_flags}} -define:ODIN_TEST_THREADS=1
+    odin test src/content {{odin_flags}} {{cmark}} -define:ODIN_TEST_THREADS=1

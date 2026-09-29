@@ -21,6 +21,8 @@ tracking_allocator :: proc(tracker: ^Allocation_Tracker) -> runtime.Allocator {
 // RENDER_BUFFER_MAX caps what one per-request render may produce. Pages that
 // depend only on startup data are rendered once at boot instead; this bound is
 // for responses that must be rendered per request (404, Datastar patches).
+// The reservation rounds up to the OS page size, and the builder doubles as it
+// grows, so a render succeeds up to somewhere between half and all of it.
 RENDER_BUFFER_MAX :: #config(WLLS_RENDER_BUFFER_MAX, 1 * mem.Megabyte)
 
 @(private = "file")

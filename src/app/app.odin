@@ -56,6 +56,7 @@ run :: proc() {
 				terminal_command,
 				body_size_max = TERMINAL_BODY_MAX,
 				body_mode = .Buffered,
+				state_size = TERMINAL_STATE_SIZE,
 			),
 			http.get("/rss.xml", rss_compatibility),
 			stream_get("/static/*", static_asset),
@@ -82,7 +83,7 @@ run :: proc() {
 // load builds the immutable application context: assets first (content
 // rendering sizes and validates images from them), then content, then every
 // page rendered from both.
-@(private = "file")
+@(private)
 load :: proc(allocator: runtime.Allocator) -> (ctx: Application_Context, error: string) {
 	context.allocator = allocator
 

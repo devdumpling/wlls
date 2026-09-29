@@ -25,6 +25,8 @@
       ];
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
+      # Mirrors odin_defines in the justfile, with Tina's assertions off.
+      releaseDefines = "-define:HTTP_EGRESS_BUFFER_SIZE=16384 -define:TINA_ASSERTS=false";
       packagesFor = forAllSystems (
         system:
         import nixpkgs {
@@ -86,11 +88,11 @@
                 ${
                   if cross then
                     ''
-                      odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"-L${buildPkgs.cmark-gfm}/lib" -target:linux_amd64 -build-mode:obj -out:wlls.obj -o:speed -define:TINA_ASSERTS=false -thread-count:1
+                      odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"-L${buildPkgs.cmark-gfm}/lib" -target:linux_amd64 -build-mode:obj -out:wlls.obj -o:speed ${releaseDefines} -thread-count:1
                       $CC wlls.obj -o wlls -L${buildPkgs.cmark-gfm}/lib -lcmark-gfm-extensions -lcmark-gfm -lm -ldl -pthread
                     ''
                   else
-                    ''odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"-L${buildPkgs.cmark-gfm}/lib" -out:wlls -o:speed -define:TINA_ASSERTS=false -thread-count:1''
+                    ''odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"-L${buildPkgs.cmark-gfm}/lib" -out:wlls -o:speed ${releaseDefines} -thread-count:1''
                 }
                 runHook postBuild
               '';

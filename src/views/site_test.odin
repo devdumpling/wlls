@@ -56,3 +56,16 @@ test_post_document_escapes_metadata_and_inserts_rendered_markdown :: proc(t: ^te
 	testing.expect(t, strings.contains(page, `src="/static/test/js/footnotes.js"`))
 	testing.expect(t, strings.has_suffix(page, "</html>"))
 }
+
+@(test)
+test_breadcrumbs_link_each_path_prefix :: proc(t: ^testing.T) {
+	crumbs := breadcrumbs("/blog/devex")
+	testing.expect_value(t, len(crumbs), 3)
+	if len(crumbs) == 3 {
+		testing.expect_value(t, crumbs[0], Crumb{label = "wlls.dev", href = "/"})
+		testing.expect_value(t, crumbs[1], Crumb{label = "blog", href = "/blog"})
+		testing.expect_value(t, crumbs[2], Crumb{label = "devex", href = "/blog/devex"})
+	}
+	testing.expect_value(t, len(breadcrumbs("/")), 1)
+	testing.expect_value(t, len(breadcrumbs("//blog//")), 2)
+}

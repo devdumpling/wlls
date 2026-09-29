@@ -1,8 +1,8 @@
 package app
 
-import datastar "../../vendor/tina/src/extensions/http/datastar"
 import http "../../vendor/tina/src/extensions/http/server"
 import content "../content"
+import httpx "../httpx"
 import views "../views"
 import "core:strings"
 
@@ -19,70 +19,50 @@ terminal_command :: proc(
 	route_context: http.Route_Context,
 	state: rawptr,
 ) -> http.Route_Step {
-	_ = state
-	request_start, is_start := event.(http.Request_Start)
-	if !is_start do return http.close()
-	_ = request_start
-
-	ctx := cast(^Application_Context)route_context.application_context
-	if ctx == nil do return http.close()
-
-	allocator := http.request_arena(request)
-	line, ok := form_value(http.body_buffered(request), "command", allocator)
-	if !ok {
-		return http.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid command")
+	stream := cast(^httpx.Patch_Stream)state
+	if _, starting := event.(http.Request_Start); !starting {
+		return httpx.drive_patches(event, response, stream)
 	}
-	line = strings.trim_space(line)
 
-	sse, start_error := datastar.start_sse(response)
-	if start_error != .None do return http.close()
+	ctx := app_context(route_context)
+	line, ok := form_value(http.body_buffered(request), "command", http.request_arena(request))
+	if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid command")
 
-	output := strings.builder_make(0, 2048, allocator)
-	result := run_command(&output, line, &ctx.content)
-
+	writer := httpx.begin_patches(stream)
+	result := run_command(writer, strings.trim_space(line), &ctx.content)
 	if result.clear {
-		cleared := strings.builder_make(0, 256, allocator)
-		views.terminal_output(&cleared)
-		if datastar.patch_elements(&sse, strings.to_string(cleared)) != .None {
-			return http.close()
-		}
-	} else if datastar.patch_elements(
-		   &sse,
-		   strings.to_string(output),
-		   datastar.Patch_Elements_Options{selector = "#terminal-output", mode = .Append},
-	   ) !=
-	   .None {
-		return http.close()
+		httpx.queue_elements(stream) // an empty log, morphed over the old one
+	} else {
+		httpx.queue_elements(stream, {selector = "#terminal-output", mode = .Append})
 	}
 
 	// Replace (not morph) the prompt: morphing keeps a focused input's value,
 	// and the next command needs an empty line. <wlls-terminal> refocuses it.
-	prompt := strings.builder_make(0, 512, allocator)
-	views.terminal_prompt(&prompt)
-	if datastar.patch_elements(
-		   &sse,
-		   strings.to_string(prompt),
-		   datastar.Patch_Elements_Options{selector = "#terminal-prompt", mode = .Replace},
-	   ) !=
-	   .None {
-		return http.close()
-	}
+	views.terminal_prompt(writer)
+	httpx.queue_elements(stream, {selector = "#terminal-prompt", mode = .Replace})
 
 	if result.navigate != "" {
-		script := strings.concatenate({"location.assign('", result.navigate, "')"}, allocator)
-		if datastar.execute_script(&sse, script) != .None do return http.close()
+		httpx.queue_script(
+			stream,
+			strings.concatenate({"location.assign('", result.navigate, "')"}, context.temp_allocator),
+		)
 	}
-	return http.flush(final = true)
+	return httpx.send_patches(response, stream)
 }
 
-@(private = "file")
+// The terminal's per-request state: its queued patches and their render.
+@(private)
+TERMINAL_STATE_SIZE :: u16(size_of(httpx.Patch_Stream))
+
+@(private)
 Command_Result :: struct {
 	clear:    bool,
 	navigate: string, // a site path known to be safe to assign
 }
 
-// run_command renders a command's echo and result into output.
-@(private = "file")
+// run_command renders a command's echo and result into output. clear renders
+// an empty log instead, which replaces the old one.
+@(private)
 run_command :: proc(
 	output: ^strings.Builder,
 	line: string,
@@ -90,17 +70,17 @@ run_command :: proc(
 ) -> (
 	result: Command_Result,
 ) {
-	if line == "" {
-		views.terminal_echo(output, "")
-		return
-	}
-	views.terminal_echo(output, line)
-
 	rest := line
 	name, _ := strings.fields_iterator(&rest)
 	argument := strings.trim_space(rest)
+	if name == "clear" {
+		views.terminal_output(output)
+		return {clear = true}
+	}
 
+	views.terminal_echo(output, line)
 	switch name {
+	case "":
 	case "help", "?":
 		views.terminal_help(output)
 	case "ls":
@@ -124,8 +104,6 @@ run_command :: proc(
 		result.navigate = target
 	case "play":
 		views.terminal_line(output, "not yet. it's still being built. soon.")
-	case "clear":
-		result.clear = true
 	case:
 		message := strings.concatenate(
 			{"command not found: ", name, ". try help"},
