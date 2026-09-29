@@ -29,14 +29,14 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 			<link rel="stylesheet" href={ assets.garden }/>
 			{! import_map(assets) }
 			<script type="module" src={ assets.datastar }></script>
-			if metadata.page == "post" {
+			if metadata.page == .Post {
 				<script type="module" src={ assets.footnotes }></script>
 			}
-			if metadata.page == "home" {
+			if metadata.page == .Home {
 				<script type="module" src={ assets.terminal }></script>
 			}
 		</head>
-		<body data-page={ metadata.page }>
+		<body data-page={ page_name(metadata.page) }>
 			<a class="skip-link" href="#main-content">Skip to content</a>
 			<div class="shell">
 				<div class="column">
@@ -75,7 +75,7 @@ rail :: templ(metadata: Metadata, assets: Asset_URLs) {
 		<nav aria-label="Primary">
 			<ol class="rail-links">
 				<li>
-					<a href="/blog" if metadata.page == "blog" || metadata.page == "post" { aria-current="page" }>
+					<a href="/blog" if metadata.page == .Blog || metadata.page == .Post { aria-current="page" }>
 						<span class="rail-glyph" aria-hidden="true">¶</span>
 						<span class="rail-label">posts</span>
 					</a>

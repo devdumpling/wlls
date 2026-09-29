@@ -15,7 +15,7 @@ test_post_document_escapes_metadata_and_inserts_rendered_markdown :: proc(t: ^te
 		html        = content.Markdown_HTML("<p><strong>Rendered Markdown</strong></p>"),
 	}
 	metadata := Metadata {
-		page        = "post",
+		page        = .Post,
 		path        = "/blog/sample-post",
 		title       = post.title,
 		description = post.description,

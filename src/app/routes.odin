@@ -2,52 +2,98 @@ package app
 
 import http "../../vendor/tina/src/extensions/http/server"
 import httpx "../httpx"
+import views "../views"
 
-import "core:strings"
+// Tina calls an event route once per event of a request (Request_Start, then
+// Send_Ready after each flush, or Peer_Closed). Every handler below follows
+// the same shape: on Request_Start, choose a response and begin streaming it;
+// on any later event, let httpx.drive continue or clean up.
 
-Page_Renderer :: #type proc(
-	writer: ^strings.Builder,
-	request: ^http.Request,
-	application_context: ^Application_Context,
-) -> http.HTTP_Status
-
-// document_event handles the shared HTTP lifecycle for complete server-rendered pages.
-// feature renderers only choose data, metadata, and their Tempo view.
-// this adapter handles chunking, headers, backpressure, and disconnect cleanup.
-document_event :: proc(
+// serve_page answers every page rendered at startup, looked up by path.
+serve_page :: proc(
 	event: http.Route_Event,
 	request: ^http.Request,
 	response: ^http.Response,
 	route_context: http.Route_Context,
 	state: rawptr,
-	render: Page_Renderer,
 ) -> http.Route_Step {
-	page_state := cast(^Stream_State)state
-	switch _ in event {
-	case http.Request_Start:
-		application_context := cast(^Application_Context)route_context.application_context
-		if application_context == nil do return http.close()
-
-		httpx.document_begin(&page_state.document, http.HTTP_STATUS_OK, "text/html; charset=utf-8")
-		status := render(&page_state.document.body, request, application_context)
-		page_state.document.status = status
-		set_security_headers(response)
-		_ = http.header_set(response, "Cache-Control", "public, max-age=0, must-revalidate")
-		return httpx.document_send(response, &page_state.document)
-	case http.Send_Ready:
-		return httpx.document_send(response, &page_state.document)
-	case http.Peer_Closed, http.Server_Drain:
-		httpx.document_destroy(&page_state.document)
-		return http.close()
-	case http.Body_Chunk, http.Application_Reply, http.Application_Notification:
-		return http.close()
+	stream := cast(^httpx.Body_Stream)state
+	if _, starting := event.(http.Request_Start); !starting {
+		return httpx.drive(event, response, stream)
 	}
-	return http.close()
+
+	ctx := app_context(route_context)
+	page, found := find_page(&ctx.site, string(http.path(request)))
+	if !found do return render_not_found(request, response, ctx, stream)
+
+	_ = http.header_set(response, "Cache-Control", page.cache_control)
+	_ = http.header_set(response, "ETag", page.etag)
+	if string(http.header(request, "If-None-Match")) == page.etag {
+		return httpx.not_modified(response, page.content_type)
+	}
+	httpx.begin_bytes(stream, http.HTTP_STATUS_OK, page.content_type, page.bytes)
+	return httpx.send(response, stream)
 }
 
+// not_found is the one page rendered per request, because its breadcrumb
+// echoes the requested path. It is the model for future request-dependent
+// pages: render into httpx.begin_render, then send.
+not_found :: proc(
+	event: http.Route_Event,
+	request: ^http.Request,
+	response: ^http.Response,
+	route_context: http.Route_Context,
+	state: rawptr,
+) -> http.Route_Step {
+	stream := cast(^httpx.Body_Stream)state
+	if _, starting := event.(http.Request_Start); !starting {
+		return httpx.drive(event, response, stream)
+	}
+	return render_not_found(request, response, app_context(route_context), stream)
+}
+
+@(private = "file")
+render_not_found :: proc(
+	request: ^http.Request,
+	response: ^http.Response,
+	ctx: ^Application_Context,
+	stream: ^httpx.Body_Stream,
+) -> http.Route_Step {
+	writer := httpx.begin_render(stream, http.HTTP_STATUS_NOT_FOUND, "text/html; charset=utf-8")
+	metadata := views.Metadata {
+		page        = .Not_Found,
+		path        = string(http.path(request)),
+		title       = "404 | wlls.dev",
+		description = "Sorry fam it's not here idk what to tell you.",
+		noindex     = true,
+	}
+	views.not_found_document(writer, metadata, ctx.view_assets)
+	_ = http.header_set(response, "Cache-Control", "public, max-age=0, must-revalidate")
+	return httpx.send(response, stream)
+}
+
+rss_compatibility :: proc(request: ^http.Request, response: ^http.Response) -> http.Route_Step {
+	_ = http.header_set(response, "Cache-Control", "public, max-age=3600")
+	_ = http.header_set(response, "Location", "/feed.xml")
+	return httpx.respond_text(response, http.HTTP_STATUS_MOVED_PERMANENTLY, "")
+}
+
+health :: proc(request: ^http.Request, response: ^http.Response) -> http.Route_Step {
+	_ = http.header_set(response, "Cache-Control", "no-store")
+	return httpx.respond_text(response, http.HTTP_STATUS_OK, "ok\n")
+}
+
+// app_context recovers the immutable startup data every route borrows.
 @(private)
-set_security_headers :: proc(response: ^http.Response) {
-	_ = http.header_set(response, "Referrer-Policy", "strict-origin-when-cross-origin")
-	_ = http.header_set(response, "X-Content-Type-Options", "nosniff")
-	_ = http.header_set(response, "X-Frame-Options", "DENY")
+app_context :: proc(route_context: http.Route_Context) -> ^Application_Context {
+	ctx := cast(^Application_Context)route_context.application_context
+	assert(ctx != nil, "route registered without the application context")
+	return ctx
+}
+
+// stream_get registers a GET route whose per-request state is a Body_Stream.
+// Tina routes HEAD to the GET handler when no explicit HEAD route exists.
+@(private)
+stream_get :: proc(path: string, handler: http.Route_Event_Handler) -> http.Route {
+	return http.get_event(path, handler, state_size = u16(size_of(httpx.Body_Stream)))
 }

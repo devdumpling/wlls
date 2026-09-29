@@ -7,7 +7,7 @@ import "core:strings"
 Metadata :: struct {
 	// page names the resource kind for the shell: it becomes <body data-page>
 	// for stylesheet hooks and marks the current primary navigation link.
-	page:        string,
+	page:        Page_Kind,
 	// path is the request path; the shell renders it as a breadcrumb.
 	path:        string,
 	title:       string,
@@ -15,6 +15,31 @@ Metadata :: struct {
 	canonical:   string,
 	open_graph:  string,
 	noindex:     bool,
+}
+
+Page_Kind :: enum {
+	Home,
+	Blog,
+	Post,
+	About,
+	Not_Found,
+}
+
+// page_name is the data-page value stylesheets select on.
+page_name :: proc(kind: Page_Kind) -> string {
+	switch kind {
+	case .Home:
+		return "home"
+	case .Blog:
+		return "blog"
+	case .Post:
+		return "post"
+	case .About:
+		return "about"
+	case .Not_Found:
+		return "not-found"
+	}
+	return ""
 }
 
 // stylesheet carries structure; garden carries the swappable theme (tokens,

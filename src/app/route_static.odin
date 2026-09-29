@@ -14,46 +14,30 @@ static_asset :: proc(
 	route_context: http.Route_Context,
 	state: rawptr,
 ) -> http.Route_Step {
-	stream := cast(^Stream_State)state
-	switch _ in event {
-	case http.Request_Start:
-		ctx := cast(^Application_Context)route_context.application_context
-		if ctx == nil do return http.close()
-
-		path := string(http.path(request))
-		asset_path, immutable := resolve_asset_path(&ctx.assets, path)
-		asset, found := assets.find(&ctx.assets, asset_path)
-		if !found {
-			_ = http.header_set(response, "Cache-Control", "no-store")
-			return http.respond_text(response, http.HTTP_STATUS_NOT_FOUND, "Not Found\n")
-		}
-
-		set_security_headers(response)
-		if immutable {
-			_ = http.header_set(response, "Cache-Control", "public, max-age=31536000, immutable")
-		} else {
-			_ = http.header_set(response, "Cache-Control", "public, max-age=3600")
-		}
-		_ = http.header_set(response, "ETag", asset.etag)
-		if string(http.header(request, "If-None-Match")) == asset.etag {
-			return http.respond_bytes(
-				response,
-				http.HTTP_STATUS_NOT_MODIFIED,
-				asset.content_type,
-				{},
-			)
-		}
-		httpx.bytes_begin(&stream.document, http.HTTP_STATUS_OK, asset.content_type, asset.bytes)
-		return httpx.document_send(response, &stream.document)
-	case http.Send_Ready:
-		return httpx.document_send(response, &stream.document)
-	case http.Peer_Closed, http.Server_Drain:
-		httpx.document_destroy(&stream.document)
-		return http.close()
-	case http.Body_Chunk, http.Application_Reply, http.Application_Notification:
-		return http.close()
+	stream := cast(^httpx.Body_Stream)state
+	if _, starting := event.(http.Request_Start); !starting {
+		return httpx.drive(event, response, stream)
 	}
-	return http.close()
+
+	ctx := app_context(route_context)
+	asset_path, immutable := resolve_asset_path(&ctx.assets, string(http.path(request)))
+	asset, found := assets.find(&ctx.assets, asset_path)
+	if !found {
+		_ = http.header_set(response, "Cache-Control", "no-store")
+		return httpx.respond_text(response, http.HTTP_STATUS_NOT_FOUND, "Not Found\n")
+	}
+
+	if immutable {
+		_ = http.header_set(response, "Cache-Control", "public, max-age=31536000, immutable")
+	} else {
+		_ = http.header_set(response, "Cache-Control", "public, max-age=3600")
+	}
+	_ = http.header_set(response, "ETag", asset.etag)
+	if string(http.header(request, "If-None-Match")) == asset.etag {
+		return httpx.not_modified(response, asset.content_type)
+	}
+	httpx.begin_bytes(stream, http.HTTP_STATUS_OK, asset.content_type, asset.bytes)
+	return httpx.send(response, stream)
 }
 
 @(private = "file")

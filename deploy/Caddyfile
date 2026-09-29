@@ -3,12 +3,8 @@
 }
 
 {$WLLS_SITE_ADDRESS:http://localhost:3000} {
-	header {
-		-Server
-		Referrer-Policy "strict-origin-when-cross-origin"
-		X-Content-Type-Options "nosniff"
-		X-Frame-Options "DENY"
-	}
+	# The app sets security headers on every response (src/httpx/headers.odin).
+	header -Server
 
 	# HEAD must keep the upstream's actual length. Even small SSE events need
 	# compression to start on the first flush, regardless of request method.

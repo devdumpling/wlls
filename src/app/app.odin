@@ -2,7 +2,6 @@ package app
 
 import assets "../assets"
 import content "../content"
-import httpx "../httpx"
 import views "../views"
 
 import tina "../../vendor/tina/src"
@@ -20,10 +19,7 @@ Application_Context :: struct {
 	content:     content.Repository,
 	assets:      assets.Bundle,
 	view_assets: views.Asset_URLs,
-}
-
-Stream_State :: struct {
-	document: httpx.Document_Stream,
+	site:        Site,
 }
 
 // Load and validate content before accepting requests. tina_start blocks until
@@ -44,26 +40,24 @@ run :: proc() {
 		os.exit(1)
 	}
 
-	// Init Tina app with our context and routes
-	// Note this is effectively route registration
-	// Edit this routes array to register new routes.
+	// Route registration: every path the site answers, in one place.
 	app := http.App {
 		application_context = rawptr(&application_context),
 		routes              = []http.Route {
-			stream_get("/", home_page),
-			stream_get("/blog", blog_index),
-			stream_get("/blog/:slug", blog_post),
-			stream_get("/about", about_page),
+			stream_get("/", serve_page),
+			stream_get("/blog", serve_page),
+			stream_get("/blog/:slug", serve_page),
+			stream_get("/about", serve_page),
+			stream_get("/feed.xml", serve_page),
+			stream_get("/sitemap.xml", serve_page),
+			stream_get("/robots.txt", serve_page),
 			http.post_event(
 				"/terminal",
 				terminal_command,
 				body_size_max = TERMINAL_BODY_MAX,
 				body_mode = .Buffered,
 			),
-			stream_get("/feed.xml", feed),
 			http.get("/rss.xml", rss_compatibility),
-			stream_get("/sitemap.xml", sitemap),
-			stream_get("/robots.txt", robots),
 			stream_get("/static/*", static_asset),
 			stream_get("/images/*", static_asset),
 			stream_get("/fonts/*", static_asset),
@@ -85,8 +79,9 @@ run :: proc() {
 	tina.tina_start(&spec)
 }
 
-// load builds the immutable application context. Assets load first: content
-// rendering sizes and validates images from them.
+// load builds the immutable application context: assets first (content
+// rendering sizes and validates images from them), then content, then every
+// page rendered from both.
 @(private = "file")
 load :: proc(allocator: runtime.Allocator) -> (ctx: Application_Context, error: string) {
 	context.allocator = allocator
@@ -110,14 +105,9 @@ load :: proc(allocator: runtime.Allocator) -> (ctx: Application_Context, error: 
 		favicon    = "/favicon.svg",
 		feed       = "/feed.xml",
 	}
-	return
-}
 
-// Tina routes HEAD to the GET handler when no explicit HEAD route exists.
-// Event handlers also need state across flushes; allocate it for every route.
-@(private = "file")
-stream_get :: proc(path: string, handler: http.Route_Event_Handler) -> http.Route {
-	return http.get_event(path, handler, state_size = u16(size_of(Stream_State)))
+	ctx.site, error = prerender(&ctx)
+	return
 }
 
 // embedded_image_size resolves a content image URL (for example

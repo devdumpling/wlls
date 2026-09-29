@@ -1,116 +1,16 @@
 package app
 
-import http "../../vendor/tina/src/extensions/http/server"
 import content "../content"
-import httpx "../httpx"
 import "core:fmt"
 import "core:strings"
 import "core:time"
 
-Discovery_Renderer :: #type proc(writer: ^strings.Builder, ctx: ^Application_Context)
+// Discovery documents (RSS, sitemap, robots.txt) are written by hand rather
+// than with Tempo: they are small, fixed XML/text shapes. prerender renders
+// them once at startup alongside the HTML pages.
 
-// discovery_event streams generated XML/text through the same bounded response
-// path as HTML, so a feed that grows with the archive also handles backpressure.
-discovery_event :: proc(
-	event: http.Route_Event,
-	response: ^http.Response,
-	route_context: http.Route_Context,
-	state: rawptr,
-	content_type: string,
-	render: Discovery_Renderer,
-) -> http.Route_Step {
-	stream := cast(^Stream_State)state
-	switch _ in event {
-	case http.Request_Start:
-		ctx := cast(^Application_Context)route_context.application_context
-		if ctx == nil do return http.close()
-		httpx.document_begin(&stream.document, http.HTTP_STATUS_OK, content_type)
-		render(&stream.document.body, ctx)
-		set_security_headers(response)
-		_ = http.header_set(response, "Cache-Control", "public, max-age=3600")
-		return httpx.document_send(response, &stream.document)
-	case http.Send_Ready:
-		return httpx.document_send(response, &stream.document)
-	case http.Peer_Closed, http.Server_Drain:
-		httpx.document_destroy(&stream.document)
-		return http.close()
-	case http.Body_Chunk, http.Application_Reply, http.Application_Notification:
-		return http.close()
-	}
-	return http.close()
-}
-
-feed :: proc(
-	event: http.Route_Event,
-	request: ^http.Request,
-	response: ^http.Response,
-	route_context: http.Route_Context,
-	state: rawptr,
-) -> http.Route_Step {
-	_ = request
-	return discovery_event(
-		event,
-		response,
-		route_context,
-		state,
-		"application/rss+xml; charset=utf-8",
-		render_feed,
-	)
-}
-
-sitemap :: proc(
-	event: http.Route_Event,
-	request: ^http.Request,
-	response: ^http.Response,
-	route_context: http.Route_Context,
-	state: rawptr,
-) -> http.Route_Step {
-	_ = request
-	return discovery_event(
-		event,
-		response,
-		route_context,
-		state,
-		"application/xml; charset=utf-8",
-		render_sitemap,
-	)
-}
-
-robots :: proc(
-	event: http.Route_Event,
-	request: ^http.Request,
-	response: ^http.Response,
-	route_context: http.Route_Context,
-	state: rawptr,
-) -> http.Route_Step {
-	_ = request
-	return discovery_event(
-		event,
-		response,
-		route_context,
-		state,
-		"text/plain; charset=utf-8",
-		render_robots,
-	)
-}
-
-rss_compatibility :: proc(request: ^http.Request, response: ^http.Response) -> http.Route_Step {
-	_ = request
-	set_security_headers(response)
-	_ = http.header_set(response, "Cache-Control", "public, max-age=3600")
-	_ = http.header_set(response, "Location", "/feed.xml")
-	return http.respond_text(response, http.HTTP_STATUS_MOVED_PERMANENTLY, "")
-}
-
-health :: proc(request: ^http.Request, response: ^http.Response) -> http.Route_Step {
-	_ = request
-	set_security_headers(response)
-	_ = http.header_set(response, "Cache-Control", "no-store")
-	return http.respond_text(response, http.HTTP_STATUS_OK, "ok\n")
-}
-
-@(private = "file")
-render_feed :: proc(writer: ^strings.Builder, ctx: ^Application_Context) {
+@(private)
+write_feed :: proc(writer: ^strings.Builder, posts: []content.Post) {
 	strings.write_string(writer, `<?xml version="1.0" encoding="UTF-8"?>`)
 	strings.write_string(
 		writer,
@@ -124,7 +24,7 @@ render_feed :: proc(writer: ^strings.Builder, ctx: ^Application_Context) {
 	write_absolute_url(writer, "/feed.xml")
 	strings.write_string(writer, `" rel="self" type="application/rss+xml"/>`)
 
-	for post in content.published_posts(&ctx.content) {
+	for post in posts {
 		strings.write_string(writer, `<item><title>`)
 		write_xml_text(writer, post.title)
 		strings.write_string(writer, `</title><description>`)
@@ -140,23 +40,22 @@ render_feed :: proc(writer: ^strings.Builder, ctx: ^Application_Context) {
 	strings.write_string(writer, `</channel></rss>`)
 }
 
-@(private = "file")
-render_sitemap :: proc(writer: ^strings.Builder, ctx: ^Application_Context) {
+@(private)
+write_sitemap :: proc(writer: ^strings.Builder, posts: []content.Post) {
 	strings.write_string(writer, `<?xml version="1.0" encoding="UTF-8"?>`)
 	strings.write_string(writer, `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
 	static_paths := [?]string{"/", "/blog", "/about"}
 	for path in static_paths {
 		write_sitemap_url(writer, path, "")
 	}
-	for post in content.published_posts(&ctx.content) {
+	for post in posts {
 		write_sitemap_url(writer, post.canonical, post.date, absolute = true)
 	}
 	strings.write_string(writer, `</urlset>`)
 }
 
-@(private = "file")
-render_robots :: proc(writer: ^strings.Builder, ctx: ^Application_Context) {
-	_ = ctx
+@(private)
+write_robots :: proc(writer: ^strings.Builder) {
 	strings.write_string(writer, "User-agent: *\nAllow: /\nSitemap: ")
 	write_absolute_url(writer, "/sitemap.xml")
 	strings.write_byte(writer, '\n')
