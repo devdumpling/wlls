@@ -39,17 +39,53 @@ not Odin.
 
 ## Rendering with Tina and Datastar
 
-Generated components write to `^strings.Builder`. Full documents use
-`httpx.Document_Stream`: a heap-backed growable builder followed by bounded,
-fixed-length writes through Tina's evented HTTP response API. Its allocator
-records failed writes even though Tempo ignores their return values, allowing
-the response to become a 500 rather than silently serving truncated markup.
-Tina's `write_bytes` reports how much it accepted; the handler flushes and
-continues on `Send_Ready`, then frees the builder after all bytes have been
-copied into Tina's 4 KiB egress buffer. Embedded static assets borrow their
-bytes instead of allocating a second copy for each request. Event handlers
-access immutable startup data through `Route_Context.application_context`,
-owned for the lifetime of the server.
+There are three kinds of response, each with one home:
+
+| Response | Rendered | Code |
+|---|---|---|
+| Pages, feed, sitemap, robots | once, at startup | `src/app/site.odin` (`prerender`) |
+| Embedded assets | never (borrowed bytes) | `src/app/route_static.odin` |
+| Request-dependent (404, Datastar patches) | per request | `httpx.begin_render`, `httpx.begin_patches` |
+
+**Startup.** `app.load` builds everything the server borrows (assets, content,
+and every page) in one growing virtual arena, released with a single call at
+shutdown. Every page depends only on that data, so it is rendered once into
+immutable bytes with a content-hash ETag. A page that fails to render stops
+startup, and so the deploy, instead of becoming a 500 later.
+
+**Per request.** Tempo's generated components write to `^strings.Builder` and
+discard write results. `httpx.Render_Buffer` makes that safe: its builder lives
+in a static virtual arena capped at `RENDER_BUFFER_MAX`, growing in place with
+no copies, and its allocator records any failure so the response becomes a 500
+instead of truncated markup. The arena is freed in one call when the response
+is done.
+
+**Sending.** Tina never blocks a handler and never buffers without bound: each
+connection has a fixed egress buffer (`HTTP_EGRESS_BUFFER_SIZE`, 16 KiB here,
+set in the justfile and flake). A body larger than that goes out in pieces:
+write what fits, return `flush()`, continue on `Send_Ready`. Go hides the same
+loop behind a blocking `Write` on a 4 KiB `bufio.Writer`; Node hides it by
+buffering in memory without limit. Here the place in the loop lives in route
+state:
+
+- `httpx.Body_Stream` + `httpx.drive` for pages, assets, and 404s. A byte body
+  can be cut anywhere, so any size streams through any buffer.
+- `httpx.Patch_Stream` + `httpx.drive_patches` for Datastar. The SDK writes
+  each SSE event in one piece (zero allocation, never half an event), so **one
+  event can be at most the egress buffer**. Queue a response's events on
+  `Request_Start`; `send_patches` drains them, resuming after backpressure.
+
+Every route handler has the same shape: on `Request_Start`, pick a response and
+begin it; on any later event, return `httpx.drive(...)` (or `drive_patches`).
+Security headers are set by `httpx` on every response.
+
+**Batching.** Datastar favors a few coarse patches over many small ones; more
+elements per event means bigger events, which is why the buffer is 16 KiB
+rather than Tina's default 4 KiB. For live experiments (games, presence), batch
+over time instead: coalesce state changes and send one patch per tick, and when
+a client is backpressured, skip the frame and send the latest state next tick
+rather than queueing. That keeps memory bounded per connection, matching
+Tina's model.
 
 The blog's initial document responses work without JavaScript. The bundled
 Datastar + Rocket module (`datastar-rocket.js`) is served from a fingerprinted
@@ -60,7 +96,7 @@ Interactive resources follow the Tao of Datastar: the server renders HTML with
 the same Tempo components the page uses and patches it in over SSE (Caddy
 compresses the stream with zstd). Signals are kept for client feedback only.
 The landing terminal is the model: `POST /terminal` receives the command as a
-form, and `src/app/route_terminal.odin` answers with patches that append the
-result and replace the prompt. The `<wlls-terminal>` Rocket component in
+form, and `src/app/route_terminal.odin` queues patches that append the result
+and replace the prompt. The `<wlls-terminal>` Rocket component in
 `src/assets/static/js/terminal.js` adds only browser concerns: focus, history,
 and scroll-follow.

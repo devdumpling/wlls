@@ -12,7 +12,7 @@ Then:
 
 ```sh
 just run             # build and listen on 127.0.0.1:8080
-just check           # generate views, check Odin, test rendering and content
+just check           # generate views, vet Odin, run every package's tests
 just build           # write bin/wlls
 just generate        # compile authored src/views/*.templ to Odin
 just format          # format authored Odin files with odinfmt on PATH

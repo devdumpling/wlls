@@ -11,7 +11,8 @@ WorkingDirectory=/var/lib/wlls
 ExecStart=/nix/var/nix/profiles/wlls/bin/wlls
 Restart=on-failure
 RestartSec=2s
-TimeoutStopSec=15s
+# Above the app's 30 s graceful drain (src/app/conf.odin).
+TimeoutStopSec=35s
 
 NoNewPrivileges=true
 PrivateDevices=true

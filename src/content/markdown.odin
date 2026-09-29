@@ -64,6 +64,7 @@ register_gfm_extensions :: proc "contextless" () {
 // is handled consistently without growing a project-specific Markdown parser.
 // Cmark's safe default replaces raw HTML and unsafe URL schemes in its output.
 // On an image error, detail names the offending URL or option.
+@(require_results)
 render_markdown :: proc(
 	source: string,
 	images := Image_Sizes{},

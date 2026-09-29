@@ -90,7 +90,11 @@ send :: proc(response: ^http.Response, stream: ^Body_Stream) -> http.Route_Step 
 
 // drive handles every event after Request_Start for a Body_Stream route:
 // continue on Send_Ready, and release the body if the request ends early.
-drive :: proc(event: http.Route_Event, response: ^http.Response, stream: ^Body_Stream) -> http.Route_Step {
+drive :: proc(
+	event: http.Route_Event,
+	response: ^http.Response,
+	stream: ^Body_Stream,
+) -> http.Route_Step {
 	#partial switch _ in event {
 	case http.Send_Ready:
 		return send(response, stream)

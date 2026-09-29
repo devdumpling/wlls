@@ -12,12 +12,12 @@ first section.
       `src/views/terminal.templ`, and all of `src/assets/static/js/`
       (including the new `datastar-rocket.js`). `just build` reads the working
       tree, so it works either way.
-- [ ] **Terminal replies must fit Tina's 4 KiB egress buffer.** SSE patches
-      are written in one go; full documents stream through
-      `httpx.Document_Stream`, but `/terminal` does not. `ls` is fine with 10
-      posts but will eventually exceed it. Either stream patches across
-      `Send_Ready` (as `document_event` does) or cap `ls` to recent posts plus
-      a count.
+- [x] **Terminal replies must fit Tina's egress buffer.** `/terminal` now
+      renders into an `httpx.Render_Buffer` and sends through an
+      `httpx.Patch_Stream` that resumes on `Send_Ready`. The egress buffer is
+      16 KiB (one Datastar event's ceiling); `ls` fits ~100 long slugs in one
+      event (`src/app/app_test.odin`). Past that, split the listing into
+      several events or cap it.
 - [ ] **CSP.** None is set yet. If added, the inline import map needs a hash or
       nonce, and Datastar needs its CSP mode (v1.0.4 supports aliased nonce
       attributes).
@@ -76,8 +76,8 @@ first section.
       heartbeat threshold, or update the heartbeat before parking. Worth
       proposing upstream.
 
-- [ ] **Tests**: the terminal endpoint (command in, expected patches out),
-      `views.breadcrumbs` path splitting, and a full landing render.
+- [x] **Tests**: terminal commands, `views.breadcrumbs` path splitting, and
+      every page rendered at startup (`src/app/app_test.odin`).
 - [ ] **Docs**: a short CSS section in `docs/templating.md` on the
       structure (`site.css`) vs theme (`garden.css`) split, and the image
       plate syntax (`![alt](src "Caption | wide color raw pixel full")`).

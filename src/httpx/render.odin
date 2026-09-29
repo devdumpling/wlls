@@ -46,9 +46,14 @@ Render_Buffer :: struct {
 // render_buffer_init returns the builder to render into. If the arena cannot
 // be reserved, the buffer reports failed and every write is dropped.
 render_buffer_init :: proc(buffer: ^Render_Buffer) -> ^strings.Builder {
-	buffer^ = {active = true}
+	buffer^ = {
+		active = true,
+	}
 	if virtual.arena_init_static(&buffer.arena, RENDER_BUFFER_MAX, RENDER_BUFFER_COMMIT) != nil {
-		buffer.tracker = {backing = runtime.nil_allocator(), failed = true}
+		buffer.tracker = {
+			backing = runtime.nil_allocator(),
+			failed  = true,
+		}
 	} else {
 		buffer.tracker.backing = virtual.arena_allocator(&buffer.arena)
 	}

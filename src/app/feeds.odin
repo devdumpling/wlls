@@ -108,7 +108,20 @@ write_xml_text :: proc(writer: ^strings.Builder, value: string) {
 @(private = "file")
 write_rss_date :: proc(writer: ^strings.Builder, published: time.Time) {
 	weekdays := [?]string{"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"}
-	months := [?]string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"}
+	months := [?]string {
+		"Jan",
+		"Feb",
+		"Mar",
+		"Apr",
+		"May",
+		"Jun",
+		"Jul",
+		"Aug",
+		"Sep",
+		"Oct",
+		"Nov",
+		"Dec",
+	}
 	year, month, day := time.date(published)
 	fmt.sbprintf(
 		writer,

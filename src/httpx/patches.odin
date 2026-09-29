@@ -66,11 +66,7 @@ queue_script :: proc(stream: ^Patch_Stream, script: string) {
 }
 
 @(private = "file")
-queue :: proc(
-	stream: ^Patch_Stream,
-	kind: Patch_Kind,
-	options: datastar.Patch_Elements_Options,
-) {
+queue :: proc(stream: ^Patch_Stream, kind: Patch_Kind, options: datastar.Patch_Elements_Options) {
 	end := strings.builder_len(stream.render.builder)
 	if stream.count == len(stream.events) {
 		stream.failed = true
@@ -93,7 +89,11 @@ send_patches :: proc(response: ^http.Response, stream: ^Patch_Stream) -> http.Ro
 	if !stream.started {
 		if stream.failed || render_buffer_failed(&stream.render) {
 			destroy_patches(stream)
-			return respond_text(response, http.HTTP_STATUS_INTERNAL_SERVER_ERROR, "rendering failed\n")
+			return respond_text(
+				response,
+				http.HTTP_STATUS_INTERNAL_SERVER_ERROR,
+				"rendering failed\n",
+			)
 		}
 		set_security_headers(response)
 		if _, error := datastar.start_sse(response); error != .None {
@@ -124,7 +124,12 @@ send_patches :: proc(response: ^http.Response, stream: ^Patch_Stream) -> http.Ro
 			// The stream has begun, so there is no status left to change. End it
 			// cleanly; patches already sent stand. Body_Too_Large here means an
 			// event outgrew HTTP_EGRESS_BUFFER_SIZE: split it or raise the limit.
-			fmt.eprintfln("wlls: datastar event %d of %d not sent: %v", stream.next + 1, stream.count, error)
+			fmt.eprintfln(
+				"wlls: datastar event %d of %d not sent: %v",
+				stream.next + 1,
+				stream.count,
+				error,
+			)
 			destroy_patches(stream)
 			return http.flush(final = true)
 		}

@@ -76,7 +76,11 @@ run :: proc() {
 	}
 
 	fmt.printfln("wlls.dev — listening on http://127.0.0.1:%d", PORT)
-	spec := http.install_development_defaults(&server)
+	when WLLS_DEV {
+		spec := http.install_development(&server, CONNECTION_SLOTS)
+	} else {
+		spec := http.install(&server, shard_count = 1, connection_slot_count = CONNECTION_SLOTS)
+	}
 	tina.tina_start(&spec)
 }
 

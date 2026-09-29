@@ -86,7 +86,12 @@ load :: proc(
 		repository.by_slug[post.slug] = index
 	}
 
-	repository.about, error = parse_page("pages/about.md", string(EMBEDDED_ABOUT), base_url, images)
+	repository.about, error = parse_page(
+		"pages/about.md",
+		string(EMBEDDED_ABOUT),
+		base_url,
+		images,
+	)
 	return repository, error
 }
 

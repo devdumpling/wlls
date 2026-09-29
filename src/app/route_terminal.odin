@@ -44,7 +44,10 @@ terminal_command :: proc(
 	if result.navigate != "" {
 		httpx.queue_script(
 			stream,
-			strings.concatenate({"location.assign('", result.navigate, "')"}, context.temp_allocator),
+			strings.concatenate(
+				{"location.assign('", result.navigate, "')"},
+				context.temp_allocator,
+			),
 		)
 	}
 	return httpx.send_patches(response, stream)

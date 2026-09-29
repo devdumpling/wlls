@@ -1,9 +1,9 @@
 app := "bin/wlls"
 
-# Build settings shared by every Odin invocation. flake.nix mirrors
-# odin_defines for release builds; src/app/conf.odin asserts the egress size,
-# so a build that forgets it fails to compile.
-odin_defines := "-define:HTTP_EGRESS_BUFFER_SIZE=16384 -define:TINA_ASSERTS=true"
+# Build settings shared by every Odin invocation. flake.nix mirrors the egress
+# size for release builds (without the development flags); src/app/conf.odin
+# asserts it, so a build that forgets it fails to compile.
+odin_defines := "-define:HTTP_EGRESS_BUFFER_SIZE=16384 -define:TINA_ASSERTS=true -define:WLLS_DEV=true"
 odin_flags := "-collection:tempo=" + env_var("TEMPO_SRC") + " -thread-count:1 " + odin_defines
 cmark := '-extra-linker-flags:"-L' + env_var("CMARK_GFM_LIB") + '"'
 
