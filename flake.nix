@@ -72,7 +72,11 @@
               pname = "wlls";
               version = "0.1.0";
               src = self;
-              nativeBuildInputs = [ buildPkgs.buildPackages.odin tempo ];
+              nativeBuildInputs = [
+                buildPkgs.buildPackages.odin
+                buildPkgs.buildPackages.removeReferencesTo
+                tempo
+              ];
               buildInputs = [ buildPkgs.cmark-gfm ];
               dontConfigure = true;
 
@@ -95,6 +99,12 @@
                 runHook preInstall
                 mkdir -p "$out/bin"
                 install -m 0755 wlls "$out/bin/wlls"
+                # Source locations embedded for panics and bounds checks would
+                # otherwise pull the compiler and its sources into the runtime.
+                remove-references-to \
+                  -t ${buildPkgs.buildPackages.odin} \
+                  -t ${tempo-src} \
+                  "$out/bin/wlls"
                 runHook postInstall
               '';
             };
