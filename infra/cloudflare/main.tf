@@ -37,10 +37,11 @@ resource "cloudflare_zone_setting" "site" {
 
 # Cloudflare asks the origin for gzip or br, never zstd, so Caddy sends it
 # identity and Cloudflare compresses per visitor (deploy/Caddyfile). Its
-# default content types exclude Server-Sent Events; this rule adds them.
+# default content types exclude Server-Sent Events; this rule adds them. The
+# name matches the dashboard-created ruleset, since renaming forces replacement.
 resource "cloudflare_ruleset" "compression" {
   zone_id     = local.zone_id
-  name        = "Response compression"
+  name        = "default"
   description = "Compress Datastar SSE streams; zstd first."
   kind        = "zone"
   phase       = "http_response_compression"
