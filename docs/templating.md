@@ -21,7 +21,14 @@ post_page :: templ(post: content.Post, metadata: Metadata, assets: Asset_URLs) {
 
 `{ value }` escapes text and attributes. `{! value }` deliberately writes raw
 HTML; reserve it for `content.Markdown_HTML` produced by the cmark-gfm content
-pipeline with raw HTML disabled. `@document(...) { ... }` composes the shared
+pipeline with raw HTML disabled.
+
+Footnotes render twice: cmark's notes section at the end of the post, and a
+sidenote copy right after each note's first reference
+(`src/content/footnotes.odin`). CSS shows one of them. A container query on
+`main` hangs the sidenotes in the margin when there's room and hides the
+section; otherwise it hides the sidenotes. Sidenotes sit inside paragraphs,
+so a footnote may only contain paragraphs; anything else fails startup. `@document(...) { ... }` composes the shared
 shell via a slot. See `src/views/blog.templ` and `src/views/layout.templ` for
 the authored pages.
 

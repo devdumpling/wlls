@@ -50,6 +50,7 @@ Markdown_Error :: enum {
 	Extension_Attachment,
 	Parse_Failed,
 	Render_Failed,
+	Unsupported_Footnote,
 }
 
 // Cmark's extension registry is process-wide. Register it during Odin package
@@ -116,38 +117,16 @@ render_markdown :: proc(
 	alerted, alert_error := transform_alerts(anchored)
 	if alert_error != nil do return html, .Output_Allocation, ""
 	defer delete(alerted)
-	owned_html, bind_error := bind_footnote_refs(alerted)
-	if bind_error != nil do return html, .Output_Allocation, ""
-	return Markdown_HTML(owned_html), .None, ""
-}
-
-// bind_footnote_refs puts a WORD JOINER (U+2060) before each footnote
-// reference, so a `[1]` never wraps onto a line of its own: the browser may
-// not break between the word and the ref that follows it.
-@(private)
-bind_footnote_refs :: proc(
-	source: string,
-	allocator := context.allocator,
-) -> (
-	output: string,
-	error: runtime.Allocator_Error,
-) {
-	REF :: `<sup class="footnote-ref">`
-	WORD_JOINER :: "\u2060"
-
-	extra := strings.count(source, REF) * len(WORD_JOINER)
-	builder := strings.builder_make(0, len(source) + extra, allocator) or_return
-	rest := source
-	for {
-		ref := strings.index(rest, REF)
-		if ref < 0 do break
-		strings.write_string(&builder, rest[:ref])
-		strings.write_string(&builder, WORD_JOINER)
-		strings.write_string(&builder, REF)
-		rest = rest[ref + len(REF):]
+	owned_html, footnote_error, footnote_detail := transform_footnotes(alerted)
+	switch footnote_error {
+	case .None:
+	case .Allocation:
+		return html, .Output_Allocation, ""
+	// The detail borrows the alerted buffer, which is freed on return.
+	case .Block_Content:
+		return html, .Unsupported_Footnote, strings.clone(footnote_detail, context.temp_allocator)
 	}
-	strings.write_string(&builder, rest)
-	return strings.to_string(builder), nil
+	return Markdown_HTML(owned_html), .None, ""
 }
 
 // transform_alerts rewrites GitHub-style alerts (`> [!NOTE]`) into callout

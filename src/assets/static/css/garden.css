@@ -284,6 +284,14 @@
     font-size: 0.82rem;
     line-height: 1.65;
   }
+  /* iOS Safari zooms into any focused field set below 16px. On touch
+     screens the whole terminal steps up to 1rem, so the prompt and its log
+     stay one size. */
+  @media (pointer: coarse) {
+    .terminal {
+      font-size: max(1rem, 16px);
+    }
+  }
   .terminal-prompt .terminal-ps1,
   .terminal-trigger .terminal-ps1 {
     color: var(--ink-soft);
@@ -563,24 +571,48 @@
     font-size: 0.8em;
   }
   a[data-footnote-ref],
-  .footnote-backref {
+  .footnote-backref,
+  .sidenote-number {
     color: var(--accent);
     background: none;
   }
-  a[data-footnote-ref] {
+  a[data-footnote-ref],
+  .sidenote-number {
     font-family: var(--font-mono);
     font-size: 0.7rem;
   }
-  a[data-footnote-ref]::before {
+  a[data-footnote-ref]::before,
+  .sidenote-number::before {
     content: "[";
   }
-  a[data-footnote-ref]::after {
+  a[data-footnote-ref]::after,
+  .sidenote-number::after {
     content: "]";
   }
   .footnotes li:target,
   a[data-footnote-ref]:target {
     background: var(--highlight);
     border-radius: 0.25rem;
+  }
+
+  /* Sidenotes: the notes section's quieter voice, set in the margin. The
+     active note (its reference hovered or focused) takes the highlight. */
+  .sidenote {
+    color: var(--ink-soft);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    border-radius: 0.25rem;
+  }
+  .sidenote.is-active {
+    background: var(--highlight);
+    box-shadow: 0 0 0 0.35rem var(--highlight);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .sidenote {
+      transition:
+        background-color 180ms var(--ease-out),
+        box-shadow 180ms var(--ease-out);
+    }
   }
 
   .skip-link {

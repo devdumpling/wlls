@@ -52,8 +52,15 @@ first section.
 
 ## Stack features (after the design settles)
 
-- [ ] **Marginalia**: reader notes pinned to paragraphs, moderated, patched in
-      live.
+- [x] **Sidenotes.** Footnotes hang in the margin beside their reference on
+      wide screens (`src/content/footnotes.odin`); narrow screens keep the
+      notes section and popovers. Replaces reader marginalia, which would
+      mostly be empty margins plus moderation.
+- [ ] **Live hub**: one `GET /live?topic=…` Datastar stream for every live
+      feature (one hub isolate fans out topic changes), with commands as short
+      POSTs. Raise `CONNECTION_SLOTS` and cap subscribers below it.
+- [ ] **Guestbook** on the live hub: SQLite (hand-bound, like cmark), one
+      writer isolate, moderated from the terminal.
 - [ ] **Commons**: the planned GPU landing sim with SQLite-persisted
       plantings.
 - [ ] **Webmentions** stored in SQLite, rendered under posts.

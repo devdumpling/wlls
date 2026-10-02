@@ -141,9 +141,37 @@ test_markdown_headings_get_unique_ids_and_permalinks :: proc(t: ^testing.T) {
 }
 
 @(test)
-test_markdown_binds_footnote_refs_to_the_preceding_word :: proc(t: ^testing.T) {
-	html, error, _ := render_markdown("A claim.[^1]\n\n[^1]: The source.\n")
+test_markdown_copies_each_footnote_beside_its_first_reference :: proc(t: ^testing.T) {
+	source :=
+		"A claim.[^1] Again.[^1] Another.[^note]\n\n" +
+		"[^1]: The [source](https://example.com).\n\n    More detail.\n" +
+		"[^note]: Named.\n"
+	html, error, _ := render_markdown(source)
 	testing.expect_value(t, error, Markdown_Error.None)
 	defer delete(string(html))
-	testing.expect(t, strings.contains(string(html), "claim.⁠<sup class=\"footnote-ref\">"))
+	rendered := string(html)
+	sidenote :=
+		`claim.⁠<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>` +
+		`<span class="sidenote" role="note"><span class="sidenote-number">1</span> ` +
+		`<span class="sidenote-para">The <a href="https://example.com">source</a>.</span>` +
+		`<span class="sidenote-para">More detail.</span></span>`
+	testing.expect(t, strings.contains(rendered, sidenote))
+	testing.expect(
+		t,
+		strings.contains(
+			rendered,
+			`<span class="sidenote-number">2</span> <span class="sidenote-para">Named.</span>`,
+		),
+	)
+	testing.expect_value(t, strings.count(rendered, `class="sidenote"`), 2)
+	testing.expect(t, strings.contains(rendered, `<section class="footnotes" data-footnotes>`))
+}
+
+@(test)
+test_markdown_rejects_footnotes_a_sidenote_cannot_hold :: proc(t: ^testing.T) {
+	_, error, detail := render_markdown(
+		"A claim.[^list]\n\n[^list]: Items:\n\n    - one\n    - two\n",
+	)
+	testing.expect_value(t, error, Markdown_Error.Unsupported_Footnote)
+	testing.expect_value(t, detail, "list")
 }

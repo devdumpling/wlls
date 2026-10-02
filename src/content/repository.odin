@@ -190,6 +190,12 @@ markdown_error_message :: proc(path: string, error: Markdown_Error, detail: stri
 		return fmt.tprintf("%s references an image that is not embedded: %s", path, detail)
 	case .Invalid_Image_Option:
 		return fmt.tprintf("%s uses an unknown image option: %s", path, detail)
+	case .Unsupported_Footnote:
+		return fmt.tprintf(
+			"%s: footnote [^%s] has lists, code, or quotes; a sidenote takes paragraphs only",
+			path,
+			detail,
+		)
 	}
 	return fmt.tprintf("%s could not be rendered as Markdown", path)
 }

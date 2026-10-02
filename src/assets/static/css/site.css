@@ -62,6 +62,8 @@
 
     --measure: 40rem;
     --wide-extra: 8rem;
+    --sidenote-gap: 2.5rem;
+    --sidenote-width: 16rem;
     --pad-inline: clamp(1.25rem, 6vw, 7rem);
     --pad-block: clamp(1.25rem, 4vh, 2.75rem);
     --rail-width: clamp(15rem, 22vw, 21rem);
@@ -164,6 +166,7 @@
       [full-end];
     align-content: start;
     padding-block-start: clamp(3rem, 10vh, 7rem);
+    container: main / inline-size;
   }
   main > *,
   .article > *,
@@ -359,6 +362,45 @@
   }
   .footnotes li + li {
     margin-block-start: 0.6em;
+  }
+
+  /* Sidenotes: each footnote is also copied beside its first reference
+     (src/content/footnotes.odin), and one of the two copies shows. Where
+     main fits the measure, a gap, and a note, the copy hangs in the margin
+     and the notes section is hidden; elsewhere the copy is hidden. */
+  .sidenote {
+    display: none;
+  }
+  /* A note may hang halfway into the column's padding, so 52rem leaves it
+     about 12rem: --measure + --sidenote-gap + 12rem - --pad-inline / 2. */
+  @container main (min-width: 52rem) {
+    .article-body {
+      position: relative;
+    }
+    /* No block offset, so the note keeps its static position: the line its
+       reference sits on. That needs an inline display (position: absolute
+       blockifies the box anyway); a block's static position is the next
+       line. Absolute rather than floated, because a grid item contains its
+       floats and a long note would push the next paragraph down. (A
+       reference inside a heading, which is positioned for its permalink,
+       would place its note against the heading instead.) */
+    .sidenote {
+      display: inline;
+      position: absolute;
+      inset-inline-start: calc(var(--measure) + var(--sidenote-gap));
+      inline-size: min(
+        var(--sidenote-width),
+        100cqi - var(--measure) - var(--sidenote-gap) + var(--pad-inline) / 2
+      );
+    }
+    /* The first paragraph runs on from the note's number. */
+    .sidenote-para + .sidenote-para {
+      display: block;
+      margin-block-start: 0.5em;
+    }
+    .footnotes {
+      display: none;
+    }
   }
   sup {
     line-height: 0;
