@@ -6,7 +6,7 @@ first section.
 
 ## Before deploying
 
-- [ ] **Stage new files before `nix build`.** Flakes only see files git
+- [x] **Stage new files before `nix build`.** Flakes only see files git
       tracks. New untracked sources include `src/app/route_terminal.odin`,
       `src/content/{plates,headings}.odin`, `src/assets/image_size*.odin`,
       `src/views/terminal.templ`, and all of `src/assets/static/js/`
@@ -21,28 +21,22 @@ first section.
 - [x] **CSP.** Static policy in `src/httpx/headers.odin`; no inline scripts
       (the import map is gone and `cd` navigates with `data-init`). It keeps
       `'unsafe-eval'` for Datastar expressions; see `docs/templating.md`.
-- [ ] **Production pass behind Caddy.** Confirm `POST /terminal` responses
+- [x] **Production pass behind Caddy.** Confirm `POST /terminal` responses
       arrive zstd-encoded, `/healthz` and `/readyz` respond, and fingerprinted
       assets resolve on the real domain.
 
 ## Design
 
-- [ ] **About is unlinked.** Reachable only via `whoami` / `cd about` in the
-      terminal. Add a fourth rail row, or keep it as a discovered page.
-- [ ] **"posts" vs `/blog`.** The rail says posts; the URL and breadcrumb say
-      blog. Rename the route to `/posts` (with redirects from `/blog/*`) or
-      the label to blog.
-- [ ] **Post dates.** Removed from pages (still in feed and sitemap). Consider
-      a minimal date at the end of the breadcrumb or beside the mono dek.
-- [ ] **Generative glyph (phase 3).** Per-post contour/venation mark rendered
-      in Odin from the slug hash; use it for the favicon (currently a generic
-      "D") and OG images.
-- [ ] **`theme-color` meta** so mobile browser chrome matches the paper.
-- [ ] **Footnote refs orphaning.** A `[1]` can wrap onto its own line; bind
-      it to the preceding word.
-- [ ] **Code highlighting.** Code blocks are unstyled; do it server-side in the
-      Markdown pipeline to stay zero-JS.
-- [ ] **404 copy** reads "this this page".
+- [x] **About is unlinked.** The rail has a fourth row, `whoami`, linking
+      `/about`.
+- [x] **"posts" vs `/blog`.** Everything says blog: the rail, the index
+      heading and title, and the terminal's `cd` hints (`cd posts` still works).
+- [x] **Post dates.** A mono date stamp above each post's title; nowhere else
+      on pages (still in feed and sitemap).
+- [x] **`theme-color` meta** so mobile browser chrome matches the paper.
+- [x] **Footnote refs orphaning.** The Markdown pipeline puts a word joiner
+      (U+2060) before each ref, binding it to the preceding word.
+- [x] **404 copy** reads "this this page".
 
 ## Terminal and game
 

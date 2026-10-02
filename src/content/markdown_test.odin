@@ -139,3 +139,11 @@ test_markdown_headings_get_unique_ids_and_permalinks :: proc(t: ^testing.T) {
 	testing.expect(t, strings.contains(rendered, `<h3 id="q-a-10x">`))
 	testing.expect(t, strings.contains(rendered, "<h1>Title stays bare</h1>"))
 }
+
+@(test)
+test_markdown_binds_footnote_refs_to_the_preceding_word :: proc(t: ^testing.T) {
+	html, error, _ := render_markdown("A claim.[^1]\n\n[^1]: The source.\n")
+	testing.expect_value(t, error, Markdown_Error.None)
+	defer delete(string(html))
+	testing.expect(t, strings.contains(string(html), "claim.⁠<sup class=\"footnote-ref\">"))
+}

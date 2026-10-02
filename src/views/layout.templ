@@ -1,7 +1,9 @@
 package views
 
 // The document shell owns site-wide metadata and navigation. Feature templates
-// compose their page-specific resource inside the main landmark.
+// compose their page-specific resource inside the main landmark. theme-color
+// tints mobile browser chrome to the paper; keep it in step with --paper in
+// garden.css.
 document :: templ(metadata: Metadata, assets: Asset_URLs) {
 	<!DOCTYPE html>
 	<html lang="en">
@@ -9,6 +11,8 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 			<meta charset="utf-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1"/>
 			<meta name="color-scheme" content="light dark"/>
+			<meta name="theme-color" content="#f5f1e8" media="(prefers-color-scheme: light)"/>
+			<meta name="theme-color" content="#1b1815" media="(prefers-color-scheme: dark)"/>
 			<title>{ metadata.title }</title>
 			<meta name="description" content={ metadata.description }/>
 			if metadata.canonical != "" {
@@ -76,7 +80,13 @@ rail :: templ(metadata: Metadata, assets: Asset_URLs) {
 				<li>
 					<a href="/blog" if metadata.page == .Blog || metadata.page == .Post { aria-current="page" }>
 						<span class="rail-glyph" aria-hidden="true">¶</span>
-						<span class="rail-label">posts</span>
+						<span class="rail-label">blog</span>
+					</a>
+				</li>
+				<li>
+					<a href="/about" if metadata.page == .About { aria-current="page" }>
+						<span class="rail-glyph" aria-hidden="true">&#64;</span>
+						<span class="rail-label">whoami</span>
 					</a>
 				</li>
 				<li>
@@ -99,7 +109,7 @@ rail :: templ(metadata: Metadata, assets: Asset_URLs) {
 not_found :: templ() {
 	<section class="message-page">
 		<h1>Nothing grows here</h1>
-		<p>Sorry fam this this page doesn't exist. Idk either.</p>
+		<p>Sorry fam this page doesn't exist. Idk either.</p>
 		<a href="/">Take me away</a>
 	</section>
 }

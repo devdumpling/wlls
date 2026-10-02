@@ -118,6 +118,13 @@
     font-size: 0.76rem;
     line-height: 1.55;
   }
+  /* The date is stamped above the title, like the head of a field note. */
+  .article-date {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+  }
 
   /* Links: a resting hairline, and an accent line that draws in from the
      left on touch and retracts to the right on release. */

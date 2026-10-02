@@ -90,7 +90,7 @@ run_command :: proc(
 		if !found {
 			views.terminal_error(
 				output,
-				"cd: no such place. try posts, about, ~, or a post from ls",
+				"cd: no such place. try blog, about, ~, or a post from ls",
 			)
 			return
 		}
@@ -121,7 +121,7 @@ resolve_place :: proc(
 	switch strings.trim(place, "/") {
 	case "", "~", "..", "home":
 		return "/", true
-	case "posts", "blog":
+	case "blog", "posts":
 		return "/blog", true
 	case "about":
 		return "/about", true

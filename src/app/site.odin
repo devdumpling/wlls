@@ -66,7 +66,7 @@ prerender :: proc(ctx: ^Application_Context) -> (site: Site, error: string) {
 		views.Metadata {
 			page = .Blog,
 			path = "/blog",
-			title = "Posts | wlls.dev",
+			title = "Blog | wlls.dev",
 			description = "You can read it if you want.",
 			canonical = CANONICAL_BLOG,
 			open_graph = "website",

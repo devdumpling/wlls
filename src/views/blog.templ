@@ -14,7 +14,7 @@ post_link :: templ(post: content.Post) {
 post_index :: templ(posts: []content.Post, metadata: Metadata, assets: Asset_URLs) {
 	@document(metadata, assets) {
 		<header class="page-header">
-			<h1>Posts</h1>
+			<h1>Blog</h1>
 		</header>
 		<section class="post-section" aria-label="All posts">
 			<ol class="post-list">
@@ -30,6 +30,7 @@ post_page :: templ(post: content.Post, metadata: Metadata, assets: Asset_URLs) {
 	@document(metadata, assets) {
 		<article class="article">
 			<header class="article-header">
+				<p class="article-date"><time datetime={ post.date }>{ post.date }</time></p>
 				<h1>{ post.title }</h1>
 				<p class="article-dek">{ post.description }</p>
 			</header>
