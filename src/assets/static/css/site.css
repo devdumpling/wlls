@@ -67,6 +67,7 @@
     --pad-inline: clamp(1.25rem, 6vw, 7rem);
     --pad-block: clamp(1.25rem, 4vh, 2.75rem);
     --rail-width: clamp(15rem, 22vw, 21rem);
+    --rail-slim: 4.5rem;
     --flow: 1.25em;
     --radius: 0.4rem;
 
@@ -151,6 +152,19 @@
       inset-block-start: 0;
       block-size: 100dvh;
       padding-inline: clamp(1.5rem, 2.5vw, 2.5rem);
+    }
+  }
+  /* Until 84rem the rail folds to its glyphs, so main reaches the 52rem
+     that sidenotes need from about 1090px (see the sidenote container
+     query). At 84rem the full rail still leaves main just over 52rem, so
+     notes stay put as it unfolds: keep the two in step if --rail-width or
+     the threshold changes. */
+  @media (min-width: 60rem) and (max-width: 83.99rem) {
+    .shell {
+      grid-template-columns: minmax(0, 1fr) var(--rail-slim);
+    }
+    .rail nav {
+      padding-inline: 0.75rem;
     }
   }
 
@@ -460,6 +474,30 @@
     grid-template-columns: 2.75rem 1fr;
     align-items: center;
     padding: 0.85rem 0.5rem;
+  }
+  /* The folded rail shows glyphs alone. Each label leaves the layout but
+     still names its link, and slides out to the left of the rail on hover
+     or focus (clipped, not hidden, so it stays in the accessibility tree). */
+  @media (min-width: 60rem) and (max-width: 83.99rem) {
+    .rail-links a {
+      position: relative;
+      grid-template-columns: 1fr;
+      justify-items: center;
+      padding-inline: 0;
+    }
+    .rail-label {
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: 100%;
+      display: flex;
+      align-items: center;
+      padding-inline: 0.85rem;
+      white-space: nowrap;
+      clip-path: inset(0 0 0 100%);
+    }
+    .rail-links a:is(:hover, :focus-visible) .rail-label {
+      clip-path: inset(0);
+    }
   }
 
   .latest {

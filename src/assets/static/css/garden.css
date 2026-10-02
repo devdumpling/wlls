@@ -227,6 +227,31 @@
         color 250ms var(--ease-out);
     }
   }
+  /* Folded rail: the label is an ink tab pulled out from the row, and the
+     current page's square moves beside its glyph. */
+  @media (min-width: 60rem) and (max-width: 83.99rem) {
+    .rail-label {
+      background: var(--ink);
+      color: var(--paper);
+    }
+    .rail-links a[aria-current="page"] .rail-label::after {
+      content: none;
+    }
+    .rail-links a[aria-current="page"]::before {
+      content: "";
+      position: absolute;
+      inset-inline-start: 0.2rem;
+      inset-block-start: calc(50% - 0.2rem);
+      inline-size: 0.4rem;
+      block-size: 0.4rem;
+      background: var(--accent);
+    }
+  }
+  @media (min-width: 60rem) and (max-width: 83.99rem) and (prefers-reduced-motion: no-preference) {
+    .rail-label {
+      transition: clip-path 300ms var(--ease-in-out);
+    }
+  }
 
   /* Landing. */
   .landing h1 {
