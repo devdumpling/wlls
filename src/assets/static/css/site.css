@@ -575,6 +575,50 @@
     grid-template-columns: 1fr;
   }
 
+  /* Guestbook: the sign form, then entries newest first. */
+  .guestbook-sign {
+    display: grid;
+    gap: 0.35rem;
+    max-inline-size: 32rem;
+    margin-block-end: clamp(2.5rem, 7vw, 4rem);
+  }
+  .guestbook-sign label:not(:first-child) {
+    margin-block-start: 0.75rem;
+  }
+  .guestbook-sign :is(input, textarea) {
+    inline-size: 100%;
+    padding: 0.55rem 0.7rem;
+  }
+  .guestbook-sign textarea {
+    resize: vertical;
+  }
+  .guestbook-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-block-start: 1rem;
+  }
+  .guestbook-actions button {
+    padding: 0.5rem 1.1rem;
+  }
+  .guestbook-entries {
+    display: grid;
+    gap: 2rem;
+    padding: 0;
+    list-style: none;
+  }
+  .guestbook-message {
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+  }
+  .guestbook-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1ch;
+    margin-block-start: 0.4rem;
+  }
+
   /* Off the landing page the terminal waits behind a trigger at the end of
      the breadcrumb row, and opens in a sheet pinned to the bottom. */
   /* A long breadcrumb wraps beside the trigger, which keeps to the first

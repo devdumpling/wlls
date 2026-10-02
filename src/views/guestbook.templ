@@ -1,0 +1,56 @@
+package views
+
+// The guestbook page is rendered per request, because its entries change.
+// entries is the live Guestbook frame (guestbook_entries, rendered by the
+// app), embedded as is so the page works without JavaScript; the page's live
+// stream then morphs in newer versions as entries are approved.
+guestbook_page :: templ(entries: string, metadata: Metadata, assets: Asset_URLs) {
+	@document(metadata, assets) {
+		<article class="guestbook">
+			<header class="page-header">
+				<h1>Guestbook</h1>
+				<p class="article-dek">Leave a note. I read every one before it shows up here.</p>
+			</header>
+			@guestbook_form()
+			<section class="guestbook-book" aria-label="Entries">{! entries }</section>
+		</article>
+	}
+}
+
+// guestbook_form posts with Datastar and shows _signing while it waits.
+guestbook_form :: templ() {
+	<form id="guestbook-sign" class="guestbook-sign" data-signals:_signing="false" data-indicator:_signing data-on:submit__prevent="@post('/guestbook', {contentType: 'form'})">
+		<label for="guestbook-name">name</label>
+		<input id="guestbook-name" name="name" required maxlength="40" autocomplete="nickname"/>
+		<label for="guestbook-message">message</label>
+		<textarea id="guestbook-message" name="message" required maxlength="280" rows="4"></textarea>
+		<div class="guestbook-actions">
+			<button type="submit" data-attr:disabled="$_signing">sign</button>
+			<p id="guestbook-status" class="guestbook-status" role="status"></p>
+		</div>
+	</form>
+}
+
+// guestbook_thanks replaces the form once an entry is signed.
+guestbook_thanks :: templ() {
+	<p id="guestbook-sign" class="guestbook-sign guestbook-thanks" role="status">Thanks for signing. Your note will appear here once I've read it.</p>
+}
+
+guestbook_status :: templ(text: string) {
+	<p id="guestbook-status" class="guestbook-status" role="status">{ text }</p>
+}
+
+// guestbook_entries is the Guestbook frame: newest first.
+guestbook_entries :: templ(entries: []Guestbook_Entry) {
+	<ol id="guestbook-entries" class="guestbook-entries">
+		for entry in entries {
+			<li class="guestbook-entry">
+				<p class="guestbook-message">{ entry.message }</p>
+				<p class="guestbook-meta"><span>{ entry.name }</span><span aria-hidden="true">·</span><time datetime={ entry.date }>{ entry.date }</time></p>
+			</li>
+		}
+		if len(entries) == 0 {
+			<li class="guestbook-empty">No entries yet. Be the first.</li>
+		}
+	</ol>
+}

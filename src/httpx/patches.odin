@@ -81,8 +81,7 @@ send_patches :: proc(response: ^http.Response, stream: ^Patch_Stream) -> http.Ro
 				"rendering failed\n",
 			)
 		}
-		set_security_headers(response)
-		if _, error := datastar.start_sse(response); error != .None {
+		if !start_stream(response) {
 			destroy_patches(stream)
 			return http.close()
 		}
@@ -136,4 +135,57 @@ destroy_patches :: proc(stream: ^Patch_Stream) {
 	if !stream.active do return
 	render_buffer_destroy(&stream.render)
 	stream^ = {}
+}
+
+// ─── Long-lived streams ─────────────────────────────────────────────────────
+//
+// A Patch_Stream answers one request and ends. A long-lived stream (GET /live)
+// stays open and sends an event whenever there is news, so it writes events
+// one at a time with the helpers below.
+
+// start_stream begins an SSE response with the site's security headers.
+start_stream :: proc(response: ^http.Response) -> bool {
+	set_security_headers(response)
+	_, error := datastar.start_sse(response)
+	return error == .None
+}
+
+Stream_Send :: enum {
+	Sent,
+	Backpressured, // nothing was written: flush, then retry on Send_Ready
+	Failed,
+}
+
+// send_elements writes one patch-elements event, all or nothing.
+send_elements :: proc(
+	response: ^http.Response,
+	elements: string,
+	options: datastar.Patch_Elements_Options = {},
+) -> Stream_Send {
+	sse := datastar.resume(response)
+	switch error := datastar.patch_elements(&sse, elements, options); error {
+	case .None:
+		return .Sent
+	case .Backpressured:
+		return .Backpressured
+	case .Invalid_Argument, .Body_Too_Large, .Commit_Stale, .Body_Closed, .Body_Mode_Invalid:
+		fmt.eprintfln("wlls: datastar event not sent: %v", error)
+	}
+	return .Failed
+}
+
+// send_heartbeat writes an SSE comment, which clients ignore. Proxies that
+// close idle connections (Cloudflare after ~100 s) see traffic.
+send_heartbeat :: proc(response: ^http.Response) -> Stream_Send {
+	COMMENT :: ": ping\n\n"
+	reservation, result := http.reserve_body_exact(response, len(COMMENT))
+	#partial switch result {
+	case .Reserved:
+		copy(reservation.payload, COMMENT)
+		if http.commit_body(response, reservation) != .Committed do return .Failed
+		return .Sent
+	case .Backpressured:
+		return .Backpressured
+	}
+	return .Failed
 }

@@ -4,6 +4,8 @@ import http "../../vendor/tina/src/extensions/http/server"
 import content "../content"
 import httpx "../httpx"
 import views "../views"
+import "core:fmt"
+import "core:strconv"
 import "core:strings"
 
 // The landing-page terminal is the command side of the page: each submitted
@@ -25,11 +27,27 @@ terminal_command :: proc(
 	}
 
 	ctx := app_context(route_context)
-	line, ok := form_value(http.body_buffered(request), "command", http.request_arena(request))
-	if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid command")
+	body, arena := http.body_buffered(request), http.request_arena(request)
+	caller := caller_of(request)
+	caller.session, caller.admin = admin_session(&ctx.admin, request, caller.now)
 
+	// sudo's password prompt posts a password field instead of a command.
 	writer := httpx.begin_patches(stream)
-	if run_command(writer, strings.trim_space(line), &ctx.content) == .Clear {
+	result: Command_Result
+	if form_has(body, "password") {
+		password, ok := form_value(body, "password", arena)
+		if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid form")
+		cookie: [160]u8
+		sudo, set_cookie := admin_sudo(&ctx.admin, password, caller.now, cookie[:])
+		if set_cookie != "" do _ = http.header_add(response, "Set-Cookie", set_cookie)
+		views.terminal_line(writer, "[sudo] password:")
+		sudo_reply(writer, sudo)
+	} else {
+		line, ok := form_value(body, "command", arena)
+		if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid command")
+		result = run_command(writer, strings.trim_space(line), ctx, caller)
+	}
+	if result == .Clear {
 		httpx.queue_elements(stream) // an empty log, morphed over the old one
 	} else {
 		httpx.queue_elements(stream, {selector = "#terminal-output", mode = .Append})
@@ -37,7 +55,11 @@ terminal_command :: proc(
 
 	// Replace (not morph) the prompt: morphing keeps a focused input's value,
 	// and the next command needs an empty line. <wlls-terminal> refocuses it.
-	views.terminal_prompt(writer)
+	if result == .Password {
+		views.terminal_password_prompt(writer)
+	} else {
+		views.terminal_prompt(writer)
+	}
 	httpx.queue_elements(stream, {selector = "#terminal-prompt", mode = .Replace})
 
 	return httpx.send_patches(response, stream)
@@ -51,6 +73,7 @@ TERMINAL_STATE_SIZE :: u16(size_of(httpx.Patch_Stream))
 Command_Result :: enum {
 	Append, // output is appended to the log
 	Clear, // output is an empty log that replaces the old one
+	Password, // output is appended, and the prompt asks for sudo's password
 }
 
 // run_command renders a command's echo and result into output. clear renders
@@ -61,10 +84,12 @@ Command_Result :: enum {
 run_command :: proc(
 	output: ^strings.Builder,
 	line: string,
-	repository: ^content.Repository,
+	ctx: ^Application_Context,
+	caller: Caller,
 ) -> (
 	result: Command_Result,
 ) {
+	repository := &ctx.content
 	rest := line
 	name, _ := strings.fields_iterator(&rest)
 	argument := strings.trim_space(rest)
@@ -91,22 +116,127 @@ run_command :: proc(
 		if !found {
 			views.terminal_error(
 				output,
-				"cd: no such place. try blog, about, ~, or a post from ls",
+				"cd: no such place. try blog, guestbook, about, ~, or a post from ls",
 			)
 			return
 		}
 		views.terminal_line(output, target)
 		views.terminal_navigate(output, target)
+	case "who":
+		// The hub keeps the list current; a visitor without a cookie has no
+		// live stream yet, so they are not on it.
+		strings.write_bytes(output, frame_bytes(&ctx.live.who))
+		if caller.visitor != 0 {
+			adjective, animal := visitor_name(caller.visitor)
+			views.terminal_line(
+				output,
+				strings.concatenate({"you are ", adjective, "-", animal}, context.temp_allocator),
+			)
+		}
+	case "sign":
+		// Signing from the terminal uses your handle as the name.
+		if argument == "" {
+			views.terminal_line(output, "usage: sign <a short note>")
+			views.terminal_link(output, "or sign with a name at /guestbook", "/guestbook")
+			return
+		}
+		adjective, animal := visitor_name(caller.visitor)
+		name := strings.concatenate({adjective, "-", animal}, context.temp_allocator)
+		result := guestbook_sign(
+			&ctx.guestbook,
+			name,
+			argument,
+			caller.visitor,
+			caller.client,
+			caller.now,
+		)
+		if result == .Signed {
+			views.terminal_line(output, sign_reply(result))
+		} else {
+			views.terminal_error(output, sign_reply(result))
+		}
+	case "sudo":
+		switch {
+		case argument == "-k" && caller.admin:
+			admin_sign_out(&ctx.admin, caller.session)
+			views.terminal_line(output, "signed out.")
+		case caller.admin:
+			views.terminal_line(output, "already root. try pending, or sudo -k to sign out.")
+		case !ctx.admin.enabled:
+			views.terminal_error(output, "sudo: nobody here can do that.")
+		case:
+			return .Password
+		}
+	case "pending", "approve", "reject":
+		if !caller.admin {
+			command_not_found(output, name)
+			return
+		}
+		moderate(output, name, argument, ctx)
 	case "play":
 		views.terminal_line(output, "not yet. it's still being built. soon.")
 	case:
-		message := strings.concatenate(
-			{"command not found: ", name, ". try help"},
-			context.temp_allocator,
-		)
-		views.terminal_error(output, message)
+		command_not_found(output, name)
 	}
 	return
+}
+
+@(private = "file")
+command_not_found :: proc(output: ^strings.Builder, name: string) {
+	message := strings.concatenate(
+		{"command not found: ", name, ". try help"},
+		context.temp_allocator,
+	)
+	views.terminal_error(output, message)
+}
+
+@(private = "file")
+sudo_reply :: proc(output: ^strings.Builder, result: Sudo_Result) {
+	switch result {
+	case .Granted:
+		views.terminal_line(output, "root. try pending, approve <id>, reject <id>, or sudo -k.")
+	case .Denied:
+		views.terminal_error(output, "sudo: incorrect password.")
+	case .Locked:
+		views.terminal_error(output, "sudo: too many tries. locked for a while.")
+	case .Disabled:
+		views.terminal_error(output, "sudo: nobody here can do that.")
+	}
+}
+
+// moderate runs the root-only guestbook commands. An approval re-renders the
+// guestbook frame, and publishing it updates every open /guestbook page.
+@(private = "file")
+moderate :: proc(output: ^strings.Builder, name, argument: string, ctx: ^Application_Context) {
+	if name == "pending" {
+		entries, total, ok := guestbook_pending(&ctx.guestbook, context.temp_allocator)
+		switch {
+		case !ok:
+			views.terminal_error(output, "pending: couldn't read the guestbook.")
+		case total == 0:
+			views.terminal_line(output, "nothing waiting.")
+		case:
+			summary := fmt.tprintf("%d waiting. approve <id> or reject <id>", total)
+			views.terminal_pending(output, entries, summary)
+		}
+		return
+	}
+
+	id, parsed := strconv.parse_i64(strings.trim_prefix(argument, "#"))
+	if !parsed {
+		views.terminal_error(output, fmt.tprintf("usage: %s <id>", name))
+		return
+	}
+	approve := name == "approve"
+	switch guestbook_moderate(&ctx.guestbook, id, approve, &ctx.live.frames[.Guestbook]) {
+	case .Done:
+		if approve do publish(ctx.live, .Guestbook)
+		views.terminal_line(output, fmt.tprintf("%sd #%d.", name, id))
+	case .Not_Found:
+		views.terminal_error(output, fmt.tprintf("%s: no unread entry #%d.", name, id))
+	case .Failed:
+		views.terminal_error(output, fmt.tprintf("%s: that didn't work; see the logs.", name))
+	}
 }
 
 // resolve_place maps cd arguments onto real site paths only, so navigation
@@ -126,14 +256,28 @@ resolve_place :: proc(
 		return "/blog", true
 	case "about":
 		return "/about", true
+	case "guestbook":
+		return "/guestbook", true
 	}
 	slug := strings.trim_prefix(strings.trim(place, "/"), "blog/")
 	post := content.find_post(repository, slug) or_return
 	return post.url, true
 }
 
+// form_has reports whether an application/x-www-form-urlencoded body has a
+// field, even an empty one.
+@(private)
+form_has :: proc(body: []u8, name: string) -> bool {
+	rest := string(body)
+	for pair in strings.split_iterator(&rest, "&") {
+		key, _, _ := strings.partition(pair, "=")
+		if key == name do return true
+	}
+	return false
+}
+
 // form_value reads one field from an application/x-www-form-urlencoded body.
-@(private = "file")
+@(private)
 form_value :: proc(
 	body: []u8,
 	name: string,

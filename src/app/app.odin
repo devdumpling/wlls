@@ -2,6 +2,7 @@ package app
 
 import assets "../assets"
 import content "../content"
+import httpx "../httpx"
 import views "../views"
 
 import tina "../../vendor/tina/src"
@@ -13,13 +14,18 @@ import "core:mem/virtual"
 import "core:os"
 import "core:strings"
 
-// Application_Context is the read-only view that Tina's route callbacks borrow.
-// run owns the underlying startup-loaded content and assets until shutdown.
+// Application_Context is what Tina's route callbacks borrow. run owns it, and
+// the startup-loaded content and assets in it, until shutdown. Everything is
+// read-only except live (the frames live features share) and guestbook, which
+// every connection uses; both rely on running one shard (live.odin).
 Application_Context :: struct {
 	content:     content.Repository,
 	assets:      assets.Bundle,
 	view_assets: views.Asset_URLs,
 	site:        Site,
+	live:        ^Live,
+	guestbook:   Guestbook,
+	admin:       Admin,
 }
 
 // Load and validate content before accepting requests. tina_start blocks until
@@ -39,6 +45,19 @@ run :: proc() {
 		fmt.eprintln("wlls: startup failed:", load_error)
 		os.exit(1)
 	}
+	guestbook := &application_context.guestbook
+	if error := guestbook_open(guestbook, DATABASE_PATH); error != "" {
+		fmt.eprintln("wlls: startup failed:", error)
+		os.exit(1)
+	}
+	defer guestbook_close(guestbook)
+	if warning := admin_load(&application_context.admin); warning != "" {
+		fmt.eprintln("wlls:", warning)
+	}
+	if !guestbook_render(guestbook, &application_context.live.frames[.Guestbook]) {
+		fmt.eprintln("wlls: startup failed: rendering the guestbook")
+		os.exit(1)
+	}
 
 	// Route registration: every path the site answers, in one place.
 	app := http.App {
@@ -51,6 +70,15 @@ run :: proc() {
 			stream_get("/feed.xml", serve_page),
 			stream_get("/sitemap.xml", serve_page),
 			stream_get("/robots.txt", serve_page),
+			http.get_event("/live", live_stream, state_size = LIVE_STATE_SIZE),
+			stream_get("/guestbook", serve_guestbook),
+			http.post_event(
+				"/guestbook",
+				sign_guestbook,
+				body_size_max = GUESTBOOK_BODY_MAX,
+				body_mode = .Buffered,
+				state_size = u16(size_of(httpx.Patch_Stream)),
+			),
 			http.post_event(
 				"/terminal",
 				terminal_command,
@@ -79,8 +107,13 @@ run :: proc() {
 	when WLLS_DEV {
 		spec := http.install_development(&server, CONNECTION_SLOTS)
 	} else {
-		spec := http.install(&server, shard_count = 1, connection_slot_count = CONNECTION_SLOTS)
+		spec := http.install(
+			&server,
+			shard_count = SHARD_COUNT,
+			connection_slot_count = CONNECTION_SLOTS,
+		)
 	}
+	install_hub(&spec, application_context.live)
 	tina.tina_start(&spec)
 }
 
@@ -112,6 +145,14 @@ load :: proc(allocator: runtime.Allocator) -> (ctx: Application_Context, error: 
 	}
 
 	ctx.site, error = prerender(&ctx)
+	if error != "" do return
+
+	// Every HTML page is a place a live stream may report.
+	ctx.live = new(Live)
+	for page in ctx.site.pages {
+		if strings.has_prefix(page.content_type, "text/html") do place_add(&ctx.live.places, page.path)
+	}
+	place_add(&ctx.live.places, "/guestbook")
 	return
 }
 

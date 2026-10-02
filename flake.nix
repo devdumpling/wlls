@@ -69,6 +69,21 @@
             buildPkgs:
             let
               cross = buildPkgs.stdenv.buildPlatform != buildPkgs.stdenv.hostPlatform;
+              # SQLite's optional Tcl extension needs Tcl built for the target,
+              # which doesn't cross-compile from macOS. The app only needs the
+              # C library, so cross builds turn the extension off (as nixpkgs
+              # does for static builds).
+              sqlite =
+                if cross then
+                  buildPkgs.sqlite.overrideAttrs (old: {
+                    configureFlags = map (
+                      flag: if nixpkgs.lib.hasPrefix "--with-tcl=" flag then "--disable-tcl" else flag
+                    ) old.configureFlags;
+                  })
+                else
+                  buildPkgs.sqlite;
+              # C libraries the app binds with `foreign import`.
+              nativeLibs = "-L${buildPkgs.cmark-gfm}/lib -L${sqlite.out}/lib";
             in
             buildPkgs.stdenv.mkDerivation {
               pname = "wlls";
@@ -79,7 +94,7 @@
                 buildPkgs.buildPackages.removeReferencesTo
                 tempo
               ];
-              buildInputs = [ buildPkgs.cmark-gfm ];
+              buildInputs = [ buildPkgs.cmark-gfm sqlite ];
               dontConfigure = true;
 
               buildPhase = ''
@@ -88,11 +103,11 @@
                 ${
                   if cross then
                     ''
-                      odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"-L${buildPkgs.cmark-gfm}/lib" -target:linux_amd64 -build-mode:obj -out:wlls.obj -o:speed ${releaseDefines} -thread-count:1
-                      $CC wlls.obj -o wlls -L${buildPkgs.cmark-gfm}/lib -lcmark-gfm-extensions -lcmark-gfm -lm -ldl -pthread
+                      odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"${nativeLibs}" -target:linux_amd64 -build-mode:obj -out:wlls.obj -o:speed ${releaseDefines} -thread-count:1
+                      $CC wlls.obj -o wlls ${nativeLibs} -lcmark-gfm-extensions -lcmark-gfm -lsqlite3 -lm -ldl -pthread
                     ''
                   else
-                    ''odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"-L${buildPkgs.cmark-gfm}/lib" -out:wlls -o:speed ${releaseDefines} -thread-count:1''
+                    ''odin build src -collection:tempo=${tempo-src} -extra-linker-flags:"${nativeLibs}" -out:wlls -o:speed ${releaseDefines} -thread-count:1''
                 }
                 runHook postBuild
               '';
@@ -163,6 +178,7 @@
             shellHook = ''
               export TEMPO_SRC=${tempo-src}
               export CMARK_GFM_LIB=${pkgs.cmark-gfm}/lib
+              export SQLITE_LIB=${pkgs.sqlite.out}/lib
             '';
           };
         }

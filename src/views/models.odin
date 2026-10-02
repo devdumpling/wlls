@@ -22,6 +22,7 @@ Page_Kind :: enum {
 	Blog,
 	Post,
 	About,
+	Guestbook,
 	Not_Found,
 }
 
@@ -36,6 +37,8 @@ page_name :: proc(kind: Page_Kind) -> string {
 		return "post"
 	case .About:
 		return "about"
+	case .Guestbook:
+		return "guestbook"
 	case .Not_Found:
 		return "not-found"
 	}
@@ -79,4 +82,28 @@ breadcrumbs :: proc(path: string) -> []Crumb {
 // site paths only, never request input.
 navigate_expression :: proc(path: string) -> string {
 	return strings.concatenate({"window.location.assign('", path, "')"}, context.temp_allocator)
+}
+
+// Who_Row is one visitor in the `who` list: their name and the page they have
+// open. Every field is a static string (name lists, site paths), so the hub
+// renders the list without allocating.
+Who_Row :: struct {
+	adjective, animal, place: string,
+}
+
+// live_expression is the Datastar expression that opens a page's live stream.
+// Callers pass site paths only, never request input.
+live_expression :: proc(path: string) -> string {
+	return strings.concatenate({"@get('/live?path=", path, "')"}, context.temp_allocator)
+}
+
+// Guestbook_Entry is one approved entry, as the guestbook frame shows it.
+Guestbook_Entry :: struct {
+	name, message, date: string,
+}
+
+// Pending_Entry is an unread entry, as `pending` lists it for moderation:
+// its label is "#id name".
+Pending_Entry :: struct {
+	label, message: string,
 }

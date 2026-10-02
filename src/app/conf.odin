@@ -11,10 +11,14 @@ CANONICAL_BLOG :: BASE_URL + "/blog"
 // memory pre-faulted at boot, faulted isolates quarantined and restarted, and a
 // 30 s graceful drain (keep systemd's TimeoutStopSec above it).
 WLLS_DEV :: #config(WLLS_DEV, false)
-CONNECTION_SLOTS :: 128
+// One shard: the droplet has one vCPU, and live frames rely on it (live.odin).
+SHARD_COUNT :: 1
+// Every visible page holds a live stream, and so a slot; see live.odin for the
+// share reserved for page loads. Slots are preallocated (~45 KiB each).
+CONNECTION_SLOTS :: 1024
 
 // Each Datastar event must fit in Tina's per-connection egress buffer in one
-// piece (see src/httpx/patches.odin). 16 KiB costs ~2 MiB across 128
+// piece (see src/httpx/patches.odin). 16 KiB costs 16 MiB across 1024
 // connection slots and leaves room for coarse patches.
 #assert(
 	httpx.EGRESS_BUFFER_SIZE >= 16 * 1024,

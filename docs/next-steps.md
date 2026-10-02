@@ -56,11 +56,17 @@ first section.
       wide screens (`src/content/footnotes.odin`); narrow screens keep the
       notes section and popovers. Replaces reader marginalia, which would
       mostly be empty margins plus moderation.
-- [ ] **Live hub**: one `GET /live?topic=…` Datastar stream for every live
-      feature (one hub isolate fans out topic changes), with commands as short
-      POSTs. Raise `CONNECTION_SLOTS` and cap subscribers below it.
-- [ ] **Guestbook** on the live hub: SQLite (hand-bound, like cmark), one
-      writer isolate, moderated from the terminal.
+- [x] **Live hub.** Every page opens one `GET /live?path=…` stream; a hub
+      isolate tracks who is here and wakes the streams whose topics changed
+      (`src/app/live.odin`). `who` lists visitors by adjective-animal handle.
+- [x] **Guestbook** at `/guestbook` (rail `:)`, `cd guestbook`, `sign <note>`):
+      SQLite (`src/sqlite`), moderated with `sudo` in the terminal, approved
+      entries pushed live. Needs `/etc/wlls/wlls.env` on the Droplet
+      (`deploy/README.md`).
+- [ ] **`msg` and `nick`**: a terminal chatroom on the live hub, using the
+      visitor handles `who` already shows (a `chat` topic and frame).
+- [ ] **Faster leave.** A closed tab stays in `who` for up to ~50 s, until a
+      heartbeat write fails. A `pagehide` beacon could unsubscribe at once.
 - [ ] **Commons**: the planned GPU landing sim with SQLite-persisted
       plantings.
 - [ ] **Webmentions** stored in SQLite, rendered under posts.

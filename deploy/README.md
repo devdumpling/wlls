@@ -90,6 +90,29 @@ nix build .#runtime-linux-amd64  # Droplet runtime, cross-built locally
 /nix/var/nix/profiles/wlls  # active runtime and previous generations
 /etc/wlls/Caddyfile
 /etc/wlls/caddy.env         # optional Caddy overrides
+/etc/wlls/wlls.env          # optional app secrets (WLLS_ADMIN_TOKEN)
 /var/lib/caddy              # certificates and Caddy state
-/var/lib/wlls               # reserved application state (currently empty)
+/var/lib/wlls               # app state: guestbook.db (+ -wal, -shm)
+```
+
+## Guestbook and sudo
+
+Approved guestbook entries live in `/var/lib/wlls/guestbook.db` (SQLite, WAL
+mode), created on first start. Moderation happens in the site's terminal:
+`sudo`, then `pending`, `approve <id>`, `reject <id>`, and `sudo -k`. It needs a
+token of 24 or more characters in `/etc/wlls/wlls.env`, readable only by root
+(systemd reads it before dropping to the `wlls` user):
+
+```bash
+ssh deploy@<droplet> 'umask 077 && openssl rand -base64 32 | sed "s/^/WLLS_ADMIN_TOKEN=/" | sudo tee /etc/wlls/wlls.env >/dev/null && sudo systemctl restart wlls'
+ssh deploy@<droplet> 'sudo cat /etc/wlls/wlls.env'   # copy it into your password manager
+```
+
+Without the file, `sudo` answers that nobody can, and everything else works.
+
+The Droplet's weekly backups cover the database. For a copy on demand, use
+SQLite's online backup, which is safe while the app runs:
+
+```bash
+ssh deploy@<droplet> 'sudo nix shell nixpkgs#sqlite -c sqlite3 /var/lib/wlls/guestbook.db ".backup /tmp/guestbook.db"'
 ```

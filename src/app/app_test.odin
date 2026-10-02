@@ -37,14 +37,16 @@ test_terminal_ls_fits_one_event :: proc(t: ^testing.T) {
 	defer virtual.arena_destroy(&arena)
 	context.allocator = virtual.arena_allocator(&arena)
 
-	repository: content.Repository
+	ctx := Application_Context {
+		live = new(Live),
+	}
 	for index in 0 ..< 100 {
 		slug := fmt.aprintf("a-reasonably-long-post-slug-%03d", index)
-		append(&repository.posts, content.Post{slug = slug, url = fmt.aprintf("/blog/%s", slug)})
+		append(&ctx.content.posts, content.Post{slug = slug, url = fmt.aprintf("/blog/%s", slug)})
 	}
 
 	output := strings.builder_make()
-	result := run_command(&output, "ls", &repository)
+	result := run_command(&output, "ls", &ctx, {})
 	rendered := strings.to_string(output)
 
 	testing.expect_value(t, result, Command_Result.Append)
@@ -66,12 +68,14 @@ test_terminal_commands :: proc(t: ^testing.T) {
 	defer virtual.arena_destroy(&arena)
 	context.allocator = virtual.arena_allocator(&arena)
 
-	repository: content.Repository
-	append(&repository.posts, content.Post{slug = "devex", url = "/blog/devex"})
-	repository.by_slug["devex"] = 0
+	ctx := Application_Context {
+		live = new(Live),
+	}
+	append(&ctx.content.posts, content.Post{slug = "devex", url = "/blog/devex"})
+	ctx.content.by_slug["devex"] = 0
 
 	output := strings.builder_make()
-	run_command(&output, "cd devex", &repository)
+	run_command(&output, "cd devex", &ctx, {})
 	testing.expect(
 		t,
 		strings.contains(
@@ -81,12 +85,67 @@ test_terminal_commands :: proc(t: ^testing.T) {
 	)
 
 	strings.builder_reset(&output)
-	run_command(&output, "cd https://example.com", &repository)
+	run_command(&output, "cd https://example.com", &ctx, {})
 	testing.expect(t, strings.contains(strings.to_string(output), "no such place"))
 	testing.expect(t, !strings.contains(strings.to_string(output), "data-init"))
 
 	strings.builder_reset(&output)
-	result := run_command(&output, "clear", &repository)
+	result := run_command(&output, "clear", &ctx, {})
 	testing.expect_value(t, result, Command_Result.Clear)
 	testing.expect(t, strings.has_prefix(strings.to_string(output), `<div id="terminal-output"`))
+}
+
+// The guestbook's whole life against an in-memory database: signing (and its
+// guards), the moderation queue, and an approval reaching the frame.
+@(test)
+test_guestbook_sign_and_moderate :: proc(t: ^testing.T) {
+	arena: virtual.Arena
+	defer virtual.arena_destroy(&arena)
+	context.allocator = virtual.arena_allocator(&arena)
+
+	guestbook: Guestbook
+	if error := guestbook_open(&guestbook, ":memory:"); !testing.expect(t, error == "", error) do return
+	defer guestbook_close(&guestbook)
+	frame := new(Frame)
+
+	minute :: u64(60 * 1_000_000_000)
+	testing.expect_value(
+		t,
+		guestbook_sign(&guestbook, "Jo", "hi <there>\r\nfriend", 7, "", 0),
+		Sign_Result.Signed,
+	)
+	testing.expect_value(
+		t,
+		guestbook_sign(&guestbook, "Jo", "again", 7, "", minute),
+		Sign_Result.Too_Soon,
+	)
+	testing.expect_value(
+		t,
+		guestbook_sign(&guestbook, "Al", "same network", 8, "10.0.0.1", minute),
+		Sign_Result.Signed,
+	)
+	testing.expect_value(
+		t,
+		guestbook_sign(&guestbook, "Bo", "", 9, "", minute),
+		Sign_Result.Invalid,
+	)
+	testing.expect_value(
+		t,
+		guestbook_sign(&guestbook, "Cy", "\x07", 9, "", minute),
+		Sign_Result.Invalid,
+	)
+
+	pending, total, ok := guestbook_pending(&guestbook)
+	testing.expect(t, ok)
+	testing.expect_value(t, total, 2)
+	testing.expect_value(t, pending[0].label, "#1 Jo")
+	testing.expect_value(t, pending[0].message, "hi <there> friend")
+
+	testing.expect_value(t, guestbook_moderate(&guestbook, 1, true, frame), Moderation.Done)
+	testing.expect_value(t, guestbook_moderate(&guestbook, 1, true, frame), Moderation.Not_Found)
+	testing.expect_value(t, guestbook_moderate(&guestbook, 2, false, frame), Moderation.Done)
+	rendered := string(frame_bytes(frame))
+	testing.expect(t, strings.contains(rendered, "hi &lt;there&gt;\nfriend"), rendered)
+	testing.expect(t, !strings.contains(rendered, "same network"))
+	testing.expect_value(t, frame.version, 1)
 }

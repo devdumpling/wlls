@@ -1,0 +1,23 @@
+package views
+
+// live_mount opens the page's one live stream when Datastar starts. Datastar
+// closes it while the tab is hidden and reopens it when the tab is shown, so
+// a page counts as here only while someone can see it.
+live_mount :: templ(path: string) {
+	<div id="live" hidden data-init={ live_expression(path) }></div>
+}
+
+// terminal_who is the presence list `who` prints. The hub renders it whenever
+// someone arrives or leaves, so the command only copies it out.
+terminal_who :: templ(rows: []Who_Row, more: string, summary: string) {
+	<dl id="terminal-who" class="terminal-list terminal-who">
+		for row in rows {
+			<dt>{ row.adjective }-{ row.animal }</dt>
+			<dd>{ row.place }</dd>
+		}
+	</dl>
+	if more != "" {
+		<p class="terminal-line">{ more }</p>
+	}
+	<p class="terminal-line">{ summary }</p>
+}

@@ -640,6 +640,48 @@
     }
   }
 
+  /* Guestbook: a form like a card catalog slip, entries like pencilled notes. */
+  .guestbook-sign label,
+  .guestbook-status,
+  .guestbook-meta,
+  .guestbook-empty {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+  .guestbook-sign :is(input, textarea) {
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    background: color-mix(in oklch, var(--paper) 85%, var(--ink) 4%);
+    color: var(--ink);
+    /* 16px or more, or iOS zooms in on focus. */
+    font-size: max(1rem, 16px);
+  }
+  .guestbook-sign :is(input, textarea):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .guestbook-actions button {
+    border: 1px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .guestbook-actions button:disabled {
+    opacity: 0.55;
+    cursor: progress;
+  }
+  .guestbook-thanks {
+    font-style: italic;
+  }
+  .guestbook-entry {
+    padding-inline-start: 1rem;
+    border-inline-start: 2px solid var(--rule);
+  }
+
   .skip-link {
     background: var(--ink);
   }

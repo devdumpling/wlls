@@ -124,3 +124,16 @@ trigger at the end of the breadcrumb row, or by `/` anywhere. The
 only browser concerns: focus, the `/` shortcut, history (kept in
 `localStorage`), and scroll-follow. The sheet follows a component-local `$$.open`
 signal, so `exit` closes it in the browser without a request.
+
+## Live connections
+
+Every page (except 404) opens one long-lived stream with
+`data-init="@get('/live?path=…')"` (`views.live_mount`); Datastar closes it
+while the tab is hidden. That stream is the read side for everything live; writes
+stay short POSTs (`/terminal`, `/guestbook`). Content never travels in Tina
+messages (96 bytes): a feature renders a **frame** once per change (Tempo
+HTML whose elements carry ids), a hub isolate wakes the streams subscribed to
+that topic, and each copies the newest frame into its egress buffer, so a
+slow client simply skips to the latest version. Frames, the guestbook, and sudo
+sessions are the only state isolates share, which is safe because the app
+runs one shard (`src/app/live.odin`).

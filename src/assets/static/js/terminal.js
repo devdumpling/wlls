@@ -139,6 +139,11 @@ rocket("wlls-terminal", {
     /** @param {SubmitEvent} event */
     const remember = (event) => {
       const field = input()
+      // sudo's password prompt: never kept in history.
+      if (field?.type === "password") {
+        submitted = true
+        return
+      }
       const command = field?.value.trim()
       if (command && command !== history.at(-1)) {
         history.push(command)
@@ -158,7 +163,7 @@ rocket("wlls-terminal", {
     /** @param {KeyboardEvent} event */
     const recall = (event) => {
       const field = input()
-      if (event.target !== field || !field || history.length === 0) return
+      if (event.target !== field || !field || field.type === "password" || history.length === 0) return
       if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return
       event.preventDefault()
       cursor = Math.min(Math.max(cursor + (event.key === "ArrowUp" ? -1 : 1), 0), history.length)

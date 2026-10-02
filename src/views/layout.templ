@@ -58,6 +58,9 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 			if metadata.page != .Home {
 				@terminal_sheet()
 			}
+			if metadata.page != .Not_Found {
+				@live_mount(metadata.path)
+			}
 		</body>
 	</html>
 }
@@ -89,6 +92,12 @@ rail :: templ(metadata: Metadata, assets: Asset_URLs) {
 					<a href="/blog" if metadata.page == .Blog || metadata.page == .Post { aria-current="page" }>
 						<span class="rail-glyph" aria-hidden="true">¶</span>
 						<span class="rail-label">blog</span>
+					</a>
+				</li>
+				<li>
+					<a href="/guestbook" if metadata.page == .Guestbook { aria-current="page" }>
+						<span class="rail-glyph" aria-hidden="true">:)</span>
+						<span class="rail-label">guestbook</span>
 					</a>
 				</li>
 				<li>

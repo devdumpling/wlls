@@ -8,11 +8,17 @@ Type=simple
 User=wlls
 Group=wlls
 WorkingDirectory=/var/lib/wlls
+# WLLS_ADMIN_TOKEN (24+ characters) turns on the terminal's sudo, which
+# moderates the guestbook. Without it, sudo stays off.
+EnvironmentFile=-/etc/wlls/wlls.env
 ExecStart=/nix/var/nix/profiles/wlls/bin/wlls
 Restart=on-failure
 RestartSec=2s
 # Above the app's 30 s graceful drain (src/app/conf.odin).
 TimeoutStopSec=35s
+# Every visible page holds a live stream: CONNECTION_SLOTS (1024) sockets,
+# plus the listener, the database, and headroom.
+LimitNOFILE=4096
 
 NoNewPrivileges=true
 PrivateDevices=true
