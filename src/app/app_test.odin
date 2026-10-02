@@ -149,3 +149,45 @@ test_guestbook_sign_and_moderate :: proc(t: ^testing.T) {
 	testing.expect(t, !strings.contains(rendered, "same network"))
 	testing.expect_value(t, frame.version, 1)
 }
+
+// #lobby in memory: joining, the send limit, nicks (and their guards), root's
+// removal, and leaving, as they reach the rendered room.
+@(test)
+test_chat_room :: proc(t: ^testing.T) {
+	arena: virtual.Arena
+	defer virtual.arena_destroy(&arena)
+	context.allocator = virtual.arena_allocator(&arena)
+	live := new(Live)
+	second :: u64(1_000_000_000)
+
+	testing.expect(t, chat_join(live, 1, false))
+	testing.expect(t, !chat_join(live, 1, false))
+	testing.expect(t, chat_join(live, 2, true))
+	for _ in 0 ..< 5 do testing.expect_value(t, chat_say(live, 1, false, "hi <b>", 0), Say_Result.Sent)
+	testing.expect_value(t, chat_say(live, 1, false, "one too many", 0), Say_Result.Too_Fast)
+	testing.expect_value(t, chat_say(live, 1, false, "later", 2 * second), Say_Result.Sent)
+	testing.expect_value(t, chat_say(live, 3, false, "not here", 0), Say_Result.Not_Member)
+
+	testing.expect_value(t, nick_set(&live.nicks, 1, "jo", false), Nick_Result.Set)
+	testing.expect_value(t, nick_set(&live.nicks, 3, "jo", false), Nick_Result.Taken)
+	testing.expect_value(t, nick_set(&live.nicks, 3, "dev", false), Nick_Result.Taken)
+	testing.expect_value(t, nick_set(&live.nicks, 3, "quiet-heron", false), Nick_Result.Taken)
+	testing.expect_value(t, nick_set(&live.nicks, 3, "Jo!", false), Nick_Result.Invalid)
+
+	visitor, found := chat_find(live, "jo")
+	testing.expect(t, found && visitor == 1)
+	testing.expect_value(t, chat_remove(&live.chat, 1), 6)
+	testing.expect(t, chat_leave(live, 1))
+
+	testing.expect(t, chat_render(live))
+	rendered := string(frame_bytes(&live.frames[.Chat]))
+	testing.expect(t, strings.contains(rendered, "#lobby · 1 here"), rendered)
+	testing.expect(t, strings.contains(rendered, " joined"))
+	testing.expect(t, strings.contains(rendered, "jo left"))
+	testing.expect(
+		t,
+		strings.contains(rendered, `data-root="true">dev</span>`) ||
+		strings.contains(rendered, "dev joined"),
+	)
+	testing.expect(t, !strings.contains(rendered, "hi &lt;b&gt;"))
+}

@@ -63,8 +63,11 @@ first section.
       SQLite (`src/sqlite`), moderated with `sudo` in the terminal, approved
       entries pushed live. Needs `/etc/wlls/wlls.env` on the Droplet
       (`deploy/README.md`).
-- [ ] **`msg` and `nick`**: a terminal chatroom on the live hub, using the
-      visitor handles `who` already shows (a `chat` topic and frame).
+- [x] **`msg` and `nick`.** `#lobby`, a terminal chatroom on the live hub
+      (`src/app/chat.odin`): in-memory history (last 40 lines), membership per
+      visitor so the room follows you across pages, a send limit (5 burst,
+      then 1/s), and root's `/mute`, `/unmute`, `/rm <name>`, `/wipe`. Nicks
+      are in memory too and reset on deploy.
 - [ ] **Faster leave.** A closed tab stays in `who` for up to ~50 s, until a
       heartbeat write fails. A `pagehide` beacon could unsubscribe at once.
 - [ ] **Commons**: the planned GPU landing sim with SQLite-persisted

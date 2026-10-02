@@ -538,8 +538,38 @@
   .terminal:not([data-engaged]) .terminal-toggle {
     visibility: hidden;
   }
-  .terminal-output > * + * {
+  .terminal-output > * + *,
+  .terminal-chat > * + * {
     margin-block-start: 0.2rem;
+  }
+  /* Chat mode: a prompt with data-chat swaps the log for #lobby. */
+  .terminal-chat {
+    display: none;
+    flex: 0 1 auto;
+    min-block-size: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  .terminal:has(#terminal-prompt[data-chat]) .terminal-chat {
+    display: block;
+  }
+  .terminal:has(#terminal-prompt[data-chat]) .terminal-output {
+    display: none;
+  }
+  .chat-line {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 1.5ch;
+  }
+  .chat-text {
+    overflow-wrap: anywhere;
+  }
+  .terminal-prompt:has(.terminal-notice) {
+    flex-wrap: wrap;
+  }
+  .terminal-notice {
+    flex-basis: 100%;
   }
   .terminal-prompt {
     flex: 1;

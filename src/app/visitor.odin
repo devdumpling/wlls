@@ -58,6 +58,111 @@ visitor_name :: proc(visitor: Visitor) -> (adjective, animal: string) {
 	return ADJECTIVES[u64(visitor) % len(ADJECTIVES)], ANIMALS[(u64(visitor) >> 6) % len(ANIMALS)]
 }
 
+// ─── Names ──────────────────────────────────────────────────────────────────
+//
+// A visitor shows as their nick if they set one with `nick`, else as their
+// adjective-animal handle. Nicks live in memory and reset on deploy. Name is
+// a small fixed buffer, so names can be kept in shared tables and rendered
+// without allocating.
+
+NAME_MAX :: 24 // bytes; nicks are at most NICK_MAX ASCII characters
+NICK_MIN :: 2
+NICK_MAX :: 20
+@(private = "file")
+NICKS_MAX :: 256
+
+Name :: struct {
+	bytes: [NAME_MAX]u8,
+	size:  u8,
+}
+
+name_string :: proc(name: ^Name) -> string {
+	return string(name.bytes[:name.size])
+}
+
+name_of :: proc(text: string) -> (name: Name) {
+	name.size = u8(copy(name.bytes[:], text))
+	return
+}
+
+Nicks :: struct {
+	entries: [NICKS_MAX]Nick,
+	count:   int,
+	next:    int, // when full, the oldest nick is replaced
+}
+
+@(private = "file")
+Nick :: struct {
+	visitor: Visitor,
+	name:    Name,
+}
+
+// display_name is how a visitor appears in `who`, chat, and terminal signing.
+display_name :: proc(nicks: ^Nicks, visitor: Visitor) -> Name {
+	for &nick in nicks.entries[:nicks.count] {
+		if nick.visitor == visitor do return nick.name
+	}
+	adjective, animal := visitor_name(visitor)
+	name: Name
+	name.size = u8(len(fmt.bprintf(name.bytes[:], "%s-%s", adjective, animal)))
+	return name
+}
+
+Nick_Result :: enum {
+	Set,
+	Invalid, // not 2–20 of a–z, 0–9, and -
+	Taken, // someone else's nick, a handle, or reserved
+}
+
+// nick_set gives a visitor a nick. Reserved names (dev, root, admin) are only
+// for root, and handle-shaped names are refused so no one can pose as
+// another visitor's handle.
+nick_set :: proc(nicks: ^Nicks, visitor: Visitor, text: string, root: bool) -> Nick_Result {
+	if len(text) < NICK_MIN || len(text) > NICK_MAX do return .Invalid
+	for character in transmute([]u8)text {
+		is_lower := character >= 'a' && character <= 'z'
+		is_digit := character >= '0' && character <= '9'
+		if !is_lower && !is_digit && character != '-' do return .Invalid
+	}
+	switch text {
+	case "dev", "root", "admin":
+		if !root do return .Taken
+	}
+	if is_handle(text) do return .Taken
+	for &nick in nicks.entries[:nicks.count] {
+		if name_string(&nick.name) == text && nick.visitor != visitor do return .Taken
+	}
+
+	for &nick in nicks.entries[:nicks.count] {
+		if nick.visitor == visitor {
+			nick.name = name_of(text)
+			return .Set
+		}
+	}
+	entry := Nick {
+		visitor = visitor,
+		name    = name_of(text),
+	}
+	if nicks.count < len(nicks.entries) {
+		nicks.entries[nicks.count] = entry
+		nicks.count += 1
+	} else {
+		nicks.entries[nicks.next] = entry
+		nicks.next = (nicks.next + 1) % len(nicks.entries)
+	}
+	return .Set
+}
+
+// is_handle reports whether text looks like a generated adjective-animal name.
+@(private = "file")
+is_handle :: proc(text: string) -> bool {
+	adjective, _, animal := strings.partition(text, "-")
+	adjective_found, animal_found := false, false
+	for word in ADJECTIVES do adjective_found ||= word == adjective
+	for word in ANIMALS do animal_found ||= word == animal
+	return adjective_found && animal_found
+}
+
 @(private = "file")
 ADJECTIVES := [64]string {
 	"quiet",

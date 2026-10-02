@@ -12,7 +12,8 @@ import "core:strings"
 // line is a short POST, answered by SSE patches that append the result to the
 // terminal's log and morph a fresh prompt in. The server owns every command,
 // so new ones (and eventually the game) are added here, not in the browser.
-TERMINAL_BODY_MAX :: 512
+// A chat line is up to 200 characters, which percent-encoding can triple.
+TERMINAL_BODY_MAX :: 2048
 
 terminal_command :: proc(
 	event: http.Route_Event,
@@ -31,10 +32,19 @@ terminal_command :: proc(
 	caller := caller_of(request)
 	caller.session, caller.admin = admin_session(&ctx.admin, request, caller.now)
 
-	// sudo's password prompt posts a password field instead of a command.
+	// Each prompt posts its own field: a command, sudo's password, or a line
+	// said in #lobby.
 	writer := httpx.begin_patches(stream)
 	result: Command_Result
-	if form_has(body, "password") {
+	notice: string
+	switch {
+	case form_has(body, "say"):
+		said, ok := form_value(body, "say", arena)
+		if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid form")
+		result, notice = chat_input(writer, strings.trim_space(said), ctx, caller)
+		// In the room, output only goes to the log on the way out.
+		if result == .Append do httpx.queue_elements(stream, {selector = "#terminal-output", mode = .Append})
+	case form_has(body, "password"):
 		password, ok := form_value(body, "password", arena)
 		if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid form")
 		cookie: [160]u8
@@ -42,22 +52,33 @@ terminal_command :: proc(
 		if set_cookie != "" do _ = http.header_add(response, "Set-Cookie", set_cookie)
 		views.terminal_line(writer, "[sudo] password:")
 		sudo_reply(writer, sudo)
-	} else {
+		httpx.queue_elements(stream, {selector = "#terminal-output", mode = .Append})
+	case:
 		line, ok := form_value(body, "command", arena)
 		if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid command")
 		result = run_command(writer, strings.trim_space(line), ctx, caller)
+		if result == .Clear {
+			httpx.queue_elements(stream) // an empty log, morphed over the old one
+		} else {
+			httpx.queue_elements(stream, {selector = "#terminal-output", mode = .Append})
+		}
 	}
-	if result == .Clear {
-		httpx.queue_elements(stream) // an empty log, morphed over the old one
-	} else {
-		httpx.queue_elements(stream, {selector = "#terminal-output", mode = .Append})
+
+	// In the room, the sender sees it at once; their stream brings the same
+	// frame a moment later, and the morph makes the second one a no-op.
+	if result == .Chat {
+		strings.write_bytes(writer, frame_bytes(&ctx.live.frames[.Chat]))
+		httpx.queue_elements(stream)
 	}
 
 	// Replace (not morph) the prompt: morphing keeps a focused input's value,
 	// and the next command needs an empty line. <wlls-terminal> refocuses it.
-	if result == .Password {
+	#partial switch result {
+	case .Password:
 		views.terminal_password_prompt(writer)
-	} else {
+	case .Chat:
+		views.terminal_chat_prompt(writer, notice)
+	case:
 		views.terminal_prompt(writer)
 	}
 	httpx.queue_elements(stream, {selector = "#terminal-prompt", mode = .Replace})
@@ -74,6 +95,7 @@ Command_Result :: enum {
 	Append, // output is appended to the log
 	Clear, // output is an empty log that replaces the old one
 	Password, // output is appended, and the prompt asks for sudo's password
+	Chat, // any output is appended, and the room replaces the log (chat mode)
 }
 
 // run_command renders a command's echo and result into output. clear renders
@@ -127,24 +149,20 @@ run_command :: proc(
 		// live stream yet, so they are not on it.
 		strings.write_bytes(output, frame_bytes(&ctx.live.who))
 		if caller.visitor != 0 {
-			adjective, animal := visitor_name(caller.visitor)
-			views.terminal_line(
-				output,
-				strings.concatenate({"you are ", adjective, "-", animal}, context.temp_allocator),
-			)
+			name := display_name(&ctx.live.nicks, caller.visitor)
+			views.terminal_line(output, fmt.tprintf("you are %s", name_string(&name)))
 		}
 	case "sign":
-		// Signing from the terminal uses your handle as the name.
+		// Signing from the terminal uses your name (nick or handle).
 		if argument == "" {
 			views.terminal_line(output, "usage: sign <a short note>")
 			views.terminal_link(output, "or sign with a name at /guestbook", "/guestbook")
 			return
 		}
-		adjective, animal := visitor_name(caller.visitor)
-		name := strings.concatenate({adjective, "-", animal}, context.temp_allocator)
+		name := display_name(&ctx.live.nicks, caller.visitor)
 		result := guestbook_sign(
 			&ctx.guestbook,
-			name,
+			name_string(&name),
 			argument,
 			caller.visitor,
 			caller.client,
@@ -154,6 +172,31 @@ run_command :: proc(
 			views.terminal_line(output, sign_reply(result))
 		} else {
 			views.terminal_error(output, sign_reply(result))
+		}
+	case "msg":
+		if caller.visitor == 0 {
+			views.terminal_error(output, "msg: reload the page first, so it can connect.")
+			return
+		}
+		if chat_join(ctx.live, caller.visitor, caller.admin) && chat_render(ctx.live) {
+			publish(ctx.live, .Chat)
+		}
+		views.terminal_line(output, "#lobby. /help for commands, /leave to go back.")
+		return .Chat
+	case "nick":
+		if argument == "" {
+			name := display_name(&ctx.live.nicks, caller.visitor)
+			views.terminal_line(
+				output,
+				fmt.tprintf("you are %s. nick <name> to change it", name_string(&name)),
+			)
+			return
+		}
+		reply, ok := change_nick(ctx, caller, argument)
+		if ok {
+			views.terminal_line(output, reply)
+		} else {
+			views.terminal_error(output, reply)
 		}
 	case "sudo":
 		switch {
@@ -179,6 +222,118 @@ run_command :: proc(
 		command_not_found(output, name)
 	}
 	return
+}
+
+// chat_input handles a line said at the #lobby prompt: a message, or a
+// /command. It returns .Chat to stay in the room (with an optional notice for
+// the prompt) or .Append after writing a farewell to the log.
+@(private = "file")
+chat_input :: proc(
+	output: ^strings.Builder,
+	said: string,
+	ctx: ^Application_Context,
+	caller: Caller,
+) -> (
+	result: Command_Result,
+	notice: string,
+) {
+	live := ctx.live
+	if caller.visitor == 0 {
+		views.terminal_error(output, "msg: reload the page first, so it can connect.")
+		return .Append, ""
+	}
+	if said == "" do return .Chat, ""
+
+	if !strings.has_prefix(said, "/") {
+		// A chat prompt left open after leaving (in another tab, say) rejoins.
+		changed := chat_join(live, caller.visitor, caller.admin)
+		switch chat_say(live, caller.visitor, caller.admin, said, caller.now) {
+		case .Sent:
+			changed = true
+		case .Too_Fast:
+			notice = "slow down a little."
+		case .Muted:
+			notice = "you can't post in #lobby right now."
+		case .Invalid:
+			notice = "messages are one line, up to 200 characters."
+		case .Not_Member:
+		}
+		if changed && chat_render(live) do publish(live, .Chat)
+		return .Chat, notice
+	}
+
+	rest := said
+	command, _ := strings.fields_iterator(&rest)
+	argument := strings.trim_space(rest)
+	switch command {
+	case "/leave", "/exit", "/quit":
+		if chat_leave(live, caller.visitor) && chat_render(live) do publish(live, .Chat)
+		views.terminal_line(output, "you left #lobby.")
+		return .Append, ""
+	case "/who":
+		return .Chat, fmt.tprintf("here: %s", chat_members(live))
+	case "/nick":
+		reply, _ := change_nick(ctx, caller, argument)
+		return .Chat, reply
+	case "/help":
+		if caller.admin {
+			return .Chat,
+				"/who · /nick <name> · /leave · root: /mute, /unmute, /rm <name> · /wipe"
+		}
+		return .Chat, "/who · /nick <name> · /leave"
+	case "/mute", "/unmute", "/rm", "/wipe":
+		if caller.admin do return .Chat, moderate_chat(live, command, argument)
+	}
+	return .Chat, fmt.tprintf("%s: no such command. try /help", command)
+}
+
+// moderate_chat runs root's #lobby commands and says what happened.
+@(private = "file")
+moderate_chat :: proc(live: ^Live, command, name: string) -> string {
+	if command == "/wipe" {
+		chat_wipe(&live.chat)
+		if chat_render(live) do publish(live, .Chat)
+		return "wiped #lobby."
+	}
+	visitor, found := chat_find(live, name)
+	if !found do return fmt.tprintf("%s: nobody called %q in #lobby.", command, name)
+	switch command {
+	case "/mute":
+		if !chat_mute(&live.chat, visitor) do return "/mute: the mute list is full."
+		return fmt.tprintf("muted %s.", name)
+	case "/unmute":
+		chat_unmute(&live.chat, visitor)
+		return fmt.tprintf("unmuted %s.", name)
+	}
+	removed := chat_remove(&live.chat, visitor)
+	if removed > 0 && chat_render(live) do publish(live, .Chat)
+	return fmt.tprintf("removed %d of %s's messages.", removed, name)
+}
+
+// change_nick renames the caller everywhere: `who`, #lobby, and signing.
+@(private = "file")
+change_nick :: proc(
+	ctx: ^Application_Context,
+	caller: Caller,
+	name: string,
+) -> (
+	reply: string,
+	ok: bool,
+) {
+	live := ctx.live
+	if caller.visitor == 0 do return "nick: reload the page first, so it can connect.", false
+	old := display_name(&live.nicks, caller.visitor)
+	switch nick_set(&live.nicks, caller.visitor, name, caller.admin) {
+	case .Set:
+		if chat_renamed(live, caller.visitor, old) && chat_render(live) do publish(live, .Chat)
+		renamed(live)
+		return fmt.tprintf("you are now %s.", name), true
+	case .Invalid:
+		return "nick: 2–20 characters of a–z, 0–9, and -.", false
+	case .Taken:
+		return fmt.tprintf("nick: %s is taken.", name), false
+	}
+	return "", false
 }
 
 @(private = "file")

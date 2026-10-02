@@ -153,6 +153,15 @@ load :: proc(allocator: runtime.Allocator) -> (ctx: Application_Context, error: 
 		if strings.has_prefix(page.content_type, "text/html") do place_add(&ctx.live.places, page.path)
 	}
 	place_add(&ctx.live.places, "/guestbook")
+
+	// #lobby starts empty, but its frame and prompt are sent as soon as
+	// someone joins, so render both now.
+	if !chat_render(ctx.live) do return ctx, "rendering #lobby failed"
+	buffer: httpx.Render_Buffer
+	views.terminal_chat_prompt(httpx.render_buffer_init(&buffer), "")
+	stored := frame_store(&ctx.live.chat_prompt, &buffer)
+	httpx.render_buffer_destroy(&buffer)
+	if !stored do return ctx, "rendering the #lobby prompt failed"
 	return
 }
 

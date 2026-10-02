@@ -12,7 +12,7 @@ live_mount :: templ(path: string) {
 terminal_who :: templ(rows: []Who_Row, more: string, summary: string) {
 	<dl id="terminal-who" class="terminal-list terminal-who">
 		for row in rows {
-			<dt>{ row.adjective }-{ row.animal }</dt>
+			<dt>{ row.name }</dt>
 			<dd>{ row.place }</dd>
 		}
 	</dl>

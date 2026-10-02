@@ -112,8 +112,8 @@ guestbook_sign :: proc(
 	// Browsers submit a textarea's line breaks as CRLF.
 	unix_message, _ := strings.replace_all(message, "\r\n", "\n", context.temp_allocator)
 	entry_name, entry_message := strings.trim_space(name), strings.trim_space(unix_message)
-	if !is_entry_text(entry_name, GUESTBOOK_NAME_MAX, multiline = false) ||
-	   !is_entry_text(entry_message, GUESTBOOK_MESSAGE_MAX, multiline = true) {
+	if !is_plain_text(entry_name, GUESTBOOK_NAME_MAX, multiline = false) ||
+	   !is_plain_text(entry_message, GUESTBOOK_MESSAGE_MAX, multiline = true) {
 		return .Invalid
 	}
 
@@ -295,10 +295,10 @@ preview :: proc(text: string, allocator := context.allocator) -> string {
 	return strings.to_string(builder)
 }
 
-// is_entry_text accepts 1–limit characters of valid UTF-8 with no control
-// characters (a message may keep its line breaks).
-@(private = "file")
-is_entry_text :: proc(text: string, limit: int, multiline: bool) -> bool {
+// is_plain_text accepts 1–limit characters of valid UTF-8 with no control
+// characters (multiline text may keep its line breaks).
+@(private)
+is_plain_text :: proc(text: string, limit: int, multiline: bool) -> bool {
 	if text == "" || !utf8.valid_string(text) do return false
 	count := 0
 	for character in text {

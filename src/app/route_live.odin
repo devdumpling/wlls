@@ -15,10 +15,11 @@ LIVE_HEARTBEAT_NS :: 25 * 1_000_000_000
 
 @(private)
 Live_Stream :: struct {
-	visitor: Visitor,
-	place:   u16,
-	topics:  Topics,
-	sent:    [Topic]u64, // frame version last sent, per topic
+	visitor:     Visitor,
+	place:       u16,
+	topics:      Topics, // the page's own; #lobby is added while in the room
+	sent:        [Topic]u64, // frame version last sent, per topic
+	chat_prompt: bool, // a visitor in #lobby gets the chat prompt on arrival
 }
 
 @(private)
@@ -48,9 +49,10 @@ live_stream :: proc(
 			_ = http.header_add(response, "Set-Cookie", visitor_cookie(visitor, cookie[:]))
 		}
 		stream^ = {
-			visitor = visitor,
-			place   = place,
-			topics  = place_topics(string(path)),
+			visitor     = visitor,
+			place       = place,
+			topics      = place_topics(string(path)),
+			chat_prompt = chat_is_member(&live.chat, visitor),
 		}
 		if !httpx.start_stream(response) do return http.close()
 		subscribe(route_context, live, stream)
@@ -94,7 +96,22 @@ live_stream :: proc(
 // then a frame may have changed again, and only its latest version goes out.
 @(private = "file")
 send_news :: proc(response: ^http.Response, live: ^Live, stream: ^Live_Stream) -> http.Route_Step {
-	for topic in stream.topics {
+	if stream.chat_prompt {
+		prompt := string(frame_bytes(&live.chat_prompt))
+		switch httpx.send_elements(
+			response,
+			prompt,
+			{selector = "#terminal-prompt", mode = .Replace},
+		) {
+		case .Sent:
+			stream.chat_prompt = false
+		case .Backpressured:
+			return http.flush()
+		case .Failed:
+			return http.close()
+		}
+	}
+	for topic in live_topics(live, stream.visitor, stream.topics) {
 		frame := &live.frames[topic]
 		if frame.version <= stream.sent[topic] do continue
 		switch httpx.send_elements(response, string(frame_bytes(frame))) {
@@ -111,7 +128,8 @@ send_news :: proc(response: ^http.Response, live: ^Live, stream: ^Live_Stream) -
 
 @(private = "file")
 has_news :: proc(live: ^Live, stream: ^Live_Stream) -> bool {
-	for topic in stream.topics {
+	if stream.chat_prompt do return true
+	for topic in live_topics(live, stream.visitor, stream.topics) {
 		if live.frames[topic].version > stream.sent[topic] do return true
 	}
 	return false

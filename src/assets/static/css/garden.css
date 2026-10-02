@@ -640,6 +640,20 @@
     }
   }
 
+  /* #lobby: names in ink, events and the room's header in the soft voice,
+     and dev's own name in the accent. */
+  .chat-name {
+    font-weight: 600;
+  }
+  .chat-name[data-root] {
+    color: var(--accent);
+  }
+  .chat-summary,
+  .chat-event,
+  .terminal-notice {
+    color: var(--ink-soft);
+  }
+
   /* Guestbook: a form like a card catalog slip, entries like pencilled notes. */
   .guestbook-sign label,
   .guestbook-status,

@@ -12,16 +12,18 @@ import "core:fmt"
 // bytes, so content never travels in them; it is rendered once into a Frame
 // and every stream copies the bytes out.
 //
-// Frames are the one piece of memory isolates share. That is safe because the
-// app runs on one shard: every isolate runs on the same thread, one handler
-// at a time, so a frame is never read while it is being written. Moving to
-// more shards means giving each shard its own frames (or hub) first.
+// Live is the one piece of memory isolates share: the frames, and the chat
+// and nicks behind them. That is safe because the app runs on one shard:
+// every isolate runs on the same thread, one handler at a time, so nothing
+// here is read while it is being written. Moving to more shards means giving
+// each shard its own Live (or hub) first.
 #assert(SHARD_COUNT == 1, "live frames are shared memory between isolates; see live.odin")
 
 // Topic is content a page shows live. Presence is not a topic: every stream
 // counts as someone here.
 Topic :: enum u8 {
 	Guestbook,
+	Chat, // for visitors in #lobby, on every page (chat.odin)
 }
 Topics :: bit_set[Topic;u8]
 
@@ -36,10 +38,22 @@ Frame :: struct {
 }
 
 Live :: struct {
-	hub:    tina.Isolate_Handle, // set by the hub when it starts
-	frames: [Topic]Frame,
-	who:    Frame, // the presence list `who` prints
-	places: Places,
+	hub:         tina.Isolate_Handle, // set by the hub when it starts
+	frames:      [Topic]Frame,
+	who:         Frame, // the presence list `who` prints
+	places:      Places,
+	chat:        Chat,
+	nicks:       Nicks,
+	// The #lobby prompt, sent to a new page whose visitor is in the room.
+	chat_prompt: Frame,
+}
+
+// live_topics is what a stream shows: its page's topics, plus #lobby while
+// its visitor is in the room.
+live_topics :: proc(live: ^Live, visitor: Visitor, page: Topics) -> Topics {
+	topics := page
+	if chat_is_member(&live.chat, visitor) do topics += {.Chat}
+	return topics
 }
 
 // Places are the pages a stream may report, so presence only ever shows real
@@ -86,6 +100,11 @@ publish :: proc(live: ^Live, topic: Topic) {
 	_ = tina.ctx_send(live.hub, TAG_HUB_PUBLISH, &message)
 }
 
+// renamed tells the hub a visitor's name changed, so `who` shows the new one.
+renamed :: proc(live: ^Live) {
+	_ = tina.ctx_send(live.hub, TAG_HUB_RENAMED, nil)
+}
+
 // ─── Hub isolate ────────────────────────────────────────────────────────────
 
 // The hub refuses streams past this, leaving a quarter of CONNECTION_SLOTS for
@@ -101,6 +120,7 @@ TAG_HUB_SUBSCRIBE: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 1
 TAG_HUB_UNSUBSCRIBE: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 2
 TAG_HUB_PUBLISH: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 3
 TAG_LIVE_NOTIFY: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 4
+TAG_HUB_RENAMED: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 5
 
 // A stream subscribes when it starts and again on every heartbeat, so a
 // restarted hub relearns everyone within one heartbeat. It is an upsert.
@@ -188,33 +208,64 @@ hub_handler :: proc(self_raw: rawptr, message: ^tina.Message) -> tina.Isolate_Tr
 	case TAG_HUB_UNSUBSCRIBE:
 		if index, found := find_subscriber(self, source); found {
 			remove_subscriber(self, index)
-			render_who(self)
+			settle(self)
 		}
 
 	case TAG_HUB_PUBLISH:
-		topic := tina.payload_as(Hub_Publish, message.user.payload[:]).topic
-		dropped := false
-		for index := 0; index < self.count; {
-			subscriber := self.subscribers[index]
-			if topic not_in subscriber.topics {
-				index += 1
-				continue
-			}
-			notify := Live_Notify {
-				token = subscriber.token,
-			}
-			// A full mailbox keeps the subscriber: the stream already has a
-			// wake-up pending and will send the latest frame anyway.
-			if tina.ctx_send(subscriber.handle, TAG_LIVE_NOTIFY, &notify) == .stale_handle {
-				remove_subscriber(self, index)
-				dropped = true
-				continue
-			}
-			index += 1
-		}
-		if dropped do render_who(self)
+		notify(self, tina.payload_as(Hub_Publish, message.user.payload[:]).topic)
+
+	case TAG_HUB_RENAMED:
+		render_who(self)
 	}
 	return tina.ISOLATE_TRANSITION_WAIT_MESSAGE
+}
+
+// notify wakes every stream that shows topic. A dead stream found on the way
+// is dropped, and the hub settles once the round is done.
+@(private = "file")
+notify :: proc(self: ^Hub, topic: Topic) {
+	dropped := false
+	for index := 0; index < self.count; {
+		subscriber := self.subscribers[index]
+		if topic not_in live_topics(self.live, subscriber.visitor, subscriber.topics) {
+			index += 1
+			continue
+		}
+		message := Live_Notify {
+			token = subscriber.token,
+		}
+		// A full mailbox keeps the subscriber: the stream already has a
+		// wake-up pending and will send the latest frame anyway.
+		if tina.ctx_send(subscriber.handle, TAG_LIVE_NOTIFY, &message) == .stale_handle {
+			remove_subscriber(self, index)
+			dropped = true
+			continue
+		}
+		index += 1
+	}
+	if dropped do settle(self)
+}
+
+// settle runs after streams go away: `who` is re-rendered, and anyone in
+// #lobby whose last page has closed leaves it.
+@(private = "file")
+settle :: proc(self: ^Hub) {
+	render_who(self)
+	live := self.live
+	left := false
+	for index := 0; index < live.chat.member_count; {
+		visitor := live.chat.members[index].visitor
+		here := false
+		for subscriber in self.subscribers[:self.count] {
+			here ||= subscriber.visitor == visitor
+		}
+		if !here && chat_leave(live, visitor) {
+			left = true
+			continue // the last member moved into this index
+		}
+		index += 1
+	}
+	if left && chat_render(live) do notify(self, .Chat)
 }
 
 @(private = "file")
@@ -239,6 +290,7 @@ remove_subscriber :: proc(self: ^Hub, index: int) {
 @(private = "file")
 render_who :: proc(self: ^Hub) {
 	rows: [WHO_ROWS_MAX]views.Who_Row
+	names: [WHO_ROWS_MAX]Name
 	row_count, total := 0, 0
 	for index in 0 ..< self.count {
 		subscriber := self.subscribers[index]
@@ -252,11 +304,10 @@ render_who :: proc(self: ^Hub) {
 		if newer do continue
 		total += 1
 		if row_count == len(rows) do continue
-		adjective, animal := visitor_name(subscriber.visitor)
+		names[row_count] = display_name(&self.live.nicks, subscriber.visitor)
 		rows[row_count] = {
-			adjective = adjective,
-			animal    = animal,
-			place     = self.live.places.paths[subscriber.place],
+			name  = name_string(&names[row_count]),
+			place = self.live.places.paths[subscriber.place],
 		}
 		row_count += 1
 	}

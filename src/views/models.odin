@@ -85,10 +85,16 @@ navigate_expression :: proc(path: string) -> string {
 }
 
 // Who_Row is one visitor in the `who` list: their name and the page they have
-// open. Every field is a static string (name lists, site paths), so the hub
-// renders the list without allocating.
+// open. The hub renders the list from fixed buffers, without allocating.
 Who_Row :: struct {
-	adjective, animal, place: string,
+	name, place: string,
+}
+
+// Chat_Line is one line of #lobby: a message (name and text) or an event
+// such as "quiet-heron joined". root marks dev's own lines.
+Chat_Line :: struct {
+	name, text, event: string,
+	root:              bool,
 }
 
 // live_expression is the Datastar expression that opens a page's live stream.

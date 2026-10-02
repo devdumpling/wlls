@@ -11,6 +11,7 @@ import content "../content"
 terminal :: templ(in_sheet: bool) {
 	<wlls-terminal id="terminal" class="terminal">
 		@terminal_output()
+		<div id="terminal-chat" class="terminal-chat"></div>
 		<div class="terminal-bar">
 			@terminal_prompt()
 			if in_sheet {
@@ -85,6 +86,10 @@ terminal_help :: templ() {
 		<dd>who else is here right now</dd>
 		<dt>sign &lt;note&gt;</dt>
 		<dd>sign the guestbook</dd>
+		<dt>msg</dt>
+		<dd>chat with whoever else is here, in #lobby</dd>
+		<dt>nick &lt;name&gt;</dt>
+		<dd>go by a name of your choosing</dd>
 		<dt>play</dt>
 		<dd>start the game</dd>
 		<dt>clear</dt>
@@ -120,4 +125,33 @@ terminal_pending :: templ(entries: []Pending_Entry, summary: string) {
 		}
 	</dl>
 	<p class="terminal-line">{ summary }</p>
+}
+
+// terminal_chat is the #lobby frame: the room's recent lines, newest last.
+// It morphs into the #terminal-chat placeholder every terminal carries, which
+// shows only in chat mode.
+terminal_chat :: templ(lines: []Chat_Line, summary: string) {
+	<div id="terminal-chat" class="terminal-chat" role="log" aria-live="polite" aria-label="#lobby">
+		<p class="terminal-line chat-summary">{ summary }</p>
+		for line in lines {
+			if line.event != "" {
+				<p class="terminal-line chat-event">{ line.event }</p>
+			} else {
+				<p class="chat-line"><span class="chat-name" if line.root { data-root="true" }>{ line.name }</span><span class="chat-text">{ line.text }</span></p>
+			}
+		}
+	</div>
+}
+
+// terminal_chat_prompt replaces the prompt in chat mode; data-chat switches
+// the terminal from its log to the room. A notice (a reply to a /command, or
+// why a message didn't send) sits above the input until the next line.
+terminal_chat_prompt :: templ(notice: string) {
+	<form id="terminal-prompt" class="terminal-prompt" data-chat="lobby" data-on:submit__prevent="@post('/terminal', {contentType: 'form'})">
+		if notice != "" {
+			<p class="terminal-line terminal-notice">{ notice }</p>
+		}
+		<label for="terminal-input" class="terminal-ps1">#lobby &gt;</label>
+		<input id="terminal-input" name="say" value="" autocomplete="off" autocapitalize="off" maxlength="200" enterkeyhint="send"/>
+	</form>
 }
