@@ -43,15 +43,15 @@ first section.
 - [ ] **Hidden commands** to reward curiosity: `sudo`, `vim` (and `:q`),
       `cat`, `rm -rf /`, `man`.
 - [ ] **Tab completion** answered by the server over SSE, like commands.
-- [ ] **`play` hook.** Load the Odin → WASM/WGSL game module and give it a
-      canvas in the terminal region; `<wlls-terminal>` and the fold toggle are
-      ready to host it.
-- [ ] **Persist command history** per visitor (`localStorage`).
+- [x] **Terminal on every page.** `/` opens it anywhere; off the landing
+      page it lives in a bottom sheet behind a trigger in the breadcrumb row.
+      `exit` closes it.
+- [ ] **`play` page.** Give the Odin → WASM/WGSL game module its own page
+      (`/play`), and have `play` navigate there like `cd`.
+- [x] **Persist command history** per visitor (`localStorage`).
 
 ## Stack features (after the design settles)
 
-- [ ] **Nods**: a single understated appreciation per post; SQLite + one
-      writer isolate (command) + SSE counts (query).
 - [ ] **Marginalia**: reader notes pinned to paragraphs, moderated, patched in
       live.
 - [ ] **Commons**: the planned GPU landing sim with SQLite-persisted
@@ -75,5 +75,5 @@ first section.
 - [ ] **Docs**: a short CSS section in `docs/templating.md` on the
       structure (`site.css`) vs theme (`garden.css`) split, and the image
       plate syntax (`![alt](src "Caption | wide color raw pixel full")`).
-- [ ] **Lighthouse / a11y pass** on the new shell, especially keyboard use of
+- [x] **Lighthouse / a11y pass** on the new shell, especially keyboard use of
       the rail and terminal.

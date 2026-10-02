@@ -495,6 +495,85 @@
     grid-template-columns: 1fr;
   }
 
+  /* Off the landing page the terminal waits behind a trigger at the end of
+     the breadcrumb row, and opens in a sheet pinned to the bottom. */
+  /* A long breadcrumb wraps beside the trigger, which keeps to the first
+     line. */
+  .column-head {
+    display: flex;
+    align-items: baseline;
+    gap: 1.5rem;
+  }
+  .column-head .breadcrumb {
+    flex: 1;
+    min-inline-size: 0;
+  }
+  .terminal-trigger {
+    display: flex;
+    align-items: baseline;
+    flex: none;
+    gap: 1.25ch;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  /* The dialog has no padding, so a click on the dialog element itself
+     can only be on its backdrop; the terminal inside carries the spacing. */
+  .terminal-sheet {
+    position: fixed;
+    inset: auto 0 0;
+    inline-size: 100%;
+    max-inline-size: none;
+    block-size: min(60dvh, 28rem);
+    max-block-size: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .terminal-sheet[open] {
+    display: flex;
+  }
+  .terminal-sheet .terminal {
+    flex: 1;
+    padding-block: 1.25rem max(1.25rem, env(safe-area-inset-bottom));
+    padding-inline: var(--pad-inline);
+  }
+  .terminal-hint {
+    flex: none;
+  }
+  @media (hover: none) and (pointer: coarse) {
+    .terminal-hint {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .terminal-sheet,
+    .terminal-sheet::backdrop {
+      transition:
+        translate 320ms var(--ease-out),
+        opacity 320ms var(--ease-out),
+        overlay 320ms allow-discrete,
+        display 320ms allow-discrete;
+    }
+    .terminal-sheet:not([open]) {
+      translate: 0 100%;
+    }
+    .terminal-sheet:not([open])::backdrop {
+      opacity: 0;
+    }
+    @starting-style {
+      .terminal-sheet[open] {
+        translate: 0 100%;
+      }
+      .terminal-sheet[open]::backdrop {
+        opacity: 0;
+      }
+    }
+  }
+
   /* Entries are separated by space alone; the garden decides how a
      hovered entry announces itself. */
   .post-list {

@@ -6,14 +6,37 @@ import content "../content"
 // SSE patches rendered from these same components. <wlls-terminal> (a Rocket
 // component) adds only client behavior: focus, history, scroll-follow, and the
 // fold toggle. It is deliberately unannounced: a prompt and a blinking cursor.
-terminal :: templ() {
+// In the sheet, the bar's end carries a hint instead of the fold toggle: the
+// sheet itself opens and closes.
+terminal :: templ(in_sheet: bool) {
 	<wlls-terminal id="terminal" class="terminal">
 		@terminal_output()
 		<div class="terminal-bar">
 			@terminal_prompt()
-			<button type="button" class="terminal-toggle" aria-controls="terminal-output" aria-expanded="true" aria-label="Fold terminal output">[-]</button>
+			if in_sheet {
+				<span class="terminal-hint" aria-hidden="true">/ to toggle</span>
+			} else {
+				<button type="button" class="terminal-toggle" aria-controls="terminal-output" aria-expanded="true" aria-label="Fold terminal output">[-]</button>
+			}
 		</div>
 	</wlls-terminal>
+}
+
+// terminal_sheet hosts the same terminal off the landing page, in a modal
+// dialog pinned to the bottom of the screen. The dialog supplies focus
+// trapping, Esc to close, and focus return to the trigger.
+terminal_sheet :: templ() {
+	<dialog id="terminal-sheet" class="terminal-sheet" aria-label="Terminal">
+		@terminal(true)
+	</dialog>
+}
+
+// terminal_trigger sits at the end of the breadcrumb row: a quiet prompt that
+// opens the sheet. <wlls-terminal> wires it up, along with the `/` shortcut.
+terminal_trigger :: templ() {
+	<button type="button" class="terminal-trigger" aria-haspopup="dialog" aria-controls="terminal-sheet" aria-keyshortcuts="/" aria-label="Open terminal">
+		<span class="terminal-ps1" aria-hidden="true">~ $</span>
+	</button>
 }
 
 terminal_output :: templ() {
@@ -62,7 +85,10 @@ terminal_help :: templ() {
 		<dd>start the game</dd>
 		<dt>clear</dt>
 		<dd>clear the screen</dd>
+		<dt>exit</dt>
+		<dd>close the terminal</dd>
 	</dl>
+	<p class="terminal-line">press / on any page to open the terminal</p>
 }
 
 terminal_posts :: templ(posts: []content.Post) {

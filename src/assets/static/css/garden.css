@@ -284,18 +284,21 @@
     font-size: 0.82rem;
     line-height: 1.65;
   }
-  .terminal-prompt .terminal-ps1 {
+  .terminal-prompt .terminal-ps1,
+  .terminal-trigger .terminal-ps1 {
     color: var(--ink-soft);
     opacity: 0.6;
     transition:
       color 300ms var(--ease-out),
       opacity 300ms var(--ease-out);
   }
-  .terminal-prompt:is(:hover, :focus-within) .terminal-ps1 {
+  .terminal-prompt:is(:hover, :focus-within) .terminal-ps1,
+  .terminal-trigger:is(:hover, :focus-visible) .terminal-ps1 {
     color: var(--accent);
     opacity: 1;
   }
-  .terminal-prompt:not(:focus-within) .terminal-ps1::after {
+  .terminal-prompt:not(:focus-within) .terminal-ps1::after,
+  .terminal-trigger .terminal-ps1::after {
     content: "";
     display: inline-block;
     inline-size: 0.6em;
@@ -304,6 +307,11 @@
     vertical-align: -0.2em;
     background: currentColor;
     animation: terminal-blink 1.2s steps(1) infinite;
+  }
+  /* Beside a page someone is reading, the cursor holds still until it is
+     touched. */
+  .terminal-trigger:not(:hover, :focus-visible) .terminal-ps1::after {
+    animation: none;
   }
   @keyframes terminal-blink {
     50% {
@@ -328,6 +336,27 @@
   }
   .terminal-error {
     color: var(--rust);
+  }
+  .terminal-trigger {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+  .terminal-hint {
+    color: var(--ink-soft);
+    opacity: 0.6;
+    font-size: 0.72rem;
+  }
+
+  /* The sheet: a fresh slip of paper laid over the page, edged with the
+     rail's dotted rule. */
+  .terminal-sheet {
+    background:
+      linear-gradient(to right, var(--rule-strong) 1px, transparent 1px) 0 0 / 4px 1px repeat-x,
+      var(--paper);
+    color: var(--ink);
+  }
+  .terminal-sheet::backdrop {
+    background: color-mix(in srgb, var(--paper) 55%, transparent);
   }
   .terminal-toggle {
     color: var(--ink-soft);

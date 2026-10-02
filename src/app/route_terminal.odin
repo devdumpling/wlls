@@ -55,7 +55,8 @@ Command_Result :: enum {
 
 // run_command renders a command's echo and result into output. clear renders
 // an empty log instead, which replaces the old one; cd appends an element that
-// navigates once Datastar patches it in.
+// navigates once Datastar patches it in. exit never arrives: <wlls-terminal>
+// handles it in the browser.
 @(private)
 run_command :: proc(
 	output: ^strings.Builder,
