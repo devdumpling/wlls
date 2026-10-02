@@ -61,6 +61,21 @@ rocket("wlls-terminal", {
       if (log) log.scrollTop = log.scrollHeight
     }
 
+    // #lobby follows new lines too, unless you've scrolled up to read: it
+    // stays put until you scroll back to the bottom.
+    let chatPinned = true
+    const chat = () => /** @type {HTMLElement | null} */ (host.querySelector("#terminal-chat"))
+    const followChat = () => {
+      const room = chat()
+      if (room && chatPinned) room.scrollTop = room.scrollHeight
+    }
+    /** @param {Event} event */
+    const onScroll = (event) => {
+      const room = /** @type {HTMLElement} */ (event.target)
+      if (room.id !== "terminal-chat") return
+      chatPinned = room.scrollHeight - room.scrollTop - room.clientHeight < 24
+    }
+
     // The dialog mirrors $$.open. Esc and the backdrop close it natively or
     // from here, and its close event writes the signal back.
     if (sheet) {
@@ -69,6 +84,8 @@ rocket("wlls-terminal", {
         if ($$.open && !sheet.open) {
           sheet.showModal()
           followLog()
+          chatPinned = true
+          followChat()
           input()?.focus()
         } else if (!$$.open && sheet.open) {
           sheet.close()
@@ -172,11 +189,30 @@ rocket("wlls-terminal", {
     }
 
     // Patches arrive as DOM mutations: follow the log and keep the prompt live.
+    // The prompt is aria-busy while its request is in flight, which is what
+    // data-indicator would do. It can't here: Rocket rescopes the signals of
+    // a prompt patched into this component when the next patch lands inside
+    // it, and in #lobby that is often your own message's frame arriving
+    // mid-request, which resets an indicator. So listen to the same
+    // datastar-fetch events the indicator plugin uses.
+    /** @param {Event} event */
+    const onFetch = (event) => {
+      const { type, el } = /** @type {CustomEvent} */ (event).detail ?? {}
+      if (!(el instanceof HTMLFormElement) || el.id !== "terminal-prompt") return
+      if (type === "started") el.setAttribute("aria-busy", "true")
+      else if (type === "finished" || type === "error" || type === "retries-failed") {
+        el.removeAttribute("aria-busy")
+      }
+    }
+
+    // Datastar patches arrive as DOM changes, not signal changes, so watch
+    // the DOM: every patch (a reply, or a new #lobby frame) follows the newest line.
     const follow = new MutationObserver(() => {
       followLog()
+      followChat()
       if (submitted && document.activeElement === document.body) input()?.focus()
     })
-    follow.observe(host, { childList: true, subtree: true })
+    follow.observe(host, { childList: true, characterData: true, subtree: true })
 
     document.addEventListener("keydown", onShortcut)
     trigger?.addEventListener("click", open)
@@ -186,6 +222,8 @@ rocket("wlls-terminal", {
     host.addEventListener("focusin", engage)
     host.addEventListener("submit", remember, true)
     host.addEventListener("keydown", recall)
+    host.addEventListener("scroll", onScroll, true) // scroll doesn't bubble
+    document.addEventListener("datastar-fetch", onFetch)
     toggle?.addEventListener("click", onToggle)
     cleanup(() => {
       follow.disconnect()
@@ -197,6 +235,8 @@ rocket("wlls-terminal", {
       host.removeEventListener("focusin", engage)
       host.removeEventListener("submit", remember, true)
       host.removeEventListener("keydown", recall)
+      host.removeEventListener("scroll", onScroll, true)
+      document.removeEventListener("datastar-fetch", onFetch)
       toggle?.removeEventListener("click", onToggle)
     })
   },

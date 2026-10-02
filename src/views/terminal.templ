@@ -44,10 +44,14 @@ terminal_output :: templ() {
 	<div id="terminal-output" class="terminal-output" role="log" aria-live="polite" aria-label="Terminal output"></div>
 }
 
+// A prompt is aria-busy while its request is in flight (<wlls-terminal> sets
+// it), and the "working…" hint fades in only after 3 s (site.css), so a
+// normal reply never flashes it.
 terminal_prompt :: templ() {
 	<form id="terminal-prompt" class="terminal-prompt" data-on:submit__prevent="@post('/terminal', {contentType: 'form'})">
 		<label for="terminal-input" class="terminal-ps1">~ $</label>
 		<input id="terminal-input" name="command" value="" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="120" enterkeyhint="send"/>
+		<span class="terminal-sending" aria-hidden="true">working…</span>
 	</form>
 }
 
@@ -146,6 +150,9 @@ terminal_chat :: templ(lines: []Chat_Line, summary: string) {
 // terminal_chat_prompt replaces the prompt in chat mode; data-chat switches
 // the terminal from its log to the room. A notice (a reply to a /command, or
 // why a message didn't send) sits above the input until the next line.
+//
+// On small screens the room takes the whole screen (site.css), so the leave
+// button is the way out besides /leave: it sends /leave through the form.
 terminal_chat_prompt :: templ(notice: string) {
 	<form id="terminal-prompt" class="terminal-prompt" data-chat="lobby" data-on:submit__prevent="@post('/terminal', {contentType: 'form'})">
 		if notice != "" {
@@ -153,5 +160,7 @@ terminal_chat_prompt :: templ(notice: string) {
 		}
 		<label for="terminal-input" class="terminal-ps1">#lobby &gt;</label>
 		<input id="terminal-input" name="say" value="" autocomplete="off" autocapitalize="off" maxlength="200" enterkeyhint="send"/>
+		<span class="terminal-sending" aria-hidden="true">sending…</span>
+		<button type="button" class="terminal-leave" data-on:click="el.form.elements.say.value = '/leave'; el.form.requestSubmit()">leave</button>
 	</form>
 }

@@ -650,8 +650,24 @@
   }
   .chat-summary,
   .chat-event,
-  .terminal-notice {
+  .terminal-notice,
+  .terminal-sending,
+  .terminal-leave {
     color: var(--ink-soft);
+  }
+  .terminal-sending,
+  .terminal-leave {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+  .terminal-leave:is(:hover, :focus-visible) {
+    color: var(--ink);
+    text-decoration: underline;
+  }
+  @media (max-width: 59.99rem) {
+    [data-page="home"] .terminal:has(#terminal-prompt[data-chat]) {
+      background: var(--paper);
+    }
   }
 
   /* Guestbook: a form like a card catalog slip, entries like pencilled notes. */

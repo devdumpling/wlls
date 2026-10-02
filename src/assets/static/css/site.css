@@ -554,7 +554,7 @@
   .terminal:has(#terminal-prompt[data-chat]) .terminal-chat {
     display: block;
   }
-  .terminal:has(#terminal-prompt[data-chat]) .terminal-output {
+  .terminal:has(#terminal-prompt[data-chat]) :is(.terminal-output, .terminal-toggle) {
     display: none;
   }
   .chat-line {
@@ -565,11 +565,64 @@
   .chat-text {
     overflow-wrap: anywhere;
   }
+  /* On a phone a name column squeezes the text; flow lines like IRC. */
+  @media (max-width: 40rem) {
+    .chat-line {
+      display: block;
+    }
+    .chat-name {
+      margin-inline-end: 1ch;
+    }
+  }
   .terminal-prompt:has(.terminal-notice) {
     flex-wrap: wrap;
   }
   .terminal-notice {
     flex-basis: 100%;
+  }
+  .terminal-leave {
+    flex: none;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+  /* A prompt is aria-busy while its request is in flight (data-indicator).
+     The hint fades in only if that lasts 3 s, so quick replies never flash
+     it; the delay is the transition's, so no timer is needed. */
+  .terminal-prompt {
+    position: relative;
+    min-inline-size: 0;
+  }
+  /* It floats just above the prompt's end, so it never takes room. */
+  .terminal-sending {
+    position: absolute;
+    inset-block-end: 100%;
+    inset-inline-end: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .terminal-prompt[aria-busy="true"] .terminal-sending {
+    opacity: 1;
+    transition: opacity 200ms 3s;
+  }
+  /* Where the rail drops below the content, #lobby takes the whole screen:
+     the sheet grows to full height, and the landing's inline terminal
+     becomes an overlay while the page behind holds still. */
+  @media (max-width: 59.99rem) {
+    .terminal-sheet:has(#terminal-prompt[data-chat]) {
+      block-size: 100dvh;
+    }
+    [data-page="home"] .terminal:has(#terminal-prompt[data-chat]) {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      padding-block: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-bottom));
+      padding-inline: var(--pad-inline);
+    }
+    html:has([data-page="home"] #terminal-prompt[data-chat]) {
+      overflow: hidden;
+    }
   }
   .terminal-prompt {
     flex: 1;
