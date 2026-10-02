@@ -137,7 +137,7 @@ Obfuscation, Rocket Loader) that strip page ETags and would inject scripts the
 CSP blocks. DNS, including the email records above, stays in the dashboard.
 
 Create an API token scoped to the `wlls.dev` zone with **Zone Settings: Edit**,
-**Zone WAF: Edit** (rulesets), and **Zone: Read**, then:
+**Response Compression: Edit** (the compression ruleset), and **Zone: Read**, then:
 
 ```bash
 export CLOUDFLARE_API_TOKEN="..."
