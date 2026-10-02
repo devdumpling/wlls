@@ -75,11 +75,8 @@ breadcrumbs :: proc(path: string) -> []Crumb {
 	return crumbs[:]
 }
 
-// import_map lets Rocket components `import { rocket } from "datastar"`
-// against the fingerprinted bundle URL.
-import_map :: proc(assets: Asset_URLs) -> string {
-	return strings.concatenate(
-		{`<script type="importmap">{"imports":{"datastar":"`, assets.datastar, `"}}</script>`},
-		context.temp_allocator,
-	)
+// navigate_expression is the Datastar expression that loads path. Callers pass
+// site paths only, never request input.
+navigate_expression :: proc(path: string) -> string {
+	return strings.concatenate({"window.location.assign('", path, "')"}, context.temp_allocator)
 }

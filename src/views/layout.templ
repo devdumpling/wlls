@@ -27,7 +27,6 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 			<link rel="icon" href={ assets.favicon } type="image/svg+xml"/>
 			<link rel="stylesheet" href={ assets.stylesheet }/>
 			<link rel="stylesheet" href={ assets.garden }/>
-			{! import_map(assets) }
 			<script type="module" src={ assets.datastar }></script>
 			if metadata.page == .Post {
 				<script type="module" src={ assets.footnotes }></script>

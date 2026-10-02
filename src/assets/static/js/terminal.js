@@ -3,7 +3,9 @@
 // The server renders the log and prompt and answers each command with SSE
 // patches; this component only adds what a browser must own: focus, command
 // history on ↑/↓, keeping the newest output in view, and folding the log.
-import { rocket } from "datastar"
+// Same fingerprinted directory as this file, so this resolves to the exact URL
+// the page already loaded: one module instance, and no inline import map.
+import { rocket } from "./datastar-rocket.js"
 
 rocket("wlls-terminal", {
   mode: "light",

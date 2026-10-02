@@ -127,9 +127,56 @@ The first command should return Cloudflare proxy addresses rather than the
 Reserved IPv4. In Cloudflare, both web records must show the orange **Proxied**
 cloud. Verify Full (strict) TLS and preserve all unrelated email records.
 
+## 5. Manage Cloudflare settings
+
+`infra/cloudflare/` is a separate Terraform root with its own state and token.
+It owns only the zone settings and rules the application depends on: Full
+(strict) TLS, HTTPS-only, HTTP/3, compression of Datastar SSE streams, and
+turning off the HTML-rewriting features (Automatic HTTPS Rewrites, Email
+Obfuscation, Rocket Loader) that strip page ETags and would inject scripts the
+CSP blocks. DNS, including the email records above, stays in the dashboard.
+
+Create an API token scoped to the `wlls.dev` zone with **Zone Settings: Edit**,
+**Response Compression: Edit** (the compression ruleset), and **Zone: Read**, then:
+
+```bash
+export CLOUDFLARE_API_TOKEN="..."
+terraform -chdir=infra/cloudflare init
+```
+
+A zone has one ruleset per phase. If a compression rule was already created in
+the dashboard, import that ruleset once before the first apply:
+
+```bash
+ZONE_ID="$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones?name=wlls.dev" | jq -r '.result[0].id')"
+RULESET_ID="$(curl -s -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/rulesets" |
+  jq -r '.result[] | select(.phase == "http_response_compression") | .id')"
+terraform -chdir=infra/cloudflare import cloudflare_ruleset.compression \
+  "zones/$ZONE_ID/$RULESET_ID"
+```
+
+Zone settings always exist, so applying them simply sets their values; they
+need no import. Review the plan, then apply:
+
+```bash
+terraform -chdir=infra/cloudflare plan
+terraform -chdir=infra/cloudflare apply
+```
+
+Verify pages keep their ETag and SSE is compressed:
+
+```bash
+curl -sI https://wlls.dev/about | grep -i etag
+curl -sD - -o /dev/null -X POST -d command=ls -H 'Accept-Encoding: zstd, br' \
+  https://wlls.dev/terminal | grep -i content-encoding
+```
+
 ## Terraform state
 
-The initial workflow uses local state under `infra/`. It is ignored by Git but
+The initial workflow uses local state under `infra/` and `infra/cloudflare/`.
+It is ignored by Git but
 must be backed up and treated as sensitive. Before GitHub Actions can deploy or
 manage infrastructure, migrate it to a remote backend such as HCP Terraform:
 

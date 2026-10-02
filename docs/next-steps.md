@@ -18,9 +18,9 @@ first section.
       16 KiB (one Datastar event's ceiling); `ls` fits ~100 long slugs in one
       event (`src/app/app_test.odin`). Past that, split the listing into
       several events or cap it.
-- [ ] **CSP.** None is set yet. If added, the inline import map needs a hash or
-      nonce, and Datastar needs its CSP mode (v1.0.4 supports aliased nonce
-      attributes).
+- [x] **CSP.** Static policy in `src/httpx/headers.odin`; no inline scripts
+      (the import map is gone and `cd` navigates with `data-init`). It keeps
+      `'unsafe-eval'` for Datastar expressions; see `docs/templating.md`.
 - [ ] **Production pass behind Caddy.** Confirm `POST /terminal` responses
       arrive zstd-encoded, `/healthz` and `/readyz` respond, and fingerprinted
       assets resolve on the real domain.

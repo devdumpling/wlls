@@ -47,7 +47,7 @@ test_terminal_ls_fits_one_event :: proc(t: ^testing.T) {
 	result := run_command(&output, "ls", &repository)
 	rendered := strings.to_string(output)
 
-	testing.expect(t, !result.clear && result.navigate == "")
+	testing.expect_value(t, result, Command_Result.Append)
 	testing.expect_value(t, strings.count(rendered, "<li>"), 100)
 	testing.expect(t, strings.has_suffix(rendered, "</ul>"))
 	// Leave room for the SSE event's field lines and chunk framing.
@@ -71,16 +71,22 @@ test_terminal_commands :: proc(t: ^testing.T) {
 	repository.by_slug["devex"] = 0
 
 	output := strings.builder_make()
-	result := run_command(&output, "cd devex", &repository)
-	testing.expect_value(t, result.navigate, "/blog/devex")
+	run_command(&output, "cd devex", &repository)
+	testing.expect(
+		t,
+		strings.contains(
+			strings.to_string(output),
+			`data-init="window.location.assign(&#39;/blog/devex&#39;)"`,
+		),
+	)
 
 	strings.builder_reset(&output)
-	result = run_command(&output, "cd https://example.com", &repository)
-	testing.expect_value(t, result.navigate, "")
+	run_command(&output, "cd https://example.com", &repository)
 	testing.expect(t, strings.contains(strings.to_string(output), "no such place"))
+	testing.expect(t, !strings.contains(strings.to_string(output), "data-init"))
 
 	strings.builder_reset(&output)
-	result = run_command(&output, "clear", &repository)
-	testing.expect(t, result.clear)
+	result := run_command(&output, "clear", &repository)
+	testing.expect_value(t, result, Command_Result.Clear)
 	testing.expect(t, strings.has_prefix(strings.to_string(output), `<div id="terminal-output"`))
 }

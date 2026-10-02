@@ -28,7 +28,7 @@ serve_page :: proc(
 
 	_ = http.header_set(response, "Cache-Control", page.cache_control)
 	_ = http.header_set(response, "ETag", page.etag)
-	if string(http.header(request, "If-None-Match")) == page.etag {
+	if httpx.etag_matches(request, page.etag) {
 		return httpx.not_modified(response, page.content_type)
 	}
 	httpx.begin_bytes(stream, http.HTTP_STATUS_OK, page.content_type, page.bytes)

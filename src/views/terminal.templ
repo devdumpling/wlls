@@ -43,6 +43,13 @@ terminal_link :: templ(text: string, href: string) {
 	<p class="terminal-line"><a href={ href }>{ text }</a></p>
 }
 
+// terminal_navigate moves the browser once Datastar patches it into the log.
+// It runs as a Datastar expression rather than an inline <script>, which the
+// Content-Security-Policy does not allow.
+terminal_navigate :: templ(path: string) {
+	<span hidden data-init={ navigate_expression(path) }></span>
+}
+
 terminal_help :: templ() {
 	<dl class="terminal-list">
 		<dt>ls</dt>
