@@ -63,6 +63,8 @@ terminal_command :: proc(
 		line, ok := form_value(body, "command", arena)
 		if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid command")
 		result = run_command(writer, strings.trim_space(line), ctx, caller)
+		// The log is hidden in the room, so the greeting goes above the prompt.
+		if result == .Chat do notice = "#lobby. :help for commands, :q to go back."
 		if result == .Clear {
 			httpx.queue_elements(stream) // an empty log, morphed over the old one
 		} else {
@@ -195,7 +197,6 @@ run_command :: proc(
 			views.terminal_error(output, "msg: #lobby is full right now.")
 			return
 		}
-		views.terminal_line(output, "#lobby. :help for commands, :q to go back.")
 		return .Chat
 	case "nick":
 		if argument == "" {

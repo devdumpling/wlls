@@ -526,7 +526,8 @@
   }
   .terminal-bar {
     display: flex;
-    align-items: baseline;
+    /* Last, not first: a notice can wrap above the prompt's own line. */
+    align-items: last baseline;
     gap: 1.5rem;
   }
   .terminal-toggle {
