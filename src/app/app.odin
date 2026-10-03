@@ -70,6 +70,7 @@ run :: proc() {
 			stream_get("/feed.xml", serve_page),
 			stream_get("/sitemap.xml", serve_page),
 			stream_get("/robots.txt", serve_page),
+			stream_get("/speculation-rules.json", serve_page),
 			http.get_event("/live", live_stream, state_size = LIVE_STATE_SIZE),
 			stream_get("/guestbook", serve_guestbook),
 			http.post_event(

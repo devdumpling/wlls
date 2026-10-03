@@ -1,5 +1,6 @@
 package app
 
+import http "../../vendor/tina/src/extensions/http/server"
 import content "../content"
 import httpx "../httpx"
 import views "../views"
@@ -31,12 +32,30 @@ find_page :: proc(site: ^Site, path: string) -> (^Page, bool) {
 	return &site.pages[index], true
 }
 
-@(private = "file")
+@(private)
 HTML :: "text/html; charset=utf-8"
 @(private = "file")
 HTML_CACHE :: "public, max-age=0, must-revalidate"
 @(private = "file")
 DISCOVERY_CACHE :: "public, max-age=3600"
+
+// Every page prefetches a same-site link's HTML once the pointer rests on it
+// (or it is pressed), so the click finds the response already downloaded. The
+// rules arrive by header, not an inline <script>, so the CSP stays static.
+// Files and feeds are left out: only pages are worth fetching early.
+@(private = "file")
+SPECULATION_RULES_PATH :: "/speculation-rules.json"
+@(private = "file")
+SPECULATION_RULES ::
+	`{"prefetch":[{"where":{"and":[` +
+	`{"href_matches":"/*"},` +
+	`{"not":{"href_matches":["/static/*","/images/*","/fonts/*","/*.xml","/*.txt"]}}` +
+	`]},"eagerness":"moderate"}]}`
+
+// set_speculation_rules points an HTML response at the site's prefetch rules.
+set_speculation_rules :: proc(response: ^http.Response) {
+	_ = http.header_set(response, "Speculation-Rules", `"` + SPECULATION_RULES_PATH + `"`)
+}
 
 // prerender renders every page with context.allocator, which the caller points
 // at the startup arena.
@@ -116,6 +135,15 @@ prerender :: proc(ctx: ^Application_Context) -> (site: Site, error: string) {
 
 	write_robots(begin(&renderer))
 	finish(&renderer, &site, "/robots.txt", "text/plain; charset=utf-8", DISCOVERY_CACHE)
+
+	strings.write_string(begin(&renderer), SPECULATION_RULES)
+	finish(
+		&renderer,
+		&site,
+		SPECULATION_RULES_PATH,
+		"application/speculationrules+json",
+		DISCOVERY_CACHE,
+	)
 
 	if renderer.failed_path != "" {
 		return site, fmt.tprintf("rendering %s failed", renderer.failed_path)

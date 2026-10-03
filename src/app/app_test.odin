@@ -15,7 +15,15 @@ test_startup_prerenders_every_page :: proc(t: ^testing.T) {
 	ctx, error := load(virtual.arena_allocator(&arena))
 	if !testing.expect(t, error == "", error) do return
 
-	paths := [?]string{"/", "/blog", "/about", "/feed.xml", "/sitemap.xml", "/robots.txt"}
+	paths := [?]string {
+		"/",
+		"/blog",
+		"/about",
+		"/feed.xml",
+		"/sitemap.xml",
+		"/robots.txt",
+		"/speculation-rules.json",
+	}
 	for path in paths {
 		page, found := find_page(&ctx.site, path)
 		if !testing.expectf(t, found, "no page for %s", path) do continue

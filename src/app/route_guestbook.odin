@@ -39,6 +39,7 @@ serve_guestbook :: proc(
 	entries := string(frame_bytes(&ctx.live.frames[.Guestbook]))
 	views.guestbook_page(writer, entries, metadata, ctx.view_assets)
 	_ = http.header_set(response, "Cache-Control", "no-cache")
+	set_speculation_rules(response)
 	return httpx.send(response, stream)
 }
 

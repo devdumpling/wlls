@@ -29,6 +29,7 @@ serve_page :: proc(
 
 	_ = http.header_set(response, "Cache-Control", page.cache_control)
 	_ = http.header_set(response, "ETag", page.etag)
+	if page.content_type == HTML do set_speculation_rules(response)
 	if httpx.etag_matches(request, page.etag) {
 		return httpx.not_modified(response, page.content_type)
 	}
@@ -74,6 +75,7 @@ render_not_found :: proc(
 	}
 	views.not_found_document(writer, metadata, ctx.view_assets)
 	_ = http.header_set(response, "Cache-Control", "public, max-age=0, must-revalidate")
+	set_speculation_rules(response)
 	return httpx.send(response, stream)
 }
 
