@@ -152,7 +152,7 @@ terminal_chat :: templ(lines: []Chat_Row, summary: string) {
 // why a message didn't send) sits above the input until the next line.
 //
 // On small screens the room takes the whole screen (site.css), so the leave
-// button is the way out besides /leave: it sends /leave through the form.
+// button is the way out besides :q, which it sends through the form.
 terminal_chat_prompt :: templ(notice: string) {
 	<form id="terminal-prompt" class="terminal-prompt" data-chat="lobby" data-on:submit__prevent="@post('/terminal', {contentType: 'form'})">
 		if notice != "" {
@@ -161,6 +161,6 @@ terminal_chat_prompt :: templ(notice: string) {
 		<label for="terminal-input" class="terminal-ps1">#lobby &gt;</label>
 		<input id="terminal-input" name="say" value="" autocomplete="off" autocapitalize="off" maxlength="200" enterkeyhint="send"/>
 		<span class="terminal-sending" aria-hidden="true">sending…</span>
-		<button type="button" class="terminal-leave" data-on:click="el.form.elements.say.value = '/leave'; el.form.requestSubmit()">leave</button>
+		<button type="button" class="terminal-leave" data-on:click="el.form.elements.say.value = ':q'; el.form.requestSubmit()">leave</button>
 	</form>
 }

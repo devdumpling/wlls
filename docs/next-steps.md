@@ -66,7 +66,8 @@ first section.
 - [x] **`msg` and `nick`.** `#lobby`, a terminal chatroom on the live hub
       (`src/app/chat.odin`): in-memory history (last 40 lines), membership per
       visitor so the room follows you across pages, a send limit (5 burst,
-      then 1/s), and root's `/mute`, `/unmute`, `/rm <name>`, `/wipe`. Nicks
+      then 1/s), and root's `:mute`, `:unmute`, `:rm <name>`, `:wipe`. Room
+      commands use `:` (`:who`, `:nick`, `:q`), since `/` toggles the terminal. Nicks
       are in memory too and reset on deploy.
 - [ ] **Faster leave.** A closed tab stays in `who` for up to ~50 s, until a
       heartbeat write fails. A `pagehide` beacon could unsubscribe at once.

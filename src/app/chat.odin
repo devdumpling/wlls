@@ -7,7 +7,7 @@ import "core:mem/virtual"
 import "core:strings"
 
 // #lobby, the terminal's chatroom. `msg` joins; every line typed after that is
-// a message; `/leave` leaves, as does closing your last page. Everything is in
+// a message (or a :command); `:q` leaves, as does closing your last page. Everything is in
 // memory and gone on deploy: the last CHAT_LINES lines, who is in the room,
 // and who is muted. Like the frames, it is state isolates share (live.odin):
 // /terminal POSTs post messages, and the hub posts "left" lines.
@@ -243,7 +243,7 @@ chat_wipe :: proc(chat: ^Chat) {
 	chat.first, chat.count = 0, 0
 }
 
-// chat_members lists who is in the room, as names, for /who.
+// chat_members lists who is in the room, as names, for :who.
 chat_members :: proc(live: ^Live, allocator := context.temp_allocator) -> string {
 	builder := strings.builder_make(allocator)
 	for member, index in live.chat.members[:live.chat.member_count] {

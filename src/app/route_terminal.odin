@@ -195,7 +195,7 @@ run_command :: proc(
 			views.terminal_error(output, "msg: #lobby is full right now.")
 			return
 		}
-		views.terminal_line(output, "#lobby. /help for commands, /leave to go back.")
+		views.terminal_line(output, "#lobby. :help for commands, :q to go back.")
 		return .Chat
 	case "nick":
 		if argument == "" {
@@ -238,9 +238,11 @@ run_command :: proc(
 	return
 }
 
-// chat_input handles a line said at the #lobby prompt: a message, or a
-// /command. It returns .Chat to stay in the room (with an optional notice for
-// the prompt) or .Append after writing a farewell to the log.
+// chat_input handles a line said at the #lobby prompt: a :command, or else a
+// message. A line is a command only when its first word is one, so messages
+// that start with a colon (":)", ":D") are still messages. It returns .Chat
+// to stay in the room (with an optional notice for the prompt) or .Append
+// after writing a farewell to the log.
 @(private = "file")
 chat_input :: proc(
 	output: ^strings.Builder,
@@ -258,56 +260,58 @@ chat_input :: proc(
 	}
 	if said == "" do return .Chat, ""
 
-	if !strings.has_prefix(said, "/") {
-		// A chat prompt left open after leaving (in another tab, say) rejoins.
-		joined := chat_join(live, caller.visitor, caller.admin, caller.now)
-		changed := joined == .Joined
-		switch chat_say(live, caller.visitor, caller.admin, said, caller.now) {
-		case .Sent:
-			changed = true
-		case .Too_Fast:
-			notice = "slow down a little."
-		case .Muted:
-			notice = "you can't post in #lobby right now."
-		case .Invalid:
-			notice = "messages are one line, up to 200 characters."
-		case .Not_Member:
-			notice = "#lobby is full right now." if joined == .Full else "slow down a little."
-		}
-		if changed && chat_render(live) do publish(live, .Chat)
-		return .Chat, notice
-	}
-
 	rest := said
 	command, _ := strings.fields_iterator(&rest)
 	argument := strings.trim_space(rest)
 	switch command {
-	case "/leave", "/exit", "/quit":
+	case ":q", ":leave":
 		if chat_leave(live, caller.visitor) && chat_render(live) do publish(live, .Chat)
 		views.terminal_line(output, "you left #lobby.")
 		return .Append, ""
-	case "/who":
+	case ":who":
 		if live.chat.member_count == 0 do return .Chat, "nobody's here yet."
 		return .Chat, fmt.tprintf("here: %s", chat_members(live))
-	case "/nick":
+	case ":nick":
 		reply, _ := change_nick(ctx, caller, argument)
 		return .Chat, reply
-	case "/help":
+	case ":help":
 		if caller.admin {
 			return .Chat,
-				"/who · /nick <name> · /leave · root: /mute, /unmute, /rm <name> · /wipe"
+				":who · :nick <name> · :q to leave · root: :mute, :unmute, :rm <name> · :wipe"
 		}
-		return .Chat, "/who · /nick <name> · /leave"
-	case "/mute", "/unmute", "/rm", "/wipe":
+		return .Chat, ":who · :nick <name> · :q to leave"
+	case ":mute", ":unmute", ":rm", ":wipe":
 		if caller.admin do return .Chat, moderate_chat(live, command, argument)
 	}
-	return .Chat, fmt.tprintf("%s: no such command. try /help", command)
+	return .Chat, chat_message(live, caller, said)
+}
+
+// chat_message says a line in #lobby, and returns a notice if it didn't go
+// out. A chat prompt left open after leaving (in another tab, say) rejoins.
+@(private = "file")
+chat_message :: proc(live: ^Live, caller: Caller, said: string) -> (notice: string) {
+	joined := chat_join(live, caller.visitor, caller.admin, caller.now)
+	changed := joined == .Joined
+	switch chat_say(live, caller.visitor, caller.admin, said, caller.now) {
+	case .Sent:
+		changed = true
+	case .Too_Fast:
+		notice = "slow down a little."
+	case .Muted:
+		notice = "you can't post in #lobby right now."
+	case .Invalid:
+		notice = "messages are one line, up to 200 characters."
+	case .Not_Member:
+		notice = "#lobby is full right now." if joined == .Full else "slow down a little."
+	}
+	if changed && chat_render(live) do publish(live, .Chat)
+	return
 }
 
 // moderate_chat runs root's #lobby commands and says what happened.
 @(private = "file")
 moderate_chat :: proc(live: ^Live, command, name: string) -> string {
-	if command == "/wipe" {
+	if command == ":wipe" {
 		chat_wipe(&live.chat)
 		if chat_render(live) do publish(live, .Chat)
 		return "wiped #lobby."
@@ -315,10 +319,10 @@ moderate_chat :: proc(live: ^Live, command, name: string) -> string {
 	visitor, found := chat_find(live, name)
 	if !found do return fmt.tprintf("%s: nobody called %q in #lobby.", command, name)
 	switch command {
-	case "/mute":
-		if !chat_mute(&live.chat, visitor) do return "/mute: the mute list is full."
+	case ":mute":
+		if !chat_mute(&live.chat, visitor) do return ":mute: the mute list is full."
 		return fmt.tprintf("muted %s.", name)
-	case "/unmute":
+	case ":unmute":
 		chat_unmute(&live.chat, visitor)
 		return fmt.tprintf("unmuted %s.", name)
 	}
