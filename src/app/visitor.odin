@@ -1,5 +1,6 @@
 package app
 
+import tina "../../vendor/tina/src"
 import http "../../vendor/tina/src/extensions/http/server"
 import "core:crypto"
 import "core:fmt"
@@ -7,8 +8,8 @@ import "core:strconv"
 import "core:strings"
 
 // A visitor is a random id kept in a cookie: the only identity on the site.
-// It names them in `who` (and later in `msg`) as an adjective-animal pair,
-// so no account, name, or stored profile is ever needed.
+// It names them in `who`, #lobby, and terminal signing as an adjective-animal
+// pair (or a nick), so no account or stored profile is ever needed.
 Visitor :: distinct u64
 
 @(private = "file")
@@ -29,6 +30,25 @@ cookie_value :: proc(request: ^http.Request, name: string) -> string {
 		if key == name do return value
 	}
 	return ""
+}
+
+// Caller is who sent a command: their visitor id, their network address as
+// Caddy reports it (empty without Caddy, as in development), and when.
+Caller :: struct {
+	visitor: Visitor,
+	client:  string,
+	now:     u64, // monotonic ns
+	admin:   bool, // signed in with sudo (the terminal checks)
+	session: int, // the sudo session, when admin
+}
+
+caller_of :: proc(request: ^http.Request) -> Caller {
+	visitor, _ := visitor_from_request(request)
+	return Caller {
+		visitor = visitor,
+		client = string(http.header(request, "X-Client-IP")),
+		now = u64(tina.ctx_monotonic_time_ns()),
+	}
 }
 
 visitor_new :: proc() -> Visitor {

@@ -5,13 +5,15 @@ import content "../content"
 import httpx "../httpx"
 import views "../views"
 import "core:fmt"
+import "core:mem/virtual"
 import "core:strconv"
 import "core:strings"
 
-// The landing-page terminal is the command side of the page: each submitted
-// line is a short POST, answered by SSE patches that append the result to the
+// The terminal is the command side of every page: each submitted line is a
+// short POST, answered by SSE patches that append the result to the
 // terminal's log and morph a fresh prompt in. The server owns every command,
 // so new ones (and eventually the game) are added here, not in the browser.
+
 // A chat line is up to 200 characters, which percent-encoding can triple.
 TERMINAL_BODY_MAX :: 2048
 
@@ -26,6 +28,10 @@ terminal_command :: proc(
 	if _, starting := event.(http.Request_Start); !starting {
 		return httpx.drive_patches(event, response, stream)
 	}
+
+	scratch: virtual.Arena
+	context.temp_allocator = httpx.scratch_allocator(&scratch)
+	defer virtual.arena_destroy(&scratch)
 
 	ctx := app_context(route_context)
 	body, arena := http.body_buffered(request), http.request_arena(request)
@@ -48,7 +54,7 @@ terminal_command :: proc(
 		password, ok := form_value(body, "password", arena)
 		if !ok do return httpx.respond_text(response, http.HTTP_STATUS_BAD_REQUEST, "invalid form")
 		cookie: [160]u8
-		sudo, set_cookie := admin_sudo(&ctx.admin, password, caller.now, cookie[:])
+		sudo, set_cookie := admin_sudo(&ctx.admin, password, caller.client, caller.now, cookie[:])
 		if set_cookie != "" do _ = http.header_add(response, "Set-Cookie", set_cookie)
 		views.terminal_line(writer, "[sudo] password:")
 		sudo_reply(writer, sudo)
@@ -85,10 +91,6 @@ terminal_command :: proc(
 
 	return httpx.send_patches(response, stream)
 }
-
-// The terminal's per-request state: its queued patches and their render.
-@(private)
-TERMINAL_STATE_SIZE :: u16(size_of(httpx.Patch_Stream))
 
 @(private)
 Command_Result :: enum {
@@ -145,18 +147,22 @@ run_command :: proc(
 		views.terminal_line(output, target)
 		views.terminal_navigate(output, target)
 	case "who":
-		// The hub keeps the list current; a visitor without a cookie has no
-		// live stream yet, so they are not on it.
-		strings.write_bytes(output, frame_bytes(&ctx.live.who))
+		// A visitor without a cookie has no live stream yet, so isn't listed.
+		render_who(output, ctx.live)
 		if caller.visitor != 0 {
 			name := display_name(&ctx.live.nicks, caller.visitor)
 			views.terminal_line(output, fmt.tprintf("you are %s", name_string(&name)))
 		}
 	case "sign":
-		// Signing from the terminal uses your name (nick or handle).
+		// Signing from the terminal uses your name (nick or handle), which
+		// comes with the cookie the page's live stream sets.
 		if argument == "" {
 			views.terminal_line(output, "usage: sign <a short note>")
 			views.terminal_link(output, "or sign with a name at /guestbook", "/guestbook")
+			return
+		}
+		if caller.visitor == 0 {
+			views.terminal_error(output, NOT_CONNECTED)
 			return
 		}
 		name := display_name(&ctx.live.nicks, caller.visitor)
@@ -175,11 +181,19 @@ run_command :: proc(
 		}
 	case "msg":
 		if caller.visitor == 0 {
-			views.terminal_error(output, "msg: reload the page first, so it can connect.")
+			views.terminal_error(output, NOT_CONNECTED)
 			return
 		}
-		if chat_join(ctx.live, caller.visitor, caller.admin) && chat_render(ctx.live) {
-			publish(ctx.live, .Chat)
+		switch chat_join(ctx.live, caller.visitor, caller.admin, caller.now) {
+		case .Joined:
+			if chat_render(ctx.live) do publish(ctx.live, .Chat)
+		case .Already_Here:
+		case .Too_Fast:
+			views.terminal_error(output, "msg: slow down a little.")
+			return
+		case .Full:
+			views.terminal_error(output, "msg: #lobby is full right now.")
+			return
 		}
 		views.terminal_line(output, "#lobby. /help for commands, /leave to go back.")
 		return .Chat
@@ -215,7 +229,7 @@ run_command :: proc(
 			command_not_found(output, name)
 			return
 		}
-		moderate(output, name, argument, ctx)
+		moderate_guestbook(output, name, argument, ctx)
 	case "play":
 		views.terminal_line(output, "not yet. it's still being built. soon.")
 	case:
@@ -239,14 +253,15 @@ chat_input :: proc(
 ) {
 	live := ctx.live
 	if caller.visitor == 0 {
-		views.terminal_error(output, "msg: reload the page first, so it can connect.")
+		views.terminal_error(output, NOT_CONNECTED)
 		return .Append, ""
 	}
 	if said == "" do return .Chat, ""
 
 	if !strings.has_prefix(said, "/") {
 		// A chat prompt left open after leaving (in another tab, say) rejoins.
-		changed := chat_join(live, caller.visitor, caller.admin)
+		joined := chat_join(live, caller.visitor, caller.admin, caller.now)
+		changed := joined == .Joined
 		switch chat_say(live, caller.visitor, caller.admin, said, caller.now) {
 		case .Sent:
 			changed = true
@@ -257,6 +272,7 @@ chat_input :: proc(
 		case .Invalid:
 			notice = "messages are one line, up to 200 characters."
 		case .Not_Member:
+			notice = "#lobby is full right now." if joined == .Full else "slow down a little."
 		}
 		if changed && chat_render(live) do publish(live, .Chat)
 		return .Chat, notice
@@ -271,6 +287,7 @@ chat_input :: proc(
 		views.terminal_line(output, "you left #lobby.")
 		return .Append, ""
 	case "/who":
+		if live.chat.member_count == 0 do return .Chat, "nobody's here yet."
 		return .Chat, fmt.tprintf("here: %s", chat_members(live))
 	case "/nick":
 		reply, _ := change_nick(ctx, caller, argument)
@@ -321,12 +338,12 @@ change_nick :: proc(
 	ok: bool,
 ) {
 	live := ctx.live
-	if caller.visitor == 0 do return "nick: reload the page first, so it can connect.", false
+	if caller.visitor == 0 do return NOT_CONNECTED, false
+	if !chat_allow(&live.chat, caller.visitor, caller.now) do return "nick: slow down a little.", false
 	old := display_name(&live.nicks, caller.visitor)
 	switch nick_set(&live.nicks, caller.visitor, name, caller.admin) {
 	case .Set:
 		if chat_renamed(live, caller.visitor, old) && chat_render(live) do publish(live, .Chat)
-		renamed(live)
 		return fmt.tprintf("you are now %s.", name), true
 	case .Invalid:
 		return "nick: 2–20 characters of a–z, 0–9, and -.", false
@@ -335,6 +352,10 @@ change_nick :: proc(
 	}
 	return "", false
 }
+
+// Visitors get their cookie (and so their name) from the page's live stream.
+@(private = "file")
+NOT_CONNECTED :: "reload the page first, so it can connect."
 
 @(private = "file")
 command_not_found :: proc(output: ^strings.Builder, name: string) {
@@ -359,10 +380,14 @@ sudo_reply :: proc(output: ^strings.Builder, result: Sudo_Result) {
 	}
 }
 
-// moderate runs the root-only guestbook commands. An approval re-renders the
-// guestbook frame, and publishing it updates every open /guestbook page.
+// moderate_guestbook runs root's guestbook commands. An approval re-renders
+// the guestbook frame, and publishing it updates every open /guestbook page.
 @(private = "file")
-moderate :: proc(output: ^strings.Builder, name, argument: string, ctx: ^Application_Context) {
+moderate_guestbook :: proc(
+	output: ^strings.Builder,
+	name, argument: string,
+	ctx: ^Application_Context,
+) {
 	if name == "pending" {
 		entries, total, ok := guestbook_pending(&ctx.guestbook, context.temp_allocator)
 		switch {

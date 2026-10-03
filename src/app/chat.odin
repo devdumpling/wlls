@@ -22,11 +22,15 @@ CHAT_TEXT_MAX :: 200 // characters
 CHAT_MEMBERS_MAX :: 128
 @(private = "file")
 CHAT_MUTED_MAX :: 32
-// A burst of CHAT_BURST messages, then one per CHAT_INTERVAL_NS.
+// Each visitor gets a burst of CHAT_BURST room actions (joining, talking,
+// renaming), then one per CHAT_INTERVAL_NS. Limits are kept apart from
+// membership, so leaving and rejoining doesn't reset them.
 @(private = "file")
 CHAT_INTERVAL_NS :: 1_000_000_000
 @(private = "file")
 CHAT_BURST :: 5
+@(private = "file")
+CHAT_LIMITS_MAX :: 256
 
 Chat :: struct {
 	lines:        [CHAT_LINES]Chat_Line, // a ring; the oldest is overwritten
@@ -35,6 +39,8 @@ Chat :: struct {
 	member_count: int,
 	muted:        [CHAT_MUTED_MAX]Visitor,
 	muted_count:  int,
+	limits:       [CHAT_LIMITS_MAX]Chat_Limit, // the oldest is reused when full
+	next_limit:   int,
 }
 
 Chat_Line_Kind :: enum u8 {
@@ -54,11 +60,37 @@ Chat_Line :: struct {
 }
 
 Chat_Member :: struct {
+	visitor: Visitor,
+	root:    bool,
+}
+
+@(private = "file")
+Chat_Limit :: struct {
 	visitor:  Visitor,
-	root:     bool,
-	// When the send limit next allows a message without dipping into the
-	// burst: each message moves it CHAT_INTERVAL_NS later.
+	// When the next action is allowed without dipping into the burst; each
+	// action moves it CHAT_INTERVAL_NS later.
 	ready_at: u64,
+}
+
+// chat_allow spends one of a visitor's room actions, or reports that they
+// are going too fast.
+chat_allow :: proc(chat: ^Chat, visitor: Visitor, now: u64) -> bool {
+	limit := &chat.limits[chat.next_limit]
+	for &candidate in chat.limits {
+		if candidate.visitor == visitor {
+			limit = &candidate
+			break
+		}
+	}
+	if limit.visitor != visitor {
+		limit^ = {
+			visitor = visitor,
+		}
+		chat.next_limit = (chat.next_limit + 1) % len(chat.limits)
+	}
+	if limit.ready_at > now + (CHAT_BURST - 1) * CHAT_INTERVAL_NS do return false
+	limit.ready_at = max(limit.ready_at, now) + CHAT_INTERVAL_NS
+	return true
 }
 
 chat_is_member :: proc(chat: ^Chat, visitor: Visitor) -> bool {
@@ -66,10 +98,19 @@ chat_is_member :: proc(chat: ^Chat, visitor: Visitor) -> bool {
 	return found
 }
 
-// chat_join adds a visitor to #lobby; false if they were already in it.
-chat_join :: proc(live: ^Live, visitor: Visitor, root: bool) -> bool {
+Join_Result :: enum {
+	Joined,
+	Already_Here,
+	Too_Fast,
+	Full,
+}
+
+// chat_join adds a visitor to #lobby.
+chat_join :: proc(live: ^Live, visitor: Visitor, root: bool, now: u64) -> Join_Result {
 	chat := &live.chat
-	if chat_is_member(chat, visitor) || chat.member_count == len(chat.members) do return false
+	if chat_is_member(chat, visitor) do return .Already_Here
+	if chat.member_count == len(chat.members) do return .Full
+	if !chat_allow(chat, visitor, now) do return .Too_Fast
 	chat.members[chat.member_count] = {
 		visitor = visitor,
 		root    = root,
@@ -79,7 +120,7 @@ chat_join :: proc(live: ^Live, visitor: Visitor, root: bool) -> bool {
 		chat,
 		{kind = .Joined, root = root, visitor = visitor, name = chat_name(live, visitor, root)},
 	)
-	return true
+	return .Joined
 }
 
 // chat_leave removes a visitor from #lobby; false if they weren't in it.
@@ -115,12 +156,8 @@ chat_say :: proc(live: ^Live, visitor: Visitor, root: bool, text: string, now: u
 		if muted == visitor do return .Muted
 	}
 	if !is_plain_text(text, CHAT_TEXT_MAX, multiline = false) do return .Invalid
-	index, found := find_member(chat, visitor)
-	if !found do return .Not_Member
-
-	member := &chat.members[index]
-	if member.ready_at > now + (CHAT_BURST - 1) * CHAT_INTERVAL_NS do return .Too_Fast
-	member.ready_at = max(member.ready_at, now) + CHAT_INTERVAL_NS
+	if !chat_is_member(chat, visitor) do return .Not_Member
+	if !chat_allow(chat, visitor, now) do return .Too_Fast
 
 	line := Chat_Line {
 		kind    = .Message,
@@ -185,20 +222,20 @@ chat_unmute :: proc(chat: ^Chat, visitor: Visitor) -> bool {
 	return false
 }
 
-// chat_remove deletes a visitor's messages from the history.
+// chat_remove deletes a visitor's messages from the history, closing the
+// gaps in place: kept lines only ever move toward the front.
 chat_remove :: proc(chat: ^Chat, visitor: Visitor) -> (removed: int) {
-	kept: [CHAT_LINES]Chat_Line
-	count := 0
+	kept := 0
 	for offset in 0 ..< chat.count {
-		line := chat.lines[(chat.first + offset) % CHAT_LINES]
+		line := &chat.lines[(chat.first + offset) % CHAT_LINES]
 		if line.kind == .Message && line.visitor == visitor {
 			removed += 1
 			continue
 		}
-		kept[count] = line
-		count += 1
+		if kept != offset do chat.lines[(chat.first + kept) % CHAT_LINES] = line^
+		kept += 1
 	}
-	chat.lines, chat.first, chat.count = kept, 0, count
+	chat.count = kept
 	return
 }
 
@@ -225,12 +262,12 @@ chat_render :: proc(live: ^Live) -> bool {
 	defer virtual.arena_destroy(&arena)
 	allocator := virtual.arena_allocator(&arena)
 
-	lines := make([]views.Chat_Line, chat.count, allocator)
+	lines := make([]views.Chat_Row, chat.count, allocator)
 	for offset in 0 ..< chat.count {
 		line := &chat.lines[(chat.first + offset) % CHAT_LINES]
 		name := name_string(&line.name)
 		text := string(line.text[:line.text_size])
-		view := views.Chat_Line {
+		view := views.Chat_Row {
 			name = strings.clone(name, allocator),
 			root = line.root,
 		}

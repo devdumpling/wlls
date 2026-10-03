@@ -4,6 +4,7 @@ import http "../../vendor/tina/src/extensions/http/server"
 import "core:crypto"
 import "core:crypto/sha2"
 import "core:fmt"
+import "core:hash"
 import "core:mem"
 import "core:os"
 import "core:strconv"
@@ -11,7 +12,9 @@ import "core:strconv"
 // sudo: moderating the guestbook from the terminal. One secret from the
 // environment (WLLS_ADMIN_TOKEN) opens a session, kept in a cookie scoped to
 // /terminal. Sessions live in memory, so a deploy signs me out. The terminal
-// is public, so failed attempts lock sudo for a while.
+// is public, so each network address gets a few attempts before it is locked
+// out for a while; locking out per address means a stranger can't keep me
+// locked out too.
 
 ADMIN_TOKEN_MIN :: 24
 @(private = "file")
@@ -29,6 +32,13 @@ Admin :: struct {
 	token_hash:   [sha2.DIGEST_SIZE_256]u8,
 	enabled:      bool,
 	sessions:     [4]Admin_Session,
+	attempts:     [32]Admin_Attempts, // per address; the oldest is reused when full
+	next_attempt: int,
+}
+
+@(private = "file")
+Admin_Attempts :: struct {
+	client:       u64, // hash of the address; zero marks an unused slot
 	failures:     int,
 	locked_until: u64, // monotonic ns
 }
@@ -59,11 +69,11 @@ Sudo_Result :: enum {
 	Disabled,
 }
 
-// admin_sudo checks a password and, if it matches, opens a session and
-// writes its Set-Cookie value into cookie.
+// admin_sudo checks a password from client (the caller's address) and, if it
+// matches, opens a session and writes its Set-Cookie value into cookie.
 admin_sudo :: proc(
 	admin: ^Admin,
-	password: string,
+	password, client: string,
 	now: u64,
 	cookie: []u8,
 ) -> (
@@ -71,17 +81,18 @@ admin_sudo :: proc(
 	set_cookie: string,
 ) {
 	if !admin.enabled do return .Disabled, ""
-	if now < admin.locked_until do return .Locked, ""
+	attempts := attempts_for(admin, client)
+	if now < attempts.locked_until do return .Locked, ""
 
 	attempt := digest(password)
 	if crypto.compare_constant_time(attempt[:], admin.token_hash[:]) != 1 {
-		admin.failures += 1
-		if admin.failures < ADMIN_ATTEMPTS_MAX do return .Denied, ""
-		admin.failures = 0
-		admin.locked_until = now + ADMIN_LOCKOUT_NS
+		attempts.failures += 1
+		if attempts.failures < ADMIN_ATTEMPTS_MAX do return .Denied, ""
+		attempts.failures = 0
+		attempts.locked_until = now + ADMIN_LOCKOUT_NS
 		return .Locked, ""
 	}
-	admin.failures = 0
+	attempts.failures = 0
 
 	// Reuse an expired slot, or else replace the session closest to expiry.
 	slot := &admin.sessions[0]
@@ -124,6 +135,24 @@ admin_session :: proc(admin: ^Admin, request: ^http.Request, now: u64) -> (index
 
 admin_sign_out :: proc(admin: ^Admin, session: int) {
 	admin.sessions[session] = {}
+}
+
+// attempts_for finds (or starts) the failure count for an address. FNV-1a
+// never hashes to zero in practice (an unknown address, as in development,
+// hashes the empty string to its nonzero offset basis), so zero can mark an
+// unused slot.
+@(private = "file")
+attempts_for :: proc(admin: ^Admin, client: string) -> ^Admin_Attempts {
+	key := hash.fnv64a(transmute([]u8)client)
+	for &attempts in admin.attempts {
+		if attempts.client == key do return &attempts
+	}
+	slot := &admin.attempts[admin.next_attempt]
+	admin.next_attempt = (admin.next_attempt + 1) % len(admin.attempts)
+	slot^ = {
+		client = key,
+	}
+	return slot
 }
 
 @(private = "file")

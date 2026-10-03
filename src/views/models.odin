@@ -90,9 +90,9 @@ Who_Row :: struct {
 	name, place: string,
 }
 
-// Chat_Line is one line of #lobby: a message (name and text) or an event
+// Chat_Row is one line of #lobby: a message (name and text) or an event
 // such as "quiet-heron joined". root marks dev's own lines.
-Chat_Line :: struct {
+Chat_Row :: struct {
 	name, text, event: string,
 	root:              bool,
 }

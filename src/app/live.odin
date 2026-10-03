@@ -5,19 +5,20 @@ import http "../../vendor/tina/src/extensions/http/server"
 import httpx "../httpx"
 import views "../views"
 import "core:fmt"
+import "core:strings"
 
 // Live connections: every page holds one SSE stream (GET /live) for as long as
-// it is visible. A hub isolate tracks who is connected, and wakes the streams
-// that care when something they show has changed. Tina messages carry 96
-// bytes, so content never travels in them; it is rendered once into a Frame
-// and every stream copies the bytes out.
+// it is visible. A hub isolate keeps the table of who is connected, and wakes
+// the streams that care when something they show has changed. Tina messages
+// carry 96 bytes, so content never travels in them; it is rendered once into
+// a Frame and every stream copies the bytes out.
 //
-// Live is the one piece of memory isolates share: the frames, and the chat
-// and nicks behind them. That is safe because the app runs on one shard:
-// every isolate runs on the same thread, one handler at a time, so nothing
-// here is read while it is being written. Moving to more shards means giving
-// each shard its own Live (or hub) first.
-#assert(SHARD_COUNT == 1, "live frames are shared memory between isolates; see live.odin")
+// Live is the memory isolates share: frames, presence, the chat, and nicks.
+// That is safe because the app runs on one shard: every isolate runs on the
+// same thread, one handler at a time, so nothing here is read while it is
+// being written. Moving to more shards means giving each shard its own Live
+// (or hub) first.
+#assert(SHARD_COUNT == 1, "Live is shared memory between isolates; see live.odin")
 
 // Topic is content a page shows live. Presence is not a topic: every stream
 // counts as someone here.
@@ -40,7 +41,7 @@ Frame :: struct {
 Live :: struct {
 	hub:         tina.Isolate_Handle, // set by the hub when it starts
 	frames:      [Topic]Frame,
-	who:         Frame, // the presence list `who` prints
+	presence:    Presence, // written only by the hub
 	places:      Places,
 	chat:        Chat,
 	nicks:       Nicks,
@@ -100,27 +101,81 @@ publish :: proc(live: ^Live, topic: Topic) {
 	_ = tina.ctx_send(live.hub, TAG_HUB_PUBLISH, &message)
 }
 
-// renamed tells the hub a visitor's name changed, so `who` shows the new one.
-renamed :: proc(live: ^Live) {
-	_ = tina.ctx_send(live.hub, TAG_HUB_RENAMED, nil)
+// ─── Presence ───────────────────────────────────────────────────────────────
+
+// The hub refuses streams past this, leaving a quarter of CONNECTION_SLOTS for
+// page loads: a parked stream holds its slot and is never evicted as idle.
+PRESENCE_MAX :: CONNECTION_SLOTS * 3 / 4
+// `who` lists this many visitors, then counts the rest.
+@(private = "file")
+WHO_ROWS_MAX :: 25
+
+// Presence is one entry per open stream. Only the hub writes it; anyone
+// reads it, which is how `who` is rendered on demand.
+Presence :: struct {
+	entries: [PRESENCE_MAX]Presence_Entry,
+	count:   int,
+	joins:   u64,
+}
+
+Presence_Entry :: struct {
+	handle:  tina.Isolate_Handle,
+	token:   http.Request_Token,
+	visitor: Visitor,
+	place:   u16,
+	topics:  Topics,
+	joined:  u64, // order of arrival; a visitor's newest stream is where they are
+	seen:    u64, // monotonic ns of the last subscribe, renewed every heartbeat
+}
+
+// render_who writes the `who` list: one row per visitor, the first
+// WHO_ROWS_MAX of them by name, then a total. A visitor with several streams
+// (tabs, or a page they just left whose stream has not noticed yet) is shown
+// where their newest stream is. It runs only when someone types `who`.
+render_who :: proc(output: ^strings.Builder, live: ^Live) {
+	presence := &live.presence
+	rows: [WHO_ROWS_MAX]views.Who_Row
+	names: [WHO_ROWS_MAX]Name
+	row_count, total := 0, 0
+	for entry in presence.entries[:presence.count] {
+		newer := false
+		for other in presence.entries[:presence.count] {
+			newer ||= other.visitor == entry.visitor && other.joined > entry.joined
+		}
+		if newer do continue
+		total += 1
+		if row_count == len(rows) do continue
+		names[row_count] = display_name(&live.nicks, entry.visitor)
+		rows[row_count] = {
+			name  = name_string(&names[row_count]),
+			place = live.places.paths[entry.place],
+		}
+		row_count += 1
+	}
+
+	more := ""
+	if total > row_count do more = fmt.tprintf("and %d more", total - row_count)
+	views.terminal_who(output, rows[:row_count], more, fmt.tprintf("%d here now", total))
 }
 
 // ─── Hub isolate ────────────────────────────────────────────────────────────
 
-// The hub refuses streams past this, leaving a quarter of CONNECTION_SLOTS for
-// page loads: a parked stream holds its slot and is never evicted as idle.
-HUB_SUBSCRIBERS_MAX :: CONNECTION_SLOTS * 3 / 4
 @(private = "file")
 HUB_MAILBOX_CAPACITY :: 512
-// `who` lists this many visitors, then counts the rest.
+// Streams re-subscribe every heartbeat (25 s). A stream that closes without
+// saying so (a crash, a connection Tina tears down itself) stops renewing,
+// and the sweep drops it once it has been silent this long.
 @(private = "file")
-WHO_ROWS_MAX :: 25
+PRESENCE_TIMEOUT_NS :: 60 * 1_000_000_000
+@(private = "file")
+HUB_SWEEP_NS :: 30 * 1_000_000_000
 
 TAG_HUB_SUBSCRIBE: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 1
 TAG_HUB_UNSUBSCRIBE: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 2
 TAG_HUB_PUBLISH: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 3
 TAG_LIVE_NOTIFY: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 4
-TAG_HUB_RENAMED: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 5
+@(private = "file")
+TAG_HUB_SWEEP: tina.Message_Tag : tina.USER_MESSAGE_TAG_BASE + 5
 
 // A stream subscribes when it starts and again on every heartbeat, so a
 // restarted hub relearns everyone within one heartbeat. It is an upsert.
@@ -143,60 +198,46 @@ Live_Notify :: struct {
 }
 
 @(private = "file")
-Subscriber :: struct {
-	handle:  tina.Isolate_Handle,
-	token:   http.Request_Token,
-	visitor: Visitor,
-	place:   u16,
-	topics:  Topics,
-	joined:  u64, // order of arrival; a visitor's newest stream is where they are
-}
-
-@(private = "file")
 Hub :: struct {
-	live:        ^Live,
-	subscribers: [HUB_SUBSCRIBERS_MAX]Subscriber,
-	count:       int,
-	joins:       u64,
+	live: ^Live,
 }
 
 @(private = "file")
 hub_init :: proc(self_raw: rawptr, args: []u8) -> tina.Isolate_Transition {
 	self := tina.self_as(Hub, self_raw)
-	self^ = {
-		live = tina.payload_as(^Live, args)^,
-	}
+	self.live = tina.payload_as(^Live, args)^
+	// A restarted hub starts from an empty table; streams re-subscribe.
+	self.live.presence = {}
 	self.live.hub = tina.ctx_self_handle()
-	render_who(self)
+	tina.ctx_register_timer(HUB_SWEEP_NS, TAG_HUB_SWEEP)
 	return tina.ISOLATE_TRANSITION_WAIT_MESSAGE
 }
 
 @(private = "file")
 hub_handler :: proc(self_raw: rawptr, message: ^tina.Message) -> tina.Isolate_Transition {
-	self := tina.self_as(Hub, self_raw)
+	live := tina.self_as(Hub, self_raw).live
+	presence := &live.presence
 	source := message.user.source
 
 	switch message.tag {
 	case TAG_HUB_SUBSCRIBE:
 		subscribe := tina.payload_as(Hub_Subscribe, message.user.payload[:])
-		entry := Subscriber {
+		entry := Presence_Entry {
 			handle  = source,
 			token   = subscribe.token,
 			visitor = subscribe.visitor,
 			place   = subscribe.place,
 			topics  = subscribe.topics,
+			seen    = u64(tina.ctx_monotonic_time_ns()),
 		}
-		if index, found := find_subscriber(self, source); found {
-			moved := self.subscribers[index].place != entry.place
-			entry.joined = self.subscribers[index].joined
-			self.subscribers[index] = entry
-			if moved do render_who(self)
-		} else if self.count < len(self.subscribers) {
-			self.joins += 1
-			entry.joined = self.joins
-			self.subscribers[self.count] = entry
-			self.count += 1
-			render_who(self)
+		if index, found := find_entry(presence, source); found {
+			entry.joined = presence.entries[index].joined
+			presence.entries[index] = entry
+		} else if presence.count < len(presence.entries) {
+			presence.joins += 1
+			entry.joined = presence.joins
+			presence.entries[presence.count] = entry
+			presence.count += 1
 		} else {
 			refused := Live_Notify {
 				token   = subscribe.token,
@@ -206,16 +247,27 @@ hub_handler :: proc(self_raw: rawptr, message: ^tina.Message) -> tina.Isolate_Tr
 		}
 
 	case TAG_HUB_UNSUBSCRIBE:
-		if index, found := find_subscriber(self, source); found {
-			remove_subscriber(self, index)
-			settle(self)
+		if index, found := find_entry(presence, source); found {
+			remove_entry(presence, index)
+			settle(live)
 		}
 
 	case TAG_HUB_PUBLISH:
-		notify(self, tina.payload_as(Hub_Publish, message.user.payload[:]).topic)
+		notify(live, tina.payload_as(Hub_Publish, message.user.payload[:]).topic)
 
-	case TAG_HUB_RENAMED:
-		render_who(self)
+	case TAG_HUB_SWEEP:
+		now := u64(tina.ctx_monotonic_time_ns())
+		swept := false
+		for index := 0; index < presence.count; {
+			if now - presence.entries[index].seen < PRESENCE_TIMEOUT_NS {
+				index += 1
+				continue
+			}
+			remove_entry(presence, index)
+			swept = true
+		}
+		if swept do settle(live)
+		tina.ctx_register_timer(HUB_SWEEP_NS, TAG_HUB_SWEEP)
 	}
 	return tina.ISOLATE_TRANSITION_WAIT_MESSAGE
 }
@@ -223,41 +275,41 @@ hub_handler :: proc(self_raw: rawptr, message: ^tina.Message) -> tina.Isolate_Tr
 // notify wakes every stream that shows topic. A dead stream found on the way
 // is dropped, and the hub settles once the round is done.
 @(private = "file")
-notify :: proc(self: ^Hub, topic: Topic) {
+notify :: proc(live: ^Live, topic: Topic) {
+	presence := &live.presence
 	dropped := false
-	for index := 0; index < self.count; {
-		subscriber := self.subscribers[index]
-		if topic not_in live_topics(self.live, subscriber.visitor, subscriber.topics) {
+	for index := 0; index < presence.count; {
+		entry := presence.entries[index]
+		if topic not_in live_topics(live, entry.visitor, entry.topics) {
 			index += 1
 			continue
 		}
 		message := Live_Notify {
-			token = subscriber.token,
+			token = entry.token,
 		}
-		// A full mailbox keeps the subscriber: the stream already has a
-		// wake-up pending and will send the latest frame anyway.
-		if tina.ctx_send(subscriber.handle, TAG_LIVE_NOTIFY, &message) == .stale_handle {
-			remove_subscriber(self, index)
+		// A full mailbox keeps the entry: the stream already has a wake-up
+		// pending and will send the latest frame anyway.
+		if tina.ctx_send(entry.handle, TAG_LIVE_NOTIFY, &message) == .stale_handle {
+			remove_entry(presence, index)
 			dropped = true
 			continue
 		}
 		index += 1
 	}
-	if dropped do settle(self)
+	if dropped do settle(live)
 }
 
-// settle runs after streams go away: `who` is re-rendered, and anyone in
-// #lobby whose last page has closed leaves it.
+// settle runs after streams go away: anyone in #lobby whose last page has
+// closed leaves it.
 @(private = "file")
-settle :: proc(self: ^Hub) {
-	render_who(self)
-	live := self.live
+settle :: proc(live: ^Live) {
+	presence := &live.presence
 	left := false
 	for index := 0; index < live.chat.member_count; {
 		visitor := live.chat.members[index].visitor
 		here := false
-		for subscriber in self.subscribers[:self.count] {
-			here ||= subscriber.visitor == visitor
+		for entry in presence.entries[:presence.count] {
+			here ||= entry.visitor == visitor
 		}
 		if !here && chat_leave(live, visitor) {
 			left = true
@@ -265,63 +317,22 @@ settle :: proc(self: ^Hub) {
 		}
 		index += 1
 	}
-	if left && chat_render(live) do notify(self, .Chat)
+	if left && chat_render(live) do notify(live, .Chat)
 }
 
 @(private = "file")
-find_subscriber :: proc(self: ^Hub, handle: tina.Isolate_Handle) -> (int, bool) {
-	for index in 0 ..< self.count {
-		if self.subscribers[index].handle == handle do return index, true
+find_entry :: proc(presence: ^Presence, handle: tina.Isolate_Handle) -> (int, bool) {
+	for entry, index in presence.entries[:presence.count] {
+		if entry.handle == handle do return index, true
 	}
 	return -1, false
 }
 
-// remove_subscriber swaps the last subscriber into the gap; order is free.
+// remove_entry swaps the last entry into the gap; order is free.
 @(private = "file")
-remove_subscriber :: proc(self: ^Hub, index: int) {
-	self.count -= 1
-	self.subscribers[index] = self.subscribers[self.count]
-}
-
-// render_who renders the presence list: one row per visitor, the first
-// WHO_ROWS_MAX of them by name, then a total. A visitor with several streams
-// (tabs, or a page they just left whose stream has not noticed yet) is shown
-// where their newest stream is.
-@(private = "file")
-render_who :: proc(self: ^Hub) {
-	rows: [WHO_ROWS_MAX]views.Who_Row
-	names: [WHO_ROWS_MAX]Name
-	row_count, total := 0, 0
-	for index in 0 ..< self.count {
-		subscriber := self.subscribers[index]
-		newer := false
-		for other in self.subscribers[:self.count] {
-			if other.visitor == subscriber.visitor && other.joined > subscriber.joined {
-				newer = true
-				break
-			}
-		}
-		if newer do continue
-		total += 1
-		if row_count == len(rows) do continue
-		names[row_count] = display_name(&self.live.nicks, subscriber.visitor)
-		rows[row_count] = {
-			name  = name_string(&names[row_count]),
-			place = self.live.places.paths[subscriber.place],
-		}
-		row_count += 1
-	}
-
-	summary_buffer, more_buffer: [32]u8
-	summary := fmt.bprintf(summary_buffer[:], "%d here now", total)
-	more := ""
-	if total > row_count do more = fmt.bprintf(more_buffer[:], "and %d more", total - row_count)
-
-	buffer: httpx.Render_Buffer
-	writer := httpx.render_buffer_init(&buffer)
-	defer httpx.render_buffer_destroy(&buffer)
-	views.terminal_who(writer, rows[:row_count], more, summary)
-	frame_store(&self.live.who, &buffer)
+remove_entry :: proc(presence: ^Presence, index: int) {
+	presence.count -= 1
+	presence.entries[index] = presence.entries[presence.count]
 }
 
 // install_hub adds the hub to the boot spec that http.install built, ahead of

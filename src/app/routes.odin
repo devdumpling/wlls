@@ -3,6 +3,7 @@ package app
 import http "../../vendor/tina/src/extensions/http/server"
 import httpx "../httpx"
 import views "../views"
+import "core:mem/virtual"
 
 // Tina calls an event route once per event of a request (Request_Start, then
 // Send_Ready after each flush, or Peer_Closed). Every handler below follows
@@ -59,6 +60,10 @@ render_not_found :: proc(
 	ctx: ^Application_Context,
 	stream: ^httpx.Body_Stream,
 ) -> http.Route_Step {
+	scratch: virtual.Arena
+	context.temp_allocator = httpx.scratch_allocator(&scratch)
+	defer virtual.arena_destroy(&scratch)
+
 	writer := httpx.begin_render(stream, http.HTTP_STATUS_NOT_FOUND, "text/html; charset=utf-8")
 	metadata := views.Metadata {
 		page        = .Not_Found,
@@ -95,5 +100,5 @@ app_context :: proc(route_context: http.Route_Context) -> ^Application_Context {
 // Tina routes HEAD to the GET handler when no explicit HEAD route exists.
 @(private)
 stream_get :: proc(path: string, handler: http.Route_Event_Handler) -> http.Route {
-	return http.get_event(path, handler, state_size = u16(size_of(httpx.Body_Stream)))
+	return http.get_event(path, handler, state_size = httpx.BODY_STATE_SIZE)
 }

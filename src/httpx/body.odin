@@ -11,6 +11,9 @@ import "core:strings"
 //
 // The body is either borrowed immutable bytes (embedded assets, pages
 // rendered at startup) or an owned Render_Buffer rendered for this request.
+// BODY_STATE_SIZE is the per-request state a route needs for a Body_Stream.
+BODY_STATE_SIZE :: u16(size_of(Body_Stream))
+
 Body_Stream :: struct {
 	render:       Render_Buffer,
 	bytes:        []u8,

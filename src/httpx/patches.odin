@@ -38,6 +38,9 @@ Patch_Stream :: struct {
 	started: bool,
 }
 
+// PATCH_STATE_SIZE is the per-request state a route needs for a Patch_Stream.
+PATCH_STATE_SIZE :: u16(size_of(Patch_Stream))
+
 Patch_Event :: struct {
 	start, end: int, // byte range of the event body in the render buffer
 	options:    datastar.Patch_Elements_Options,

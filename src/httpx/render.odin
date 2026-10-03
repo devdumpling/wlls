@@ -76,6 +76,22 @@ render_buffer_destroy :: proc(buffer: ^Render_Buffer) {
 	buffer^ = {}
 }
 
+// Tina runs each handler turn with context.temp_allocator pointing at a small
+// fixed scratch arena (about 6 KiB here). When it fills, allocations fail
+// quietly and strings come back empty, so a handler that builds text gives
+// itself a growing arena instead:
+//
+//	scratch: virtual.Arena
+//	context.temp_allocator = httpx.scratch_allocator(&scratch)
+//	defer virtual.arena_destroy(&scratch)
+//
+// A context change lasts until the handler returns, so everything it calls
+// allocates there too, and the defer frees it all at once.
+scratch_allocator :: proc(arena: ^virtual.Arena) -> runtime.Allocator {
+	if virtual.arena_init_growing(arena) != nil do return runtime.nil_allocator()
+	return virtual.arena_allocator(arena)
+}
+
 @(private = "file")
 tracked :: proc(
 	data: rawptr,

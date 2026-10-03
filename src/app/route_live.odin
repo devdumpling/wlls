@@ -56,10 +56,10 @@ live_stream :: proc(
 		}
 		if !httpx.start_stream(response) do return http.close()
 		subscribe(route_context, live, stream)
-		return send_news(response, live, stream)
+		return send_news(response, route_context, live, stream)
 
 	case http.Send_Ready:
-		if has_news(live, stream) do return send_news(response, live, stream)
+		if has_news(live, stream) do return send_news(response, route_context, live, stream)
 		return http.expect_notification(
 			route_context,
 			LIVE_HEARTBEAT_NS,
@@ -77,7 +77,7 @@ live_stream :: proc(
 			)
 		}
 		if notify.refused do return http.flush(final = true)
-		return send_news(response, live, stream)
+		return send_news(response, route_context, live, stream)
 
 	case http.Application_Reply:
 		// The park timed out: keep the proxies' idle timers at bay, and remind
@@ -95,7 +95,12 @@ live_stream :: proc(
 // When the egress buffer is full, it flushes and finishes on Send_Ready; by
 // then a frame may have changed again, and only its latest version goes out.
 @(private = "file")
-send_news :: proc(response: ^http.Response, live: ^Live, stream: ^Live_Stream) -> http.Route_Step {
+send_news :: proc(
+	response: ^http.Response,
+	route_context: http.Route_Context,
+	live: ^Live,
+	stream: ^Live_Stream,
+) -> http.Route_Step {
 	if stream.chat_prompt {
 		prompt := string(frame_bytes(&live.chat_prompt))
 		switch httpx.send_elements(
@@ -108,7 +113,7 @@ send_news :: proc(response: ^http.Response, live: ^Live, stream: ^Live_Stream) -
 		case .Backpressured:
 			return http.flush()
 		case .Failed:
-			return http.close()
+			return close_live(route_context, live)
 		}
 	}
 	for topic in live_topics(live, stream.visitor, stream.topics) {
@@ -120,7 +125,7 @@ send_news :: proc(response: ^http.Response, live: ^Live, stream: ^Live_Stream) -
 		case .Backpressured:
 			return http.flush()
 		case .Failed:
-			return http.close()
+			return close_live(route_context, live)
 		}
 	}
 	return http.flush()

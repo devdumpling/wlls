@@ -1,9 +1,9 @@
 package app
 
-import tina "../../vendor/tina/src"
 import http "../../vendor/tina/src/extensions/http/server"
 import httpx "../httpx"
 import views "../views"
+import "core:mem/virtual"
 
 // Name and note, percent-encoded: 280 characters of UTF-8 can triple in size.
 GUESTBOOK_BODY_MAX :: 4096
@@ -21,6 +21,10 @@ serve_guestbook :: proc(
 	if _, starting := event.(http.Request_Start); !starting {
 		return httpx.drive(event, response, stream)
 	}
+
+	scratch: virtual.Arena
+	context.temp_allocator = httpx.scratch_allocator(&scratch)
+	defer virtual.arena_destroy(&scratch)
 
 	ctx := app_context(route_context)
 	writer := httpx.begin_render(stream, http.HTTP_STATUS_OK, "text/html; charset=utf-8")
@@ -52,6 +56,10 @@ sign_guestbook :: proc(
 		return httpx.drive_patches(event, response, stream)
 	}
 
+	scratch: virtual.Arena
+	context.temp_allocator = httpx.scratch_allocator(&scratch)
+	defer virtual.arena_destroy(&scratch)
+
 	ctx := app_context(route_context)
 	body, arena := http.body_buffered(request), http.request_arena(request)
 	name, name_ok := form_value(body, "name", arena)
@@ -77,23 +85,4 @@ sign_guestbook :: proc(
 	}
 	httpx.queue_elements(stream)
 	return httpx.send_patches(response, stream)
-}
-
-// Caller is who sent a command: their visitor id, their network address as
-// Caddy reports it (empty without Caddy, as in development), and when.
-Caller :: struct {
-	visitor: Visitor,
-	client:  string,
-	now:     u64, // monotonic ns
-	admin:   bool, // signed in with sudo (the terminal checks)
-	session: int, // the sudo session, when admin
-}
-
-caller_of :: proc(request: ^http.Request) -> Caller {
-	visitor, _ := visitor_from_request(request)
-	return Caller {
-		visitor = visitor,
-		client = string(http.header(request, "X-Client-IP")),
-		now = u64(tina.ctx_monotonic_time_ns()),
-	}
 }

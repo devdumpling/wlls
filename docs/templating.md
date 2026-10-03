@@ -67,7 +67,10 @@ discard write results. `httpx.Render_Buffer` makes that safe: its builder lives
 in a static virtual arena capped at `RENDER_BUFFER_MAX`, growing in place with
 no copies, and its allocator records any failure so the response becomes a 500
 instead of truncated markup. The arena is freed in one call when the response
-is done.
+is done. Inside a handler, Tina points `context.temp_allocator` at a
+small fixed scratch arena (about 6 KiB) that fails quietly when full, so
+handlers that build text install their own growing one with
+`httpx.scratch_allocator`.
 
 **Sending.** Tina never blocks a handler and never buffers without bound: each
 connection has a fixed egress buffer (`HTTP_EGRESS_BUFFER_SIZE`, 16 KiB here,
@@ -134,6 +137,7 @@ stay short POSTs (`/terminal`, `/guestbook`). Content never travels in Tina
 messages (96 bytes): a feature renders a **frame** once per change (Tempo
 HTML whose elements carry ids), a hub isolate wakes the streams subscribed to
 that topic, and each copies the newest frame into its egress buffer, so a
-slow client simply skips to the latest version. Frames, the guestbook, and sudo
-sessions are the only state isolates share, which is safe because the app
-runs one shard (`src/app/live.odin`).
+slow client simply skips to the latest version. `Live` (frames, presence,
+#lobby, nicks), the guestbook, and sudo sessions are the only state isolates
+share, which is safe because the app runs one shard (`src/app/live.odin`).
+The hub is the only writer of presence; `who` reads it when asked.

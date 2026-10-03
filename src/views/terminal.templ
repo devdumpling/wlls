@@ -134,7 +134,7 @@ terminal_pending :: templ(entries: []Pending_Entry, summary: string) {
 // terminal_chat is the #lobby frame: the room's recent lines, newest last.
 // It morphs into the #terminal-chat placeholder every terminal carries, which
 // shows only in chat mode.
-terminal_chat :: templ(lines: []Chat_Line, summary: string) {
+terminal_chat :: templ(lines: []Chat_Row, summary: string) {
 	<div id="terminal-chat" class="terminal-chat" role="log" aria-live="polite" aria-label="#lobby">
 		<p class="terminal-line chat-summary">{ summary }</p>
 		for line in lines {
