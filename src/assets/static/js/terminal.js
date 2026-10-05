@@ -2,10 +2,9 @@
 // <wlls-terminal>: client behavior for the server-driven terminal. The server
 // renders the log and prompt and answers each command with SSE patches; this
 // component only adds what a browser must own: focus, command history on ↑/↓
-// (kept across pages), keeping the newest output in view, folding the log, and
-// the `/` shortcut. On the landing page the terminal sits inline; elsewhere it
-// lives in a <dialog> sheet that the breadcrumb row's trigger opens. The sheet
-// follows a local `open` signal, so `exit` closes it without a round trip.
+// (kept across pages), keeping the newest output in view, and the `/` shortcut.
+// It lives in a <dialog> sheet that the breadcrumb row's trigger opens. The
+// sheet follows a local `open` signal, so `exit` closes it without a round trip.
 // Same fingerprinted directory as this file, so this resolves to the exact URL
 // the page already loaded: one module instance, and no inline import map.
 import { rocket } from "./datastar-rocket.js"
@@ -44,17 +43,18 @@ rocket("wlls-terminal", {
   mode: "light",
   renderOnPropChange: false,
   setup: ({ host, $$, effect, cleanup }) => {
+    const sheet = host.closest("dialog")
+    if (!sheet) return
+    const trigger = /** @type {HTMLButtonElement | null} */ (
+      document.querySelector(`[aria-controls="${sheet.id}"]`)
+    )
+
     const history = loadHistory()
     let cursor = history.length
     let submitted = false
 
     const input = () => /** @type {HTMLInputElement | null} */ (host.querySelector("#terminal-input"))
     const output = () => /** @type {HTMLElement | null} */ (host.querySelector("#terminal-output"))
-    const toggle = /** @type {HTMLButtonElement | null} */ (host.querySelector(".terminal-toggle"))
-    const sheet = /** @type {HTMLDialogElement | null} */ (host.closest("dialog"))
-    const trigger = /** @type {HTMLButtonElement | null} */ (
-      sheet ? document.querySelector(`[aria-controls="${sheet.id}"]`) : null
-    )
 
     const followLog = () => {
       const log = output()
@@ -76,29 +76,26 @@ rocket("wlls-terminal", {
       chatPinned = room.scrollHeight - room.scrollTop - room.clientHeight < 24
     }
 
-    // The dialog mirrors $$.open. Esc and the backdrop close it natively or
-    // from here, and its close event writes the signal back.
-    if (sheet) {
-      $$.open = false
-      effect(() => {
-        if ($$.open && !sheet.open) {
-          sheet.showModal()
-          followLog()
-          chatPinned = true
-          followChat()
-          input()?.focus()
-        } else if (!$$.open && sheet.open) {
-          sheet.close()
-        }
-      })
-    }
+    // The dialog mirrors $$.open. Esc, the backdrop, and the close button
+    // close it natively or from here, and its close event writes the signal
+    // back.
+    $$.open = false
+    effect(() => {
+      if ($$.open && !sheet.open) {
+        sheet.showModal()
+        followLog()
+        chatPinned = true
+        followChat()
+        input()?.focus()
+      } else if (!$$.open && sheet.open) {
+        sheet.close()
+      }
+    })
     const open = () => {
-      if (sheet) $$.open = true
-      else input()?.focus()
+      $$.open = true
     }
     const close = () => {
-      if (sheet) $$.open = false
-      else input()?.blur()
+      $$.open = false
     }
     const onClose = () => {
       $$.open = false
@@ -108,7 +105,7 @@ rocket("wlls-terminal", {
     /** @param {KeyboardEvent} event */
     const onShortcut = (event) => {
       const field = input()
-      if (sheet?.open && event.key === "/" && event.target === field && field?.value === "") {
+      if (sheet.open && event.key === "/" && event.target === field && field?.value === "") {
         event.preventDefault()
         close()
         return
@@ -132,23 +129,6 @@ rocket("wlls-terminal", {
       if (!target.closest(".terminal-output, .terminal-bar")) return
       input()?.focus()
     }
-
-    // The fold toggle only appears once someone has found the prompt.
-    const engage = () => {
-      host.dataset.engaged = ""
-    }
-
-    /** @param {boolean} collapsed */
-    const fold = (collapsed) => {
-      host.toggleAttribute("data-collapsed", collapsed)
-      if (toggle) {
-        toggle.textContent = collapsed ? "[+]" : "[-]"
-        toggle.setAttribute("aria-expanded", String(!collapsed))
-        toggle.setAttribute("aria-label", collapsed ? "Unfold terminal output" : "Fold terminal output")
-      }
-      followLog()
-    }
-    const onToggle = () => fold(!host.hasAttribute("data-collapsed"))
 
     // Capture phase: read the command before the server replaces the prompt.
     // exit is answered here, and stopping the event keeps it from the form's
@@ -216,28 +196,24 @@ rocket("wlls-terminal", {
 
     document.addEventListener("keydown", onShortcut)
     trigger?.addEventListener("click", open)
-    sheet?.addEventListener("click", closeFromBackdrop)
-    sheet?.addEventListener("close", onClose)
+    sheet.addEventListener("click", closeFromBackdrop)
+    sheet.addEventListener("close", onClose)
     host.addEventListener("click", focusPrompt)
-    host.addEventListener("focusin", engage)
     host.addEventListener("submit", remember, true)
     host.addEventListener("keydown", recall)
     host.addEventListener("scroll", onScroll, true) // scroll doesn't bubble
     document.addEventListener("datastar-fetch", onFetch)
-    toggle?.addEventListener("click", onToggle)
     cleanup(() => {
       follow.disconnect()
       document.removeEventListener("keydown", onShortcut)
       trigger?.removeEventListener("click", open)
-      sheet?.removeEventListener("click", closeFromBackdrop)
-      sheet?.removeEventListener("close", onClose)
+      sheet.removeEventListener("click", closeFromBackdrop)
+      sheet.removeEventListener("close", onClose)
       host.removeEventListener("click", focusPrompt)
-      host.removeEventListener("focusin", engage)
       host.removeEventListener("submit", remember, true)
       host.removeEventListener("keydown", recall)
       host.removeEventListener("scroll", onScroll, true)
       document.removeEventListener("datastar-fetch", onFetch)
-      toggle?.removeEventListener("click", onToggle)
     })
   },
 })

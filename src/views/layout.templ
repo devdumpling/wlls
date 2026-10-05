@@ -1,9 +1,9 @@
 package views
 
 // The document shell owns site-wide metadata and navigation. Feature templates
-// compose their page-specific resource inside the main landmark. The landing
-// page hosts the terminal inline; every other page keeps it in a sheet that
-// the breadcrumb row's trigger (or `/`) opens. theme-color
+// compose their page-specific resource inside the main landmark. Every page
+// keeps the terminal in a sheet that the breadcrumb row's trigger (or `/`)
+// opens. theme-color
 // tints mobile browser chrome to the paper; keep it in step with --paper in
 // garden.css.
 document :: templ(metadata: Metadata, assets: Asset_URLs) {
@@ -45,9 +45,7 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 				<div class="column">
 					<div class="column-head">
 						@breadcrumb(metadata.path)
-						if metadata.page != .Home {
-							@terminal_trigger()
-						}
+						@terminal_trigger()
 					</div>
 					<main id="main-content">
 						{#slot}
@@ -55,9 +53,7 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 				</div>
 				@rail(metadata, assets)
 			</div>
-			if metadata.page != .Home {
-				@terminal_sheet()
-			}
+			@terminal_sheet()
 			if metadata.page != .Not_Found {
 				@live_mount(metadata.path)
 			}

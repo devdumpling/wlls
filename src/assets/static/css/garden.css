@@ -391,14 +391,6 @@
   .terminal-sheet::backdrop {
     background: color-mix(in srgb, var(--paper) 55%, transparent);
   }
-  .terminal-toggle {
-    color: var(--ink-soft);
-    font: inherit;
-    transition: color 250ms var(--ease-out);
-  }
-  .terminal-toggle:hover {
-    color: var(--accent);
-  }
 
   /* Contour lines close each header and replace plain rules. */
   .article-header::after,
@@ -652,22 +644,20 @@
   .chat-event,
   .terminal-notice,
   .terminal-sending,
-  .terminal-leave {
+  .terminal-leave,
+  .terminal-close button {
     color: var(--ink-soft);
   }
   .terminal-sending,
-  .terminal-leave {
+  .terminal-leave,
+  .terminal-close button {
     font-family: var(--font-mono);
     font-size: 0.8rem;
   }
-  .terminal-leave:is(:hover, :focus-visible) {
+  .terminal-leave:is(:hover, :focus-visible),
+  .terminal-close button:is(:hover, :focus-visible) {
     color: var(--ink);
     text-decoration: underline;
-  }
-  @media (max-width: 59.99rem) {
-    [data-page="home"] .terminal:has(#terminal-prompt[data-chat]) {
-      background: var(--paper);
-    }
   }
 
   /* Guestbook: a form like a card catalog slip, entries like pencilled notes. */

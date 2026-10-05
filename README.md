@@ -53,7 +53,7 @@ release runs behind Caddy on the DigitalOcean Droplet. See
 The application binds to loopback only; Caddy provides compression and the
 public HTTPS endpoint. `/` is a dedicated homepage;
 `/blog` lists all posts, `/blog/{slug}` serves each post,
-and `/about` serves about. `POST /terminal` answers the landing-page
+and `/about` serves about. `POST /terminal` answers the
 terminal with Datastar SSE patches. `/feed.xml`, `/sitemap.xml`, and
 `/robots.txt` provide discovery; `/rss.xml` redirects to the feed. CSS,
 browser code, fonts, and images are embedded, including legacy `/images/*`,

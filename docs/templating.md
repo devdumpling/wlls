@@ -120,9 +120,9 @@ the same Tempo components the page uses and patches it in over SSE (Caddy
 compresses the stream with zstd). Signals are kept for client feedback only.
 The terminal is the model: `POST /terminal` receives the command as a
 form, and `src/app/route_terminal.odin` queues patches that append the result
-and replace the prompt. It sits inline on the landing page; every other page
-renders it inside a `<dialog>` sheet (`views.terminal_sheet`) opened by a
-trigger at the end of the breadcrumb row, or by `/` anywhere. The
+and replace the prompt. Every page renders it inside a `<dialog>` sheet
+(`views.terminal_sheet`) opened by a trigger at the end of the breadcrumb row,
+or by `/` anywhere; on small screens the sheet takes the whole screen. The
 `<wlls-terminal>` Rocket component in `src/assets/static/js/terminal.js` adds
 only browser concerns: focus, the `/` shortcut, history (kept in
 `localStorage`), and scroll-follow. The sheet follows a component-local `$$.open`

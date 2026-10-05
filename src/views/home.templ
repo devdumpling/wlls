@@ -5,14 +5,11 @@ import content "../content"
 home :: templ(latest: content.Post, metadata: Metadata, assets: Asset_URLs) {
 	@document(metadata, assets) {
 		<section class="landing">
-			<div class="landing-intro">
-				<h1>hi i'm <em>dev</em>.</h1>
-				<a class="latest" href={ latest.url }>
-					<span class="latest-title">{ latest.title }</span>
-					<span class="latest-dek">{ latest.description }</span>
-				</a>
-			</div>
-			@terminal(false)
+			<h1>hi i'm <em>dev</em>.</h1>
+			<a class="latest" href={ latest.url }>
+				<span class="latest-title">{ latest.title }</span>
+				<span class="latest-dek">{ latest.description }</span>
+			</a>
 		</section>
 	}
 }

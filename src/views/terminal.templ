@@ -4,31 +4,33 @@ import content "../content"
 
 // The terminal is server-driven: a command posts as a form, and the reply is
 // SSE patches rendered from these same components. <wlls-terminal> (a Rocket
-// component) adds only client behavior: focus, history, scroll-follow, and the
-// fold toggle. It is deliberately unannounced: a prompt and a blinking cursor.
-// In the sheet, the bar's end carries a hint instead of the fold toggle: the
-// sheet itself opens and closes.
-terminal :: templ(in_sheet: bool) {
+// component) adds only client behavior: focus, history, scroll-follow, and
+// opening and closing the sheet it lives in. It is deliberately unannounced: a
+// prompt and a blinking cursor, with a hint at the bar's end.
+terminal :: templ() {
 	<wlls-terminal id="terminal" class="terminal">
 		@terminal_output()
 		<div id="terminal-chat" class="terminal-chat"></div>
 		<div class="terminal-bar">
 			@terminal_prompt()
-			if in_sheet {
-				<span class="terminal-hint" aria-hidden="true">/ to toggle</span>
-			} else {
-				<button type="button" class="terminal-toggle" aria-controls="terminal-output" aria-expanded="true" aria-label="Fold terminal output">[-]</button>
-			}
+			<span class="terminal-hint" aria-hidden="true">/ to toggle</span>
 		</div>
 	</wlls-terminal>
 }
 
-// terminal_sheet hosts the same terminal off the landing page, in a modal
-// dialog pinned to the bottom of the screen. The dialog supplies focus
-// trapping, Esc to close, and focus return to the trigger.
+// terminal_sheet hosts the terminal on every page, in a modal dialog pinned to
+// the bottom of the screen. The dialog supplies focus trapping, Esc to close,
+// and focus return to the trigger.
+//
+// On small screens the sheet takes the whole screen (site.css), where there is
+// no backdrop to tap and no Esc key, so it shows a close button. A dialog-method
+// form closes the dialog natively, with no script.
 terminal_sheet :: templ() {
 	<dialog id="terminal-sheet" class="terminal-sheet" aria-label="Terminal">
-		@terminal(true)
+		<form method="dialog" class="terminal-close">
+			<button type="submit">close</button>
+		</form>
+		@terminal()
 	</dialog>
 }
 
@@ -151,8 +153,8 @@ terminal_chat :: templ(lines: []Chat_Row, summary: string) {
 // the terminal from its log to the room. A notice (a reply to a /command, or
 // why a message didn't send) sits above the input until the next line.
 //
-// On small screens the room takes the whole screen (site.css), so the leave
-// button is the way out besides :q, which it sends through the form.
+// The leave button is the way out of the room besides :q, which it sends
+// through the form; closing the sheet keeps you in the room.
 terminal_chat_prompt :: templ(notice: string) {
 	<form id="terminal-prompt" class="terminal-prompt" data-chat="lobby" data-on:submit__prevent="@post('/terminal', {contentType: 'form'})">
 		if notice != "" {

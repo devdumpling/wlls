@@ -200,52 +200,13 @@
     grid-column: full;
   }
 
-  /* Landing: exactly one screen. The intro sits high in the open space;
-     the terminal owns everything below it, its log growing upward from the
-     prompt at the bottom of the column. */
-  [data-page="home"] main {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
-    padding-block-start: 0;
-  }
-  main > .landing {
-    grid-column: 1 / -1;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: clamp(2rem, 6vh, 4rem);
-  }
-  /* The landing is exactly one screen tall at every width, so the
-     terminal's row has a ceiling and its log scrolls within it. When the
-     rail stacks below on small screens, it keeps its own row and the column
-     takes what is left, so the links never leave the viewport. */
-  [data-page="home"] .shell {
-    block-size: 100dvh;
-    grid-template-rows: minmax(0, 1fr) auto;
-  }
-  [data-page="home"] :is(.column, main) {
-    min-block-size: 0;
-  }
-  @media (min-width: 60rem) {
-    [data-page="home"] .shell {
-      grid-template-rows: minmax(0, 1fr);
-    }
-  }
-  @media (max-width: 59.99rem) {
-    [data-page="home"] .landing-intro {
-      padding-block-start: clamp(1rem, 7vh, 4rem);
-    }
-    [data-page="home"] .rail nav {
-      padding-block: 0.75rem clamp(0.75rem, 3vh, 1.5rem);
-    }
-    [data-page="home"] .rail-links a {
-      padding-block: 0.6rem;
-    }
-  }
-  .landing-intro {
+  /* Landing: the intro sits a little lower than other pages' headers, in
+     the open space below the breadcrumb row. */
+  .landing {
     display: grid;
     align-content: start;
     gap: clamp(1.75rem, 5vh, 3rem);
-    padding-block-start: clamp(1.5rem, 18vh, 13rem);
+    padding-block-start: clamp(0rem, 8vh, 6rem);
   }
 }
 
@@ -520,24 +481,11 @@
     overscroll-behavior: contain;
     scrollbar-width: thin;
   }
-  .terminal[data-collapsed] .terminal-output {
-    max-block-size: 3lh;
-    scrollbar-width: none;
-  }
   .terminal-bar {
     display: flex;
     /* Last, not first: a notice can wrap above the prompt's own line. */
     align-items: last baseline;
     gap: 1.5rem;
-  }
-  .terminal-toggle {
-    padding: 0;
-    border: 0;
-    background: none;
-    cursor: pointer;
-  }
-  .terminal:not([data-engaged]) .terminal-toggle {
-    visibility: hidden;
   }
   .terminal-output > * + *,
   .terminal-chat > * + * {
@@ -555,7 +503,7 @@
   .terminal:has(#terminal-prompt[data-chat]) .terminal-chat {
     display: block;
   }
-  .terminal:has(#terminal-prompt[data-chat]) :is(.terminal-output, .terminal-toggle) {
+  .terminal:has(#terminal-prompt[data-chat]) .terminal-output {
     display: none;
   }
   .chat-line {
@@ -606,24 +554,6 @@
   .terminal-prompt[aria-busy="true"] .terminal-sending {
     opacity: 1;
     transition: opacity 200ms 3s;
-  }
-  /* Where the rail drops below the content, #lobby takes the whole screen:
-     the sheet grows to full height, and the landing's inline terminal
-     becomes an overlay while the page behind holds still. */
-  @media (max-width: 59.99rem) {
-    .terminal-sheet:has(#terminal-prompt[data-chat]) {
-      block-size: 100dvh;
-    }
-    [data-page="home"] .terminal:has(#terminal-prompt[data-chat]) {
-      position: fixed;
-      inset: 0;
-      z-index: 20;
-      padding-block: max(1.25rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-bottom));
-      padding-inline: var(--pad-inline);
-    }
-    html:has([data-page="home"] #terminal-prompt[data-chat]) {
-      overflow: hidden;
-    }
   }
   .terminal-prompt {
     flex: 1;
@@ -703,8 +633,8 @@
     margin-block-start: 0.4rem;
   }
 
-  /* Off the landing page the terminal waits behind a trigger at the end of
-     the breadcrumb row, and opens in a sheet pinned to the bottom. */
+  /* The terminal waits behind a trigger at the end of the breadcrumb row,
+     and opens in a sheet pinned to the bottom. */
   /* A long breadcrumb wraps beside the trigger, which keeps to the first
      line. */
   .column-head {
@@ -751,6 +681,36 @@
   }
   .terminal-hint {
     flex: none;
+  }
+  /* Where the rail drops below the content, the sheet takes the whole
+     screen for every command, #lobby included, and the page behind holds
+     still. With no backdrop left to tap, a close button sits at the top. */
+  .terminal-close {
+    display: none;
+  }
+  @media (max-width: 59.99rem) {
+    .terminal-sheet {
+      flex-direction: column;
+      block-size: 100dvh;
+    }
+    html:has(.terminal-sheet[open]) {
+      overflow: hidden;
+    }
+    .terminal-close {
+      display: flex;
+      justify-content: end;
+      padding-block-start: max(0.5rem, env(safe-area-inset-top));
+      padding-inline: var(--pad-inline);
+    }
+    /* A full-size tap target, its text still flush with the prompt's end. */
+    .terminal-close button {
+      min-block-size: 2.75rem;
+      margin-inline-end: -0.75rem;
+      padding: 0 0.75rem;
+      border: 0;
+      background: none;
+      cursor: pointer;
+    }
   }
   @media (hover: none) and (pointer: coarse) {
     .terminal-hint {
