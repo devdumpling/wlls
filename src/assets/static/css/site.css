@@ -799,27 +799,30 @@
     }
   }
   /* A list right under a section (Toolkit) is a list of labels: each
-     item's bold lead hangs in a column of its own. */
+     item's bold lead hangs in a column of its own. It floats into the
+     item's padding, so the space after it ("**Tooling** Turborepo…") starts
+     the line and is dropped, and wrapped lines align with the first. */
   .resume-section > .resume-body ul {
     padding: 0;
     list-style: none;
   }
   .resume-section > .resume-body li {
+    display: flow-root;
     padding-inline-start: 7.5rem;
-    text-indent: -7.5rem;
   }
   .resume-section > .resume-body li > strong:first-child {
-    display: inline-block;
+    float: inline-start;
     inline-size: 7.5rem;
-    text-indent: 0;
+    margin-inline-start: -7.5rem;
   }
   @container main (max-width: 30rem) {
     .resume-section > .resume-body li {
       padding: 0;
-      text-indent: 0;
     }
     .resume-section > .resume-body li > strong:first-child {
+      float: none;
       display: block;
+      margin: 0;
     }
     .resume-section > .resume-body li + li {
       margin-block-start: 0.75em;
@@ -930,17 +933,24 @@
   /* Where the rail drops below the content, the sheet takes the whole
      screen for every command, #lobby included, and the page behind holds
      still. With no backdrop left to tap, a close button sits at the top.
-     <wlls-terminal> fits the sheet to the visual viewport, which shrinks
-     for the on-screen keyboard where 100dvh doesn't, and pins the page with
-     terminal-pinned: iOS scrolls past overflow: hidden. */
+     The sheet covers the whole layout viewport; <wlls-terminal> pads it to
+     the visual viewport, which shrinks for the on-screen keyboard where the
+     layout viewport doesn't, and pins the page with terminal-pinned (iOS
+     scrolls past overflow: hidden). A drag on the sheet pans nothing; only
+     the log and #lobby scroll. */
   .terminal-close {
     display: none;
   }
   @media (max-width: 59.99rem) {
     .terminal-sheet {
       flex-direction: column;
-      inset: var(--sheet-top, 0) 0 auto;
-      block-size: var(--sheet-height, 100dvh);
+      inset: 0;
+      block-size: 100%;
+      padding-block: var(--sheet-above, 0) var(--sheet-below, 0);
+      touch-action: none;
+    }
+    .terminal-sheet :is(.terminal-output, .terminal-chat) {
+      touch-action: pan-y;
     }
     html.terminal-pinned body {
       position: fixed;

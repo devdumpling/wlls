@@ -942,12 +942,15 @@
     font-size: 0.68rem;
     letter-spacing: 0.01em;
   }
+  /* The label floats, so it can't share the line's baseline; giving it the
+     item's own line height (0.95rem at 1.6) centres both in one line box. */
   .resume-section > .resume-body li > strong:first-child {
     color: var(--ink-soft);
     font-family: var(--font-mono);
     font-size: 0.72rem;
     font-weight: 400;
     letter-spacing: 0.06em;
+    line-height: 1.52rem;
     text-transform: uppercase;
   }
   /* A story opens like a slip unfolding: + to −, and the text set back
@@ -1038,6 +1041,9 @@
     .resume-intro > p + p {
       font-size: 9.5pt;
       line-height: 1.4;
+    }
+    .resume-section > .resume-body li > strong:first-child {
+      line-height: 13.3pt; /* 9.5pt at 1.4, as above */
     }
   }
 }

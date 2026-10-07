@@ -77,19 +77,22 @@ rocket("wlls-terminal", {
     }
 
     // Below 60rem the sheet takes the whole screen (site.css). iOS doesn't
-    // shrink the layout viewport for the on-screen keyboard: it pans the
-    // page, so a 100dvh sheet slides behind the keyboard and the page shows
-    // through. So size the sheet to the visual viewport while it's open, and
-    // pin the page in place (iOS scrolls past overflow: hidden), restoring
-    // the reader's position when the sheet closes.
+    // shrink the layout viewport for the on-screen keyboard; the visible part
+    // (the visual viewport) shrinks instead, and can be dragged around within
+    // it. So the sheet covers the whole layout viewport, and anything a drag
+    // reveals is the sheet's own paper, never the page; its padding keeps the
+    // terminal inside the visible part, the prompt just above the keyboard.
+    // The page is pinned in place behind it (iOS scrolls past overflow:
+    // hidden), and the reader's position restored when the sheet closes.
     const fullScreen = matchMedia("(max-width: 59.99rem)")
     const viewport = window.visualViewport
     const root = document.documentElement
     let pinnedAt = 0
     const fit = () => {
       if (!viewport) return
-      sheet.style.setProperty("--sheet-top", `${viewport.offsetTop}px`)
-      sheet.style.setProperty("--sheet-height", `${viewport.height}px`)
+      const below = window.innerHeight - viewport.offsetTop - viewport.height
+      sheet.style.setProperty("--sheet-above", `${viewport.offsetTop}px`)
+      sheet.style.setProperty("--sheet-below", `${Math.max(0, below)}px`)
     }
     const pin = () => {
       if (!fullScreen.matches) return
@@ -103,8 +106,8 @@ rocket("wlls-terminal", {
     const unpin = () => {
       viewport?.removeEventListener("resize", fit)
       viewport?.removeEventListener("scroll", fit)
-      sheet.style.removeProperty("--sheet-top")
-      sheet.style.removeProperty("--sheet-height")
+      sheet.style.removeProperty("--sheet-above")
+      sheet.style.removeProperty("--sheet-below")
       if (!root.classList.contains("terminal-pinned")) return
       root.classList.remove("terminal-pinned")
       root.style.removeProperty("--pinned-top")
@@ -153,10 +156,11 @@ rocket("wlls-terminal", {
       open()
     }
 
-    // A click that lands on the dialog itself is on its backdrop.
+    // A click that lands on the dialog itself is on its backdrop. Full
+    // screen there is no backdrop, only the sheet's padding, so it's ignored.
     /** @param {MouseEvent} event */
     const closeFromBackdrop = (event) => {
-      if (event.target === sheet) close()
+      if (event.target === sheet && !fullScreen.matches) close()
     }
 
     // Clicking the terminal's own lines focuses the prompt.
