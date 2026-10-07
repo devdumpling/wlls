@@ -42,8 +42,10 @@ test_embedded_blog_content_loads_and_sorts_by_publication_date :: proc(t: ^testi
 	resume := resume_page(&repository)
 	testing.expect_value(t, resume.name, "Devon Wells")
 	testing.expect_value(t, resume.sections[0].id, "experience")
-	goodrx := resume.sections[0].entries[1]
-	testing.expect_value(t, goodrx.id, "goodrx")
+	goodrx: Resume_Entry
+	for entry in resume.sections[0].entries {
+		if entry.id == "goodrx" do goodrx = entry
+	}
 	testing.expect_value(t, goodrx.dates, "Jan 2022 – Feb 2025")
 	testing.expect_value(t, len(goodrx.roles), 3)
 	story := string(goodrx.roles[2].body)

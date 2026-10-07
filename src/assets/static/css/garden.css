@@ -725,7 +725,6 @@
   }
   /* After the contact line, a summary in the page's own voice. */
   .resume-intro > p + p {
-    max-inline-size: 36rem;
     color: var(--ink);
     font-family: var(--font-prose);
     font-size: 0.95rem;
@@ -882,7 +881,7 @@
     .resume-body,
     .resume-intro > p + p {
       font-size: 9.5pt;
-      line-height: 1.45;
+      line-height: 1.4;
     }
   }
 }

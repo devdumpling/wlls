@@ -10,7 +10,7 @@ Principal Software Engineer
 
 [dev@wlls.dev](mailto:dev@wlls.dev) · [github.com/devdumpling](https://github.com/devdumpling) · [linkedin.com/in/devon-a-wells](https://www.linkedin.com/in/devon-a-wells/)
 
-Frontend and platform engineer: design systems, performance, and the tooling that helps teams ship.
+I build end to end: engineering, design systems, and platforms that ship.
 
 ## Experience
 
@@ -34,6 +34,22 @@ _Feb 2025 – Present_
 > Joined Amino Health, a healthtech startup focused on care navigation, to lead a complete frontend rebuild and redesign. The legacy stack was a Flask/Django backend serving client-side React 16, so every page load meant downloading megabytes of JavaScript before anything rendered.
 >
 > Capital Rx acquired Amino (and shortly after raised a $400M Series F at a $3.25B valuation). Scope expanded from rebuilding one app to unifying the frontend across all consumer-facing products under the new Judi Health brand, serving 50M+ plan members.
+
+### Stealth AI startup
+
+_Feb 2026 – Present_
+
+Seed-stage, mobile-first app for ranked pickup soccer: computer vision tracks players from game footage, feeding stats, ratings, and ELO matchmaking.
+
+#### Technical Advisor
+
+- Advise as a fractional CTO on architecture and technical direction
+
+#### Co-founder & CTO
+
+- Architected and built the MVP on a sync engine (Zero, TypeScript, Solid, Go/Python, Capacitor, PostgreSQL, Railway)
+- Shipped V1 player profiles and ranked matchmaking, rating players from CV-tracked game footage
+- Partnered on early AI integrations, bringing SAM 3–based player and ball tracking into the product
 
 ### GoodRx
 
@@ -120,7 +136,7 @@ Bachelor of Arts, Computer Science
 - **Tooling** Turborepo/Nx, pnpm, uv, oxc, Playwright, Vite, Nix, Sentry, Grafana, Figma, Terraform
 - **Data** Postgres, SQLite, Zero
 - **Platforms** AWS, GCP, Cloudflare, Docker, Kubernetes, OrbStack
-- **AI** Claude, Pi, Custom harnesses
+- **AI** Claude, Claude Code, Pi, Custom harnesses
 
 ## Recent Projects
 

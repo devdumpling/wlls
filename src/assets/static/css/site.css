@@ -999,15 +999,18 @@
       inline-size: auto;
       margin: 0;
     }
-    /* Keep headings with what follows them, and short things whole. */
+    /* Keep headings with what follows them, and short things whole: a
+       bullet, an entry without roles (a project, a school), the toolkit.
+       Longer roles may break between bullets, so a page never ends in a
+       gap the next role couldn't fill. */
     .resume :is(h2, h3, h4),
     .resume-entry-head,
     .resume-role-head {
       break-after: avoid;
     }
     .resume-body li,
-    .resume-role:not(:has(li:nth-child(6))),
-    .resume-section:not(:has(.resume-role)) {
+    .resume-entry:not(:has(.resume-role)),
+    .resume-section > .resume-body {
       break-inside: avoid;
     }
   }
@@ -1020,5 +1023,5 @@
 }
 @page resume {
   size: letter;
-  margin: 0.55in 0.6in;
+  margin: 0.5in 0.6in;
 }
