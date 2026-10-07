@@ -162,6 +162,41 @@ test_guestbook_sign_and_moderate :: proc(t: ^testing.T) {
 	testing.expect_value(t, frame.version, 1)
 }
 
+// The shared doodle: a stroke paints and saves, repainting is a no-op, a
+// visitor who floods it is held back, the board survives a reload, and
+// root's wipe blanks it.
+@(test)
+test_doodle_paint_limit_and_wipe :: proc(t: ^testing.T) {
+	arena: virtual.Arena
+	defer virtual.arena_destroy(&arena)
+	context.allocator = virtual.arena_allocator(&arena)
+
+	guestbook: Guestbook
+	if error := guestbook_open(&guestbook, ":memory:"); !testing.expect(t, error == "", error) do return
+	defer guestbook_close(&guestbook)
+
+	stroke := []int{0, 1, DOODLE_CELLS - 1}
+	testing.expect_value(t, doodle_paint(&guestbook, 7, 1, stroke, 0), Paint_Result.Painted)
+	testing.expect_value(t, doodle_paint(&guestbook, 7, 1, stroke, 0), Paint_Result.Unchanged)
+	flooded := false
+	for _ in 0 ..< 100 {
+		flooded ||= doodle_paint(&guestbook, 8, 0, stroke, 0) == .Too_Fast
+	}
+	testing.expect(t, flooded)
+
+	guestbook.doodle.cells = {}
+	doodle_load(&guestbook)
+	testing.expect_value(t, guestbook.doodle.cells[1], u8('0')) // visitor 8 erased it
+	testing.expect(t, doodle_paint(&guestbook, 9, 1, stroke, 0) == .Painted)
+	doodle_load(&guestbook)
+	testing.expect_value(t, guestbook.doodle.cells[DOODLE_CELLS - 1], u8('1'))
+
+	frame := new(Frame)
+	testing.expect(t, doodle_wipe(&guestbook) && doodle_render(&guestbook, frame))
+	testing.expect_value(t, strings.index_byte(string(guestbook.doodle.cells[:]), '1'), -1)
+	testing.expect(t, strings.contains(string(frame_bytes(frame)), `cells="0000`))
+}
+
 // #lobby in memory: joining, the shared action limit (which leaving and
 // rejoining can't reset), nicks and their guards, root's removal, and
 // leaving, as they reach the rendered room.

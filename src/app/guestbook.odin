@@ -35,6 +35,7 @@ Guestbook :: struct {
 	db:     ^sqlite.DB,
 	recent: [32]Signature, // recent signers, oldest overwritten first
 	next:   int,
+	doodle: Doodle, // the shared board (doodle.odin)
 }
 
 @(private = "file")
@@ -57,6 +58,10 @@ CREATE TABLE IF NOT EXISTS entries (
 	           CHECK (status IN ('pending', 'approved', 'rejected'))
 );
 CREATE INDEX IF NOT EXISTS entries_by_status ON entries (status, id);
+CREATE TABLE IF NOT EXISTS doodle (
+	id    INTEGER PRIMARY KEY CHECK (id = 1),
+	cells TEXT    NOT NULL
+);
 `
 
 guestbook_open :: proc(guestbook: ^Guestbook, path: cstring) -> (error: string) {
@@ -68,6 +73,7 @@ guestbook_open :: proc(guestbook: ^Guestbook, path: cstring) -> (error: string) 
 	if sqlite.exec(guestbook.db, SCHEMA, nil, nil, nil) != sqlite.OK {
 		return fmt.tprintf("creating the guestbook schema: %s", sqlite.message(guestbook.db))
 	}
+	doodle_load(guestbook)
 	return ""
 }
 
@@ -173,13 +179,25 @@ guestbook_render :: proc(guestbook: ^Guestbook, frame: ^Frame) -> bool {
 	entries := make([dynamic]views.Guestbook_Entry, 0, GUESTBOOK_SHOWN_MAX, allocator)
 	sqlite.bind_int64(stmt, 1, GUESTBOOK_SHOWN_MAX)
 	for sqlite.step(stmt) == sqlite.ROW {
-		year, month, day := time.date(time.unix(sqlite.column_int64(stmt, 2), 0))
+		signed := time.unix(sqlite.column_int64(stmt, 2), 0)
+		year, month, day := time.date(signed)
+		hour, minute, second := time.clock(signed)
 		append(
 			&entries,
 			views.Guestbook_Entry {
 				name = strings.clone(sqlite.column_string(stmt, 0), allocator),
 				message = strings.clone(sqlite.column_string(stmt, 1), allocator),
 				date = fmt.aprintf("%04d-%02d-%02d", year, int(month), day, allocator = allocator),
+				iso = fmt.aprintf(
+					"%04d-%02d-%02dT%02d:%02d:%02dZ",
+					year,
+					int(month),
+					day,
+					hour,
+					minute,
+					second,
+					allocator = allocator,
+				),
 			},
 		)
 	}
@@ -322,7 +340,7 @@ count_pending :: proc(guestbook: ^Guestbook) -> (count: int, ok: bool) {
 	return int(sqlite.column_int64(stmt, 0)), true
 }
 
-@(private = "file")
+@(private)
 log_failure :: proc(guestbook: ^Guestbook, doing: string) {
 	fmt.eprintfln("wlls: guestbook %s: %s", doing, sqlite.message(guestbook.db))
 }

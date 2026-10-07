@@ -76,12 +76,48 @@ rocket("wlls-terminal", {
       chatPinned = room.scrollHeight - room.scrollTop - room.clientHeight < 24
     }
 
+    // Below 60rem the sheet takes the whole screen (site.css). iOS doesn't
+    // shrink the layout viewport for the on-screen keyboard: it pans the
+    // page, so a 100dvh sheet slides behind the keyboard and the page shows
+    // through. So size the sheet to the visual viewport while it's open, and
+    // pin the page in place (iOS scrolls past overflow: hidden), restoring
+    // the reader's position when the sheet closes.
+    const fullScreen = matchMedia("(max-width: 59.99rem)")
+    const viewport = window.visualViewport
+    const root = document.documentElement
+    let pinnedAt = 0
+    const fit = () => {
+      if (!viewport) return
+      sheet.style.setProperty("--sheet-top", `${viewport.offsetTop}px`)
+      sheet.style.setProperty("--sheet-height", `${viewport.height}px`)
+    }
+    const pin = () => {
+      if (!fullScreen.matches) return
+      pinnedAt = window.scrollY
+      root.style.setProperty("--pinned-top", `${-pinnedAt}px`)
+      root.classList.add("terminal-pinned")
+      fit()
+      viewport?.addEventListener("resize", fit)
+      viewport?.addEventListener("scroll", fit)
+    }
+    const unpin = () => {
+      viewport?.removeEventListener("resize", fit)
+      viewport?.removeEventListener("scroll", fit)
+      sheet.style.removeProperty("--sheet-top")
+      sheet.style.removeProperty("--sheet-height")
+      if (!root.classList.contains("terminal-pinned")) return
+      root.classList.remove("terminal-pinned")
+      root.style.removeProperty("--pinned-top")
+      window.scrollTo({ top: pinnedAt, behavior: "instant" })
+    }
+
     // The dialog mirrors $$.open. Esc, the backdrop, and the close button
     // close it natively or from here, and its close event writes the signal
     // back.
     $$.open = false
     effect(() => {
       if ($$.open && !sheet.open) {
+        pin()
         sheet.showModal()
         followLog()
         chatPinned = true
@@ -97,8 +133,10 @@ rocket("wlls-terminal", {
     const close = () => {
       $$.open = false
     }
+    // Every way of closing (Esc, the close button, exit, /) ends here.
     const onClose = () => {
       $$.open = false
+      unpin()
     }
 
     // `/` opens the terminal, and closes the sheet from an empty prompt.
@@ -232,6 +270,7 @@ rocket("wlls-terminal", {
     document.addEventListener("datastar-fetch", onFetch)
     window.addEventListener("pageshow", onPageShow)
     cleanup(() => {
+      unpin()
       follow.disconnect()
       document.removeEventListener("keydown", onShortcut)
       trigger?.removeEventListener("click", open)

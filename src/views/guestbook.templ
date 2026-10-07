@@ -1,54 +1,86 @@
 package views
 
-// The guestbook page is rendered per request, because its entries change.
-// entries is the live Guestbook frame (guestbook_entries, rendered by the
-// app), embedded as is so the page works without JavaScript; the page's live
-// stream then morphs in newer versions as entries are approved.
-guestbook_page :: templ(entries: string, metadata: Metadata, assets: Asset_URLs) {
+// The guestbook page is rendered per request, because its entries change and
+// the postcard is addressed from you. entries is the live Guestbook frame
+// (guestbook_entries, rendered by the app), embedded as is so the page works
+// without JavaScript; the page's live stream then morphs in newer versions
+// as entries are approved. doodle is the live Doodle frame, the same way.
+// from is your name on this site, if it knows it.
+guestbook_page :: templ(entries: string, doodle: string, from: string, metadata: Metadata, assets: Asset_URLs) {
 	@document(metadata, assets) {
 		<article class="guestbook">
 			<header class="page-header">
 				<h1>Guestbook</h1>
 				<p class="article-dek">Leave a note. I read every one before it shows up here.</p>
 			</header>
-			@guestbook_form()
-			<section class="guestbook-book" aria-label="Entries">{! entries }</section>
+			@guestbook_form(from)
+			<section class="guestbook-section guestbook-board">
+				<h2 class="guestbook-heading">Doodle</h2>
+				{! doodle }
+			</section>
+			<section class="guestbook-section guestbook-wall">
+				<h2 class="guestbook-heading">Notes</h2>
+				{! entries }
+			</section>
 		</article>
 	}
 }
 
-// guestbook_form posts with Datastar and shows _signing while it waits. A
+// guestbook_form is a postcard: the note on ruled lines, then who it's to
+// and from, and a stamp that sends it. It posts with Datastar and shows
+// _signing while it waits; _length counts down what's left of the note. A
 // network failure isn't retried (it might sign twice); _failed says so.
-guestbook_form :: templ() {
-	<form id="guestbook-sign" class="guestbook-sign" data-signals:_signing="false" data-signals:_failed="false" data-indicator:_signing data-on:submit__prevent="$_failed = false; @post('/guestbook', {contentType: 'form', retryMaxCount: 0})" data-on:datastar-fetch__document="evt.detail.el === el && evt.detail.type === 'retries-failed' && ($_failed = true)">
-		<label for="guestbook-name">name</label>
-		<input id="guestbook-name" name="name" required maxlength="40" autocomplete="nickname"/>
-		<label for="guestbook-message">message</label>
-		<textarea id="guestbook-message" name="message" required maxlength="280" rows="4"></textarea>
-		<div class="guestbook-actions">
-			<button type="submit" data-attr:disabled="$_signing">sign</button>
-			<p id="guestbook-status" class="guestbook-status" role="status"></p>
-			<p class="guestbook-status guestbook-failed" role="alert" hidden data-attr:hidden="!$_failed">Couldn't reach the server. Check your connection and try again.</p>
+guestbook_form :: templ(from: string) {
+	<form id="guestbook-sign" class="postcard" data-signals:_signing="false" data-signals:_failed="false" data-signals:_length="0" data-indicator:_signing data-on:submit__prevent="$_failed = false; @post('/guestbook', {contentType: 'form', retryMaxCount: 0})" data-on:datastar-fetch__document="evt.detail.el === el && evt.detail.type === 'retries-failed' && ($_failed = true)">
+		<div class="postcard-face">
+		<div class="postcard-note">
+			<textarea id="guestbook-message" name="message" aria-label="Your note" required maxlength="280" rows="6" placeholder="say hi, tell me what you're reading, leave a trail…" aria-describedby="guestbook-left" data-on:input="$_length = el.value.length"></textarea>
+			<p id="guestbook-left" class="postcard-left" hidden data-attr:hidden="$_length === 0" data-class:postcard-low="$_length > 260" data-text="(280 - $_length) + ' left'"></p>
 		</div>
+		<div class="postcard-address">
+			<p class="postcard-line"><span class="postcard-label">to</span><span class="postcard-to">dev</span></p>
+			<p class="postcard-line">
+				<label for="guestbook-name" class="postcard-label">from</label>
+				<input id="guestbook-name" name="name" value={ from } placeholder="your name" required maxlength="40" autocomplete="nickname"/>
+			</p>
+			<button type="submit" class="postcard-stamp" data-attr:disabled="$_signing"><span data-text="$_signing ? 'sending' : 'sign'">sign</span></button>
+		</div>
+		</div>
+		<p id="guestbook-status" class="guestbook-status" role="status"></p>
+		<p class="guestbook-status guestbook-failed" role="alert" hidden data-attr:hidden="!$_failed">Couldn't reach the server. Check your connection and try again.</p>
 	</form>
 }
 
-// guestbook_thanks replaces the form once an entry is signed.
-guestbook_thanks :: templ() {
-	<p id="guestbook-sign" class="guestbook-sign guestbook-thanks" role="status">Thanks for signing. Your note will appear here once I've read it.</p>
+// guestbook_thanks replaces the postcard once it's signed, postmarked with
+// the day it arrived.
+guestbook_thanks :: templ(date: string) {
+	<div id="guestbook-sign" class="postcard postcard-sent" role="status">
+		<p class="postmark" aria-hidden="true"><span>received</span><span>{ date }</span></p>
+		<p>Thanks for signing. Your note will appear here once I've read it.</p>
+	</div>
+}
+
+// guestbook_doodle is the Doodle frame: the shared board as the server has
+// it. Each stroke posts its cells (never retried: the board moves on), and
+// the reply, then everyone's live stream, brings the board back. Until it
+// does, a painter's own cells show as pending.
+guestbook_doodle :: templ(cells: string, size: string) {
+	<sb-pixel-board id="guestbook-doodle" class="guestbook-doodle" size={ size } cells={ cells } color="1" grid palette={ DOODLE_PALETTE } data-on:sb-paint="@post('/guestbook/doodle', {payload: evt.detail, requestCancellation: 'disabled', retryMaxCount: 0})"></sb-pixel-board>
 }
 
 guestbook_status :: templ(text: string) {
 	<p id="guestbook-status" class="guestbook-status" role="status">{ text }</p>
 }
 
-// guestbook_entries is the Guestbook frame: newest first.
+// guestbook_entries is the Guestbook frame: newest first, each a note pinned
+// to the wall. The date reads "3 days ago" once <sb-relative-time> starts,
+// and is the plain date until then (or without script).
 guestbook_entries :: templ(entries: []Guestbook_Entry) {
 	<ol id="guestbook-entries" class="guestbook-entries">
 		for entry in entries {
 			<li class="guestbook-entry">
 				<p class="guestbook-message">{ entry.message }</p>
-				<p class="guestbook-meta"><span>{ entry.name }</span><span aria-hidden="true">·</span><time datetime={ entry.date }>{ entry.date }</time></p>
+				<p class="guestbook-meta"><span>{ entry.name }</span><span aria-hidden="true">·</span><sb-relative-time datetime={ entry.iso } threshold="30">{ entry.date }</sb-relative-time></p>
 			</li>
 		}
 		if len(entries) == 0 {

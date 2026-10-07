@@ -589,38 +589,152 @@
     grid-template-columns: 1fr;
   }
 
-  /* Guestbook: the sign form, then entries newest first. */
-  .guestbook-sign {
+  /* Guestbook: a postcard to sign, then the notes pinned to a wall, newest
+     first. The note and the address sit side by side where there's room,
+     as on a real card, and stack on a phone. */
+  /* The card is its own container: its two halves sit side by side only
+     when the card itself is wide enough, wherever the page puts it. */
+  .postcard {
     display: grid;
-    gap: 0.35rem;
-    max-inline-size: 32rem;
+    gap: 1rem;
     margin-block-end: clamp(2.5rem, 7vw, 4rem);
+    padding: clamp(1.1rem, 4vw, 1.75rem);
+    container: postcard / inline-size;
   }
-  .guestbook-sign label:not(:first-child) {
-    margin-block-start: 0.75rem;
-  }
-  .guestbook-sign :is(input, textarea) {
-    inline-size: 100%;
-    padding: 0.55rem 0.7rem;
-  }
-  .guestbook-sign textarea {
-    resize: vertical;
-  }
-  .guestbook-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem 1rem;
-    margin-block-start: 1rem;
-  }
-  .guestbook-actions button {
-    padding: 0.5rem 1.1rem;
-  }
-  .guestbook-entries {
+  .postcard-face {
     display: grid;
-    gap: 2rem;
+    gap: 1.25rem 2rem;
+  }
+  @container postcard (min-width: 30rem) {
+    .postcard-face {
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    }
+    .postcard-address {
+      padding-inline-start: 2rem;
+    }
+  }
+  .postcard-note {
+    display: grid;
+    gap: 0.4rem;
+  }
+  .postcard textarea {
+    inline-size: 100%;
+    padding: 0;
+    border: 0;
+    resize: none;
+  }
+  .postcard-left {
+    justify-self: end;
+  }
+  .postcard-address {
+    display: grid;
+    align-content: end;
+    gap: 0.9rem;
+  }
+  .postcard-line {
+    display: grid;
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+    align-items: baseline;
+  }
+  .postcard-line input {
+    inline-size: 100%;
+    padding: 0.15rem 0;
+    border: 0;
+    border-radius: 0;
+  }
+  .postcard-stamp {
+    justify-self: end;
+    margin-block-start: 0.6rem;
+    padding: 0.55rem 1rem;
+    cursor: pointer;
+  }
+  .postcard-stamp:disabled {
+    cursor: progress;
+  }
+  /* Once sent, the card is postmarked at its end. The mark is in the flow,
+     so a one-line card grows to hold it. */
+  .postcard-sent {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 1.5rem;
+  }
+  .postmark {
+    grid-column: 2;
+    grid-row: 1;
+    display: grid;
+    place-content: center;
+    gap: 0.1rem;
+    inline-size: 5.75rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    text-align: center;
+  }
+
+  .guestbook-section + .guestbook-section {
+    margin-block-start: clamp(2.5rem, 7vw, 4rem);
+  }
+  .guestbook-heading {
+    margin-block-end: 1rem;
+  }
+  /* Where main has room past the text column, the guestbook spreads out:
+     the postcard and the doodle side by side (the two things to do here),
+     then the wall of notes across both, so it holds more cards to a row. */
+  @container main (min-width: 52rem) {
+    main > .guestbook {
+      grid-column: full;
+      display: grid;
+      /* The postcard's column grows first; the board takes the rest, and
+         sizes itself up to 26rem within it. */
+      grid-template-columns: minmax(0, var(--measure)) minmax(18rem, 1fr);
+      align-items: start;
+      column-gap: clamp(2.5rem, 5cqi, 5rem);
+      max-inline-size: 76rem;
+    }
+    .guestbook > :is(.page-header, .postcard) {
+      grid-column: 1;
+    }
+    /* The board may stand taller than the postcard, so it keeps the same
+       space below it before the wall. */
+    .guestbook-board {
+      grid-column: 2;
+      grid-row: 2;
+      margin-block-end: clamp(2.5rem, 7vw, 4rem);
+    }
+    .guestbook-wall {
+      grid-column: 1 / -1;
+    }
+    .guestbook-section + .guestbook-section {
+      margin-block-start: 0;
+    }
+  }
+  /* The shared board: as wide as the column allows, up to a comfortable
+     square. */
+  .guestbook-doodle {
+    display: block;
+    --sb-pixel-board-size: min(100%, 26rem);
+  }
+  /* Until the component loads (or without script), hold its square so the
+     notes below don't jump when it arrives. */
+  .guestbook-doodle:not(:defined) {
+    inline-size: min(100%, 26rem);
+    aspect-ratio: 1;
+  }
+
+  /* The wall: notes stack in columns, each as tall as it needs, like cards
+     pinned close together. */
+  .guestbook-entries {
+    columns: 15rem;
+    column-gap: 1.25rem;
     padding: 0;
     list-style: none;
+  }
+  .guestbook-entry {
+    break-inside: avoid;
+    margin-block-end: 1.5rem;
+    padding: 1rem 1.15rem;
+  }
+  .guestbook-empty {
+    column-span: all;
   }
   .guestbook-message {
     white-space: pre-line;
@@ -630,7 +744,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0 1ch;
-    margin-block-start: 0.4rem;
+    margin-block-start: 0.6rem;
   }
 
   /* Resume: sections of entries (a company, school, or project), each with
@@ -815,17 +929,23 @@
   }
   /* Where the rail drops below the content, the sheet takes the whole
      screen for every command, #lobby included, and the page behind holds
-     still. With no backdrop left to tap, a close button sits at the top. */
+     still. With no backdrop left to tap, a close button sits at the top.
+     <wlls-terminal> fits the sheet to the visual viewport, which shrinks
+     for the on-screen keyboard where 100dvh doesn't, and pins the page with
+     terminal-pinned: iOS scrolls past overflow: hidden. */
   .terminal-close {
     display: none;
   }
   @media (max-width: 59.99rem) {
     .terminal-sheet {
       flex-direction: column;
-      block-size: 100dvh;
+      inset: var(--sheet-top, 0) 0 auto;
+      block-size: var(--sheet-height, 100dvh);
     }
-    html:has(.terminal-sheet[open]) {
-      overflow: hidden;
+    html.terminal-pinned body {
+      position: fixed;
+      inset-inline: 0;
+      inset-block-start: var(--pinned-top, 0);
     }
     .terminal-close {
       display: flex;

@@ -660,46 +660,202 @@
     text-decoration: underline;
   }
 
-  /* Guestbook: a form like a card catalog slip, entries like pencilled notes. */
-  .guestbook-sign label,
+  /* Guestbook: a postcard laid on the paper, and notes pinned to the wall
+     below in the same card stock. The card itself stays square: turned, its
+     hairline ruling breaks up as it's anti-aliased. */
+  .postcard,
+  .guestbook-entry {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-organic);
+    background: light-dark(
+      color-mix(in oklch, var(--paper) 55%, white),
+      color-mix(in oklch, var(--paper) 93%, var(--ink))
+    );
+  }
+  /* The address side is ruled off with the rail's dotted line. */
+  @container postcard (min-width: 30rem) {
+    .postcard-address {
+      background: linear-gradient(var(--rule-strong) 1px, transparent 1px) 0 0 / 1px 4px repeat-y;
+    }
+  }
+  /* The note is written on ruled lines that scroll with the text; they
+     take the accent while you write, which is the field's focus ring. */
+  .postcard textarea {
+    --line: 1.9rem;
+    --ruling: var(--rule);
+    background: repeating-linear-gradient(
+        to bottom,
+        transparent 0 calc(var(--line) - 1px),
+        var(--ruling) calc(var(--line) - 1px) var(--line)
+      )
+      local;
+    color: var(--ink);
+    font-family: var(--font-prose);
+    /* 16px or more, or iOS zooms in on focus. */
+    font-size: max(1rem, 16px);
+    line-height: var(--line);
+    outline: 0;
+  }
+  .postcard textarea:focus-visible {
+    --ruling: color-mix(in oklch, var(--accent) 55%, transparent);
+  }
+  .postcard :is(textarea, input)::placeholder {
+    color: var(--ink-soft);
+    font-style: italic;
+    opacity: 0.75;
+  }
+  .postcard-label,
+  .postcard-left,
   .guestbook-status,
   .guestbook-meta,
   .guestbook-empty {
     color: var(--ink-soft);
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: 0.76rem;
   }
-  .guestbook-sign :is(input, textarea) {
-    border: 1px solid var(--rule-strong);
-    border-radius: var(--radius);
-    background: color-mix(in oklch, var(--paper) 85%, var(--ink) 4%);
+  .postcard-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .postcard-left.postcard-low {
+    color: var(--rust);
+  }
+  .postcard-to,
+  .postcard-line input {
     color: var(--ink);
-    /* 16px or more, or iOS zooms in on focus. */
-    font-size: max(1rem, 16px);
-  }
-  .guestbook-sign :is(input, textarea):focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
-  }
-  .guestbook-actions button {
-    border: 1px solid var(--ink);
-    border-radius: var(--radius);
-    background: var(--ink);
-    color: var(--paper);
-    font-family: var(--font-mono);
-    font-size: 0.85rem;
-    cursor: pointer;
-  }
-  .guestbook-actions button:disabled {
-    opacity: 0.55;
-    cursor: progress;
-  }
-  .guestbook-thanks {
+    font-family: var(--font-prose);
     font-style: italic;
   }
-  .guestbook-entry {
-    padding-inline-start: 1rem;
-    border-inline-start: 2px solid var(--rule);
+  /* The from line is a dotted rule until you write on it. */
+  .postcard-line input {
+    background: linear-gradient(to right, var(--rule-strong) 1px, transparent 1px) 0 100% / 4px 1px
+      repeat-x;
+    font-size: max(1rem, 16px);
+    outline: 0;
+  }
+  .postcard-line input:focus-visible {
+    background: linear-gradient(var(--accent) 0 0) 0 100% / 100% 1px no-repeat;
+  }
+  /* Sign is the stamp: a perforated edge, set a little crooked. */
+  .postcard-stamp {
+    border: 1px solid currentColor;
+    border-radius: 0.15rem;
+    outline: 1px dashed currentColor;
+    outline-offset: 3px;
+    background: none;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    rotate: 2deg;
+  }
+  .postcard-stamp:is(:hover, :focus-visible) {
+    rotate: 0deg;
+    background: color-mix(in oklch, var(--accent) 10%, transparent);
+  }
+  .postcard-stamp:focus-visible {
+    outline-style: solid;
+  }
+  .postcard-stamp:active {
+    translate: 0 1px;
+  }
+  .postcard-stamp:disabled {
+    opacity: 0.55;
+  }
+  .postcard-sent {
+    font-style: italic;
+  }
+  .postmark {
+    border: 3px double var(--rust);
+    color: var(--rust);
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-style: normal;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    rotate: -14deg;
+  }
+  .guestbook-failed {
+    color: var(--rust);
+  }
+
+  /* Section labels belong to the digital layer, as on the resume. */
+  .guestbook-heading {
+    display: flex;
+    align-items: center;
+    gap: 1.5ch;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .guestbook-heading::after {
+    content: "";
+    flex: 1;
+    block-size: 1px;
+    background: linear-gradient(to right, var(--rule-strong) 1px, transparent 1px) 0 0 / 4px 1px repeat-x;
+  }
+  /* The doodle board takes colours, not tokens (its canvas is painted from
+     its palette), so it is always dressed in the light theme: ink on card,
+     a lavender focus ring. In the dark, the whole board is flipped: invert
+     plus a half turn of hue keeps each hue and inverts its lightness, so
+     ink becomes chalk on a dark slate, and the ring stays lavender. */
+  .guestbook-doodle {
+    --sb-border: #c3b8a6;
+    --sb-surface-inset: #fbf9f5;
+    --sb-brand-light: oklch(53% 0.1 290);
+    --sb-text-1: #454038;
+    --sb-pixel-board-grid: rgb(69 64 56 / 0.07);
+  }
+  .guestbook-doodle:not(:defined) {
+    border: 1px solid var(--sb-border);
+    background: var(--sb-surface-inset);
+  }
+  @media (prefers-color-scheme: dark) {
+    .guestbook-doodle {
+      filter: invert(1) hue-rotate(180deg);
+    }
+  }
+
+  /* Pinned notes, each at its own slight angle, straightened by a touch. */
+  .guestbook-entry:nth-child(3n + 1) {
+    rotate: -0.6deg;
+  }
+  .guestbook-entry:nth-child(3n + 2) {
+    rotate: 0.45deg;
+  }
+  .guestbook-entry:nth-child(3n) {
+    rotate: -0.2deg;
+  }
+  .guestbook-entry:hover {
+    rotate: 0deg;
+  }
+  .guestbook-message {
+    font-size: 0.98rem;
+    line-height: 1.6;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .postcard-stamp,
+    .guestbook-entry {
+      transition:
+        rotate 450ms var(--ease-out),
+        translate 200ms var(--ease-out),
+        background-color 250ms var(--ease-out),
+        opacity 450ms var(--ease-out);
+    }
+    /* A note approved while you're here drops onto the wall. */
+    @starting-style {
+      .guestbook-entry {
+        opacity: 0;
+        translate: 0 -0.6rem;
+      }
+    }
   }
 
   /* Resume: a ledger in the same hand. Section labels belong to the digital

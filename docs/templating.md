@@ -128,6 +128,30 @@ only browser concerns: focus, the `/` shortcut, history (kept in
 `localStorage`), and scroll-follow. The sheet follows a component-local `$$.open`
 signal, so `exit` closes it in the browser without a request.
 
+## Starbase components
+
+[Starbase](https://github.com/zweiundeins/starbase) is a community library of
+Rocket components (MIT). The guestbook uses two, vendored as single files
+into `src/assets/static/js/` (the directory isn't loaded recursively):
+`sb-relative-time.js` for entry dates and `sb-pixel-board.js` for the shared
+doodle. Each file's header names the upstream commit and lists the local
+changes, which are only what this site's constraints require:
+
+- **No import map.** Starbase imports `'datastar'` and expects an import map
+  to resolve it, but the CSP forbids the inline one. Point the import at
+  `./datastar-rocket.js`, as `terminal.js` does.
+- **No style attributes.** `style-src 'self'` blocks `style="…"` in markup,
+  including markup a component renders into its shadow root. Use
+  `data-style:…` instead, which sets the style through the CSSOM. Component
+  CSS is fine: Rocket's `adoptStyles` uses constructable stylesheets, which
+  the CSP doesn't restrict.
+
+Load a component only on the pages that use it (an `if metadata.page == …`
+script tag in `views/layout.templ`). Theme it from `garden.css` through its
+`--sb-*` custom properties and `::part()`s. Datastar 1.0.4 + Rocket beta.2
+has everything both components need (`startPeeking`, `adoptStyles`,
+`template[data-for]`); check a new component against the bundle first.
+
 ## Live connections
 
 Every page opens one long-lived stream with

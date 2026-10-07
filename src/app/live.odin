@@ -24,6 +24,7 @@ import "core:strings"
 // counts as someone here.
 Topic :: enum u8 {
 	Guestbook,
+	Doodle, // the shared board on /guestbook (doodle.odin)
 	Chat, // for visitors in #lobby, on every page (chat.odin)
 }
 Topics :: bit_set[Topic;u8]
@@ -71,7 +72,7 @@ place_add :: proc(places: ^Places, path: string) {
 
 // place_topics is what a page shows live, beyond presence.
 place_topics :: proc(path: string) -> Topics {
-	if path == "/guestbook" do return {.Guestbook}
+	if path == "/guestbook" do return {.Guestbook, .Doodle}
 	return {}
 }
 

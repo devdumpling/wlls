@@ -54,13 +54,16 @@ page_name :: proc(kind: Page_Kind) -> string {
 // stylesheet carries structure; garden carries the swappable theme (tokens,
 // type, texture, ornaments) layered over it, CSS Zen Garden style.
 Asset_URLs :: struct {
-	stylesheet: string,
-	garden:     string,
-	datastar:   string,
-	footnotes:  string,
-	terminal:   string,
-	favicon:    string,
-	feed:       string,
+	stylesheet:    string,
+	garden:        string,
+	datastar:      string,
+	footnotes:     string,
+	terminal:      string,
+	// Guestbook only: Starbase components (vendored).
+	relative_time: string,
+	pixel_board:   string,
+	favicon:       string,
+	feed:          string,
 }
 
 Crumb :: struct {
@@ -137,9 +140,16 @@ live_expression :: proc(path: string) -> string {
 }
 
 // Guestbook_Entry is one approved entry, as the guestbook frame shows it.
+// date is when it was signed, as the page shows it without script (YYYY-MM-DD);
+// iso is the same moment for <sb-relative-time> ("3 days ago").
 Guestbook_Entry :: struct {
-	name, message, date: string,
+	name, message, date, iso: string,
 }
+
+// DOODLE_PALETTE is the shared board's two colours, blank and ink, as
+// <sb-pixel-board> takes them. They're for light paper; garden.css flips the
+// canvas in the dark.
+DOODLE_PALETTE :: `["#fbf9f5","#3d3832"]`
 
 // Pending_Entry is an unread entry, as `pending` lists it for moderation:
 // its label is "#id name".

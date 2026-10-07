@@ -51,6 +51,11 @@ shipping except the first section.
       (`/play`), and have `play` navigate there like `cd`. Until then, `help`
       lists it as coming soon.
 - [x] **Persist command history** per visitor (`localStorage`).
+- [x] **Terminal on phones.** The sheet is sized to the visual viewport (iOS
+      keeps the layout viewport, and `100dvh`, full height under the
+      on-screen keyboard), and the page is pinned behind it with a fixed
+      `body` (iOS scrolls past `overflow: hidden`), then restored to where
+      you were. Needs a check on a real iPhone after deploy.
 - [x] **Loading states.** Commands and guestbook signing are never retried
       on a network failure (`retryMaxCount: 0`; either could run twice), and
       say so instead: an error line in the terminal, a notice in #lobby, a
@@ -86,6 +91,16 @@ shipping except the first section.
 - [x] **Live hub.** Every page opens one `GET /live?path=…` stream; a hub
       isolate tracks who is here and wakes the streams whose topics changed
       (`src/app/live.odin`). `who` lists visitors by adjective-animal handle.
+- [x] **Guestbook redesign.** A postcard to sign: the note on ruled lines
+      with a count of what's left, `to dev` / `from <your handle>`, a stamp
+      to send, and a postmark once received. Notes pin to a wall, with
+      dates from Starbase's `sb-relative-time` ("5 days ago"). Where main
+      is wide, the postcard and doodle sit side by side above the wall.
+- [x] **Shared doodle** on `/guestbook`: one 32×32 two-colour board anyone
+      there can draw on, live (Starbase's `sb-pixel-board`, the `Doodle`
+      topic, `src/app/doodle.odin`). Saved in SQLite, rate-limited per
+      visitor, and wiped by root with `wipe doodle`. Without script it's an
+      empty frame.
 - [x] **Guestbook** at `/guestbook` (rail `:)`, `cd guestbook`, `sign <note>`):
       SQLite (`src/sqlite`), moderated with `sudo` in the terminal, approved
       entries pushed live. Needs `/etc/wlls/wlls.env` on the Droplet

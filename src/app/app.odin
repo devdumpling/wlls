@@ -58,6 +58,10 @@ run :: proc() {
 		fmt.eprintln("wlls: startup failed: rendering the guestbook")
 		os.exit(1)
 	}
+	if !doodle_render(guestbook, &application_context.live.frames[.Doodle]) {
+		fmt.eprintln("wlls: startup failed: rendering the doodle")
+		os.exit(1)
+	}
 
 	// Route registration: every path the site answers, in one place.
 	app := http.App {
@@ -80,6 +84,13 @@ run :: proc() {
 				"/guestbook",
 				sign_guestbook,
 				body_size_max = GUESTBOOK_BODY_MAX,
+				body_mode = .Buffered,
+				state_size = httpx.PATCH_STATE_SIZE,
+			),
+			http.post_event(
+				"/guestbook/doodle",
+				paint_doodle,
+				body_size_max = DOODLE_BODY_MAX,
 				body_mode = .Buffered,
 				state_size = httpx.PATCH_STATE_SIZE,
 			),
@@ -139,13 +150,15 @@ load :: proc(allocator: runtime.Allocator) -> (ctx: Application_Context, error: 
 	if error != "" do return
 
 	ctx.view_assets = views.Asset_URLs {
-		stylesheet = assets.url(&ctx.assets, "css/site.css"),
-		garden     = assets.url(&ctx.assets, "css/garden.css"),
-		datastar   = assets.url(&ctx.assets, "js/datastar-rocket.js"),
-		footnotes  = assets.url(&ctx.assets, "js/footnotes.js"),
-		terminal   = assets.url(&ctx.assets, "js/terminal.js"),
-		favicon    = "/favicon.svg",
-		feed       = "/feed.xml",
+		stylesheet    = assets.url(&ctx.assets, "css/site.css"),
+		garden        = assets.url(&ctx.assets, "css/garden.css"),
+		datastar      = assets.url(&ctx.assets, "js/datastar-rocket.js"),
+		footnotes     = assets.url(&ctx.assets, "js/footnotes.js"),
+		terminal      = assets.url(&ctx.assets, "js/terminal.js"),
+		relative_time = assets.url(&ctx.assets, "js/sb-relative-time.js"),
+		pixel_board   = assets.url(&ctx.assets, "js/sb-pixel-board.js"),
+		favicon       = "/favicon.svg",
+		feed          = "/feed.xml",
 	}
 
 	ctx.site, error = prerender(&ctx)

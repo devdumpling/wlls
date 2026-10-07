@@ -40,6 +40,10 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 			if metadata.page == .Post {
 				<script type="module" src={ assets.footnotes }></script>
 			}
+			if metadata.page == .Guestbook {
+				<script type="module" src={ assets.relative_time }></script>
+				<script type="module" src={ assets.pixel_board }></script>
+			}
 			<script type="module" src={ assets.terminal }></script>
 		</head>
 		<body data-page={ page_name(metadata.page) }>

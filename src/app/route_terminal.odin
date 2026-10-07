@@ -261,6 +261,22 @@ run_command :: proc(
 			return
 		}
 		moderate_guestbook(output, name, argument, ctx)
+	case "wipe":
+		if !caller.admin {
+			command_not_found(output, name)
+			return
+		}
+		if argument != "doodle" {
+			views.terminal_error(output, "usage: wipe doodle")
+			return
+		}
+		if !doodle_wipe(&ctx.guestbook) ||
+		   !doodle_render(&ctx.guestbook, &ctx.live.frames[.Doodle]) {
+			views.terminal_error(output, "wipe: that didn't work; see the logs.")
+			return
+		}
+		publish(ctx.live, .Doodle)
+		views.terminal_line(output, "wiped the doodle.")
 	case "play":
 		views.terminal_line(output, "not yet. it's still being built. soon.")
 	case:
@@ -418,7 +434,10 @@ command_not_found :: proc(output: ^strings.Builder, name: string) {
 sudo_reply :: proc(output: ^strings.Builder, result: Sudo_Result) {
 	switch result {
 	case .Granted:
-		views.terminal_line(output, "root. try pending, approve <id>, reject <id>, or sudo -k.")
+		views.terminal_line(
+			output,
+			"root. try pending, approve <id>, reject <id>, wipe doodle, or sudo -k.",
+		)
 	case .Denied:
 		views.terminal_error(output, "sudo: incorrect password.")
 	case .Locked:
