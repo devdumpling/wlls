@@ -130,9 +130,10 @@ signal, so `exit` closes it in the browser without a request.
 
 ## Live connections
 
-Every page (except 404) opens one long-lived stream with
+Every page opens one long-lived stream with
 `data-init="@get('/live?path=…')"` (`views.live_mount`); Datastar closes it
-while the tab is hidden. That stream is the read side for everything live; writes
+while the tab is hidden. (A 404 reports one place, `/404`, so request paths
+never become places.) That stream is the read side for everything live; writes
 stay short POSTs (`/terminal`, `/guestbook`). Content never travels in Tina
 messages (96 bytes): a feature renders a **frame** once per change (Tempo
 HTML whose elements carry ids), a hub isolate wakes the streams subscribed to
@@ -141,3 +142,36 @@ slow client simply skips to the latest version. `Live` (frames, presence,
 #lobby, nicks), the guestbook, and sudo sessions are the only state isolates
 share, which is safe because the app runs one shard (`src/app/live.odin`).
 The hub is the only writer of presence; `who` reads it when asked.
+
+## CSS
+
+Two stylesheets, layered with `@layer reset, tokens, base, layout, prose,
+components, garden`:
+
+- `src/assets/static/css/site.css` is **structure**: the shell grid, rhythm,
+  and each component's anatomy, in neutral defaults.
+- `src/assets/static/css/garden.css` is the **theme** ("Field Notes"):
+  tokens, type, texture, ornament, and motion, all in the last layer. It
+  could be swapped wholesale without touching markup, CSS Zen Garden style.
+
+A rule belongs in `site.css` if the page would break without it, and in
+`garden.css` if it only changes how the page looks.
+
+**Print** follows the same split. `site.css` hides the shell (rail, breadcrumb
+row, terminal) and gives `main` the page; `garden.css` swaps in ink on white
+paper. Backgrounds don't print by default, so printed rules are borders. The
+resume prints on a named page (`.resume { page: resume }` with
+`@page resume`), so its US-letter size and tighter margins apply to it
+alone; `@page` rules sit outside the layers, which can't contain them.
+
+**Plates.** An image alone in its paragraph becomes a figure, and a run of
+them a set (`src/content/plates.odin`). The title carries the caption and,
+after a `|`, options:
+
+```markdown
+![alt text](/images/posts/x.webp "A caption | wide color")
+```
+
+Sizes are `wide` (out into the margin) and `full` (all of `main`'s width);
+`color` skips the warm tone, `raw` the mat and tone, and `pixel` scales
+pixel art crisply. Images must be embedded, and each is sized at startup.

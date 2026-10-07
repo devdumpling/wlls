@@ -1,8 +1,8 @@
 # Next steps
 
 Follow-ups from the redesign (field-notes theme, left column + rail shell,
-landing terminal, image plates). Nothing here blocks shipping except the
-first section.
+terminal sheet, image plates) and what's grown since. Nothing here blocks
+shipping except the first section.
 
 ## Before deploying
 
@@ -40,15 +40,42 @@ first section.
 
 ## Terminal and game
 
-- [ ] **Hidden commands** to reward curiosity: `sudo`, `vim` (and `:q`),
-      `cat`, `rm -rf /`, `man`.
+- [x] **Hidden commands** to reward curiosity: `vim` (and `:q`), `cat`,
+      `rm -rf /`, and `man` (`cat resume` and `man dev` print the resume's
+      short version). `sudo` became a real command.
 - [ ] **Tab completion** answered by the server over SSE, like commands.
 - [x] **Terminal on every page.** `/` opens it anywhere; off the landing
       page it lives in a bottom sheet behind a trigger in the breadcrumb row.
       `exit` closes it.
 - [ ] **`play` page.** Give the Odin → WASM/WGSL game module its own page
-      (`/play`), and have `play` navigate there like `cd`.
+      (`/play`), and have `play` navigate there like `cd`. Until then, `help`
+      lists it as coming soon.
 - [x] **Persist command history** per visitor (`localStorage`).
+- [x] **Loading states.** Commands and guestbook signing are never retried
+      on a network failure (`retryMaxCount: 0`; either could run twice), and
+      say so instead: an error line in the terminal, a notice in #lobby, a
+      status under the form. `cd` keeps the prompt busy until the next page
+      arrives. The trigger rests dimmed and inert until `terminal.js` loads.
+      A 404 page has a live stream too (place `/404`), so `msg` and friends
+      work there. A deploy drops live streams as network errors, which
+      Datastar retries.
+
+## Resume
+
+- [x] **`/resume`**, from `content/pages/resume.md`: Markdown with a light
+      structure (`src/content/resume.odin`), rendered at startup. Dates hang
+      in the margin, roles' stories collapse, companies have permalinks, and
+      projects show on screen only. Linked from About and the terminal
+      (`cd resume`, `cat resume`, `whoami`), not the rail or landing.
+- [x] **Other forms.** `/resume.md` (the source, links made absolute), and
+      `/resume.pdf`, printed by `just resume-pdf` and committed. A test fails
+      when `resume.md` changes without a new PDF. JSON-LD `ProfilePage` in
+      the head.
+- [x] **Print stylesheet**, site-wide: posts print without the shell, and the
+      resume prints on two US-letter pages.
+- [ ] **Review projects.** Beacon and Lume were pre-alpha in December, and
+      Pulse's repo may now be `wellwright-labs/devex` (the devex post links
+      there).
 
 ## Stack features (after the design settles)
 
@@ -74,6 +101,12 @@ first section.
 - [ ] **Commons**: the planned GPU landing sim with SQLite-persisted
       plantings.
 - [ ] **Webmentions** stored in SQLite, rendered under posts.
+- [ ] **Link previews.** No `og:image` or `twitter:card` yet, so shared links
+      (posts, the resume) show up bare in Slack and LinkedIn. One site-wide
+      card image would cover most of it.
+- [ ] **View transitions.** `@view-transition { navigation: auto; }` with a
+      short crossfade (none under reduced motion) would make MPA navigation,
+      terminal `cd` included, feel continuous. CSS only.
 
 ## Code health
 
@@ -89,8 +122,8 @@ first section.
 
 - [x] **Tests**: terminal commands, `views.breadcrumbs` path splitting, and
       every page rendered at startup (`src/app/app_test.odin`).
-- [ ] **Docs**: a short CSS section in `docs/templating.md` on the
-      structure (`site.css`) vs theme (`garden.css`) split, and the image
-      plate syntax (`![alt](src "Caption | wide color raw pixel full")`).
+- [x] **Docs**: a CSS section in `docs/templating.md` on the structure
+      (`site.css`) vs theme (`garden.css`) split, print, and the image plate
+      syntax.
 - [x] **Lighthouse / a11y pass** on the new shell, especially keyboard use of
       the rail and terminal.

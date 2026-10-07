@@ -175,6 +175,10 @@ rocket("wlls-terminal", {
     // it, and in #lobby that is often your own message's frame arriving
     // mid-request, which resets an indicator. So listen to the same
     // datastar-fetch events the indicator plugin uses.
+    // Commands aren't retried (see views.TERMINAL_POST), so a request that
+    // fails on the network ends in retries-failed at once. No reply will
+    // come to say so, so say it here: in the log, or above the #lobby prompt.
+    // The command stays in the input to send again.
     /** @param {Event} event */
     const onFetch = (event) => {
       const { type, el } = /** @type {CustomEvent} */ (event).detail ?? {}
@@ -183,6 +187,29 @@ rocket("wlls-terminal", {
       else if (type === "finished" || type === "error" || type === "retries-failed") {
         el.removeAttribute("aria-busy")
       }
+      if (type === "retries-failed") unreachable(el)
+    }
+
+    /** @param {HTMLFormElement} prompt */
+    const unreachable = (prompt) => {
+      const line = document.createElement("p")
+      line.className = "terminal-line terminal-error"
+      line.textContent = "couldn't reach wlls.dev. check your connection and try again."
+      if (prompt.dataset.chat) {
+        line.classList.add("terminal-notice")
+        prompt.querySelector(".terminal-notice")?.remove()
+        prompt.prepend(line)
+      } else {
+        output()?.append(line)
+      }
+      input()?.focus()
+    }
+
+    // After cd, the prompt stays busy until the next page loads. Going back
+    // can restore this page as it was left, so let it rest again.
+    /** @param {PageTransitionEvent} event */
+    const onPageShow = (event) => {
+      if (event.persisted) host.querySelector("#terminal-prompt")?.removeAttribute("aria-busy")
     }
 
     // Datastar patches arrive as DOM changes, not signal changes, so watch
@@ -203,6 +230,7 @@ rocket("wlls-terminal", {
     host.addEventListener("keydown", recall)
     host.addEventListener("scroll", onScroll, true) // scroll doesn't bubble
     document.addEventListener("datastar-fetch", onFetch)
+    window.addEventListener("pageshow", onPageShow)
     cleanup(() => {
       follow.disconnect()
       document.removeEventListener("keydown", onShortcut)
@@ -214,6 +242,7 @@ rocket("wlls-terminal", {
       host.removeEventListener("keydown", recall)
       host.removeEventListener("scroll", onScroll, true)
       document.removeEventListener("datastar-fetch", onFetch)
+      window.removeEventListener("pageshow", onPageShow)
     })
   },
 })

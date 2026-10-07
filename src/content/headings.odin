@@ -66,7 +66,7 @@ transform_headings :: proc(
 // heading_slug lowercases the heading's visible text, keeping ASCII letters
 // and digits and collapsing everything else (tags, entities, punctuation)
 // into single hyphens.
-@(private = "file")
+@(private)
 heading_slug :: proc(inner: string) -> string {
 	builder := strings.builder_make(0, len(inner), context.temp_allocator)
 	in_tag, in_entity, pending_hyphen := false, false, false

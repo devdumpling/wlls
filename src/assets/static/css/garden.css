@@ -702,7 +702,177 @@
     border-inline-start: 2px solid var(--rule);
   }
 
+  /* Resume: a ledger in the same hand. Section labels belong to the digital
+     layer and run out into a dotted rule; dates are mono stamps; titles
+     held at a company are set in italic, like a note in the margin. */
+  .resume-intro,
+  .resume-actions {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: -0.01em;
+  }
+  .resume-intro a,
+  .resume-actions :is(a, button) {
+    color: var(--ink-soft);
+  }
+  .resume-intro a:hover,
+  .resume-actions :is(a, button):is(:hover, :focus-visible) {
+    color: var(--ink);
+  }
+  .resume-actions li + li::before {
+    color: var(--rule-strong);
+  }
+  .resume-section > h2 {
+    display: flex;
+    align-items: center;
+    gap: 1.5ch;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .resume-section > h2::after {
+    content: "";
+    flex: 1;
+    block-size: 1px;
+    background: linear-gradient(to right, var(--rule-strong) 1px, transparent 1px) 0 0 / 4px 1px repeat-x;
+  }
+  .resume-entry h3 {
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+  .resume-entry h3 a {
+    --underline-rest: color-mix(in oklch, var(--accent) 35%, transparent);
+    color: var(--ink);
+  }
+  .resume-role h4 {
+    font-size: 1rem;
+    font-style: italic;
+    font-weight: 400;
+  }
+  .resume-dates {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    line-height: 1.5;
+  }
+  /* A company's dates are a shade darker than its roles'. */
+  .resume-entry-head .resume-dates {
+    color: var(--ink);
+  }
+  .resume-body {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+  .resume-body ul > li::marker {
+    color: var(--accent);
+  }
+  .resume-body p:has(> code):not(:has(> :not(code))) > code {
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.25rem;
+    color: var(--ink-soft);
+    font-size: 0.68rem;
+    letter-spacing: 0.01em;
+  }
+  .resume-section > .resume-body li > strong:first-child {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  /* A story opens like a slip unfolding: + to −, and the text set back
+     behind a pencil line. */
+  .resume-story summary {
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    transition: color 250ms var(--ease-out);
+  }
+  .resume-story summary::before {
+    content: "+";
+    display: inline-block;
+    inline-size: 2ch;
+    color: var(--accent);
+  }
+  .resume-story[open] summary::before {
+    content: "−";
+  }
+  .resume-story summary:hover {
+    color: var(--ink);
+  }
+  .resume-story-body {
+    border-inline-start: 2px solid var(--rule-strong);
+    color: var(--ink-soft);
+    font-size: 0.92rem;
+  }
+
+  /* The guestbook form's own network failure, beside its status. */
+  .guestbook-failed {
+    color: var(--rust);
+  }
+
   .skip-link {
     background: var(--ink);
+  }
+
+  /* Print: ink on white paper, no grain. Links can't be followed on paper,
+     so they read as text, underlined only in prose. */
+  @media print {
+    :root {
+      color-scheme: light;
+      --paper: #fff;
+      --ink: #1e1b17;
+      --ink-soft: #57514a;
+      --rule: #d6d0c6;
+      --rule-strong: #b3aa9c;
+    }
+    html {
+      font-size: 10pt;
+      line-height: 1.5;
+    }
+    body::before {
+      display: none;
+    }
+    a {
+      background: none;
+      color: inherit;
+    }
+    .article-body a {
+      text-decoration: underline 1px var(--rule-strong);
+    }
+    .article-header::after,
+    .page-header::after {
+      display: none;
+    }
+
+    .resume h1 {
+      font-size: 22pt;
+    }
+    .resume-header {
+      padding-block-end: 0.8rem;
+      border-block-end: 1px solid var(--rule-strong);
+    }
+    /* Backgrounds don't print by default; a border does. */
+    .resume-section > h2::after {
+      block-size: 0;
+      border-block-start: 1px solid var(--rule);
+      background: none;
+    }
+    .resume-entry h3 {
+      font-size: 11.5pt;
+    }
+    .resume-role h4 {
+      font-size: 10.5pt;
+    }
+    .resume-body {
+      font-size: 9.5pt;
+      line-height: 1.45;
+    }
   }
 }

@@ -10,6 +10,9 @@ import "core:time"
 // repository parses and renders them once during startup, then handlers only
 // borrow immutable, in-memory values.
 EMBEDDED_ABOUT :: embedded.About
+EMBEDDED_RESUME :: embedded.Resume
+EMBEDDED_RESUME_PDF :: embedded.Resume_PDF
+EMBEDDED_RESUME_PDF_SOURCE :: embedded.Resume_PDF_Source
 
 Post :: struct {
 	slug:        string,
@@ -34,6 +37,7 @@ Repository :: struct {
 	posts:   [dynamic]Post,
 	by_slug: map[string]int,
 	about:   Page,
+	resume:  Resume,
 }
 
 // published_posts borrows the sorted immutable slice for one render pass.
@@ -49,6 +53,10 @@ find_post :: proc(repository: ^Repository, slug: string) -> (^Post, bool) {
 
 about_page :: proc(repository: ^Repository) -> ^Page {
 	return &repository.about
+}
+
+resume_page :: proc(repository: ^Repository) -> ^Resume {
+	return &repository.resume
 }
 
 // load validates every published post before startup succeeds. A bad filename,
@@ -90,6 +98,15 @@ load :: proc(
 		"pages/about.md",
 		string(EMBEDDED_ABOUT),
 		base_url,
+		images,
+	)
+	if error != "" do return repository, error
+
+	repository.resume, error = parse_resume(
+		"pages/resume.md",
+		string(EMBEDDED_RESUME),
+		base_url,
+		&repository,
 		images,
 	)
 	return repository, error
@@ -183,7 +200,7 @@ parse_page :: proc(
 		""
 }
 
-@(private = "file")
+@(private)
 markdown_error_message :: proc(path: string, error: Markdown_Error, detail: string) -> string {
 	#partial switch error {
 	case .Missing_Image:

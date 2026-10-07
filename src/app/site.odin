@@ -6,6 +6,7 @@ import httpx "../httpx"
 import views "../views"
 import "core:crypto/sha2"
 import "core:encoding/hex"
+import "core:encoding/json"
 import "core:fmt"
 import "core:strings"
 
@@ -42,14 +43,15 @@ DISCOVERY_CACHE :: "public, max-age=3600"
 // Every page prefetches a same-site link's HTML once the pointer rests on it
 // (or it is pressed), so the click finds the response already downloaded. The
 // rules arrive by header, not an inline <script>, so the CSP stays static.
-// Files and feeds are left out: only pages are worth fetching early.
+// Files, feeds, and the resume's PDF and Markdown are left out: only pages
+// are worth fetching early.
 @(private = "file")
 SPECULATION_RULES_PATH :: "/speculation-rules.json"
 @(private = "file")
 SPECULATION_RULES ::
 	`{"prefetch":[{"where":{"and":[` +
 	`{"href_matches":"/*"},` +
-	`{"not":{"href_matches":["/static/*","/images/*","/fonts/*","/*.xml","/*.txt"]}}` +
+	`{"not":{"href_matches":["/static/*","/images/*","/fonts/*","/*.xml","/*.txt","/*.pdf","/*.md"]}}` +
 	`]},"eagerness":"moderate"}]}`
 
 // set_speculation_rules points an HTML response at the site's prefetch rules.
@@ -127,6 +129,33 @@ prerender :: proc(ctx: ^Application_Context) -> (site: Site, error: string) {
 	)
 	finish(&renderer, &site, "/about", HTML, HTML_CACHE)
 
+	resume := content.resume_page(&ctx.content)
+	views.resume_page(
+		begin(&renderer),
+		resume^,
+		views.Metadata {
+			page = .Resume,
+			path = "/resume",
+			title = resume.title,
+			description = resume.description,
+			canonical = resume.canonical,
+			open_graph = "profile",
+			structured_data = resume_structured_data(resume),
+		},
+		ctx.view_assets,
+	)
+	finish(&renderer, &site, "/resume", HTML, HTML_CACHE)
+
+	// The resume also comes as the Markdown it is written in, and as a PDF
+	// printed from the page above (`just resume-pdf`). Until that recipe has
+	// run once, the PDF is empty and isn't served.
+	strings.write_string(begin(&renderer), resume.markdown)
+	finish(&renderer, &site, "/resume.md", "text/markdown; charset=utf-8", DISCOVERY_CACHE)
+	if len(content.EMBEDDED_RESUME_PDF) > 0 {
+		strings.write_bytes(begin(&renderer), content.EMBEDDED_RESUME_PDF)
+		finish(&renderer, &site, "/resume.pdf", "application/pdf", DISCOVERY_CACHE)
+	}
+
 	write_feed(begin(&renderer), posts)
 	finish(&renderer, &site, "/feed.xml", "application/rss+xml; charset=utf-8", DISCOVERY_CACHE)
 
@@ -149,6 +178,44 @@ prerender :: proc(ctx: ^Application_Context) -> (site: Site, error: string) {
 		return site, fmt.tprintf("rendering %s failed", renderer.failed_path)
 	}
 	return site, ""
+}
+
+// resume_structured_data describes /resume to search engines as JSON-LD: a
+// profile page about a person, with their profiles elsewhere.
+@(private = "file")
+resume_structured_data :: proc(resume: ^content.Resume) -> string {
+	Person :: struct {
+		type:      string `json:"@type"`,
+		name:      string `json:"name"`,
+		job_title: string `json:"jobTitle"`,
+		url:       string `json:"url"`,
+		same_as:   []string `json:"sameAs"`,
+	}
+	Profile_Page :: struct {
+		schema:        string `json:"@context"`,
+		type:          string `json:"@type"`,
+		url:           string `json:"url"`,
+		date_modified: string `json:"dateModified"`,
+		main_entity:   Person `json:"mainEntity"`,
+	}
+	page := Profile_Page {
+		schema = "https://schema.org",
+		type = "ProfilePage",
+		url = resume.canonical,
+		date_modified = resume.updated,
+		main_entity = {
+			type = "Person",
+			name = resume.name,
+			job_title = resume.headline,
+			url = BASE_URL,
+			same_as = resume.links[:],
+		},
+	}
+	data, error := json.marshal(page, allocator = context.temp_allocator)
+	if error != nil do return ""
+	// Inside <script>, only "</" could end the element early.
+	escaped, _ := strings.replace_all(string(data), "</", `<\/`, context.temp_allocator)
+	return escaped
 }
 
 // Renderer lets prerender read as a flat list of pages: begin hands out a

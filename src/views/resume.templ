@@ -1,0 +1,73 @@
+package views
+
+import content "../content"
+
+// The resume page is rendered at startup from content/pages/resume.md, whose
+// structure (sections, entries, roles) is parsed in src/content/resume.odin.
+// Screen and print share this markup; the stylesheets decide what each shows.
+resume_page :: templ(resume: content.Resume, metadata: Metadata, assets: Asset_URLs) {
+	@document(metadata, assets) {
+		<article class="resume">
+			<header class="page-header resume-header">
+				<p class="article-date">updated <time datetime={ resume.updated }>{ resume.updated }</time></p>
+				<h1>{ resume.name }</h1>
+				<p class="article-dek">{ resume.headline }</p>
+				if resume.intro != "" {
+					<div class="resume-intro">{! string(resume.intro) }</div>
+				}
+				@resume_actions(resume)
+			</header>
+			for section in resume.sections {
+				<section class="resume-section">
+					<h2 id={ section.id }>{ section.title } <a class="heading-anchor" href={ fragment(section.id) } aria-label="Link to this section">#</a></h2>
+					if section.body != "" {
+						<div class="resume-body">{! string(section.body) }</div>
+					}
+					for entry in section.entries {
+						@resume_entry(entry)
+					}
+				</section>
+			}
+		</article>
+	}
+}
+
+// resume_actions offers the other forms of the resume. Print needs script, so
+// the button stays hidden until Datastar starts and clears the attribute.
+resume_actions :: templ(resume: content.Resume) {
+	<ul class="resume-actions">
+		<li><a href="/resume.pdf" download={ resume.pdf_name }>pdf</a></li>
+		<li><a href="/resume.md">markdown</a></li>
+		<li hidden data-attr:hidden="false"><button type="button" data-on:click="window.print()">print</button></li>
+		<li><a href="/about">the long version</a></li>
+	</ul>
+}
+
+// resume_entry is one company, school, or project. Its dates hang in the
+// margin where there is room for them (site.css).
+resume_entry :: templ(entry: content.Resume_Entry) {
+	<article class="resume-entry">
+		<header class="resume-entry-head">
+			<h3 id={ entry.id }>{! string(entry.title) } <a class="heading-anchor" href={ fragment(entry.id) } aria-label="Link to this section">#</a></h3>
+			if entry.dates != "" {
+				<p class="resume-dates">{ entry.dates }</p>
+			}
+		</header>
+		if entry.body != "" {
+			<div class="resume-body">{! string(entry.body) }</div>
+		}
+		for role in entry.roles {
+			<section class="resume-role">
+				<header class="resume-role-head">
+					<h4>{! string(role.title) }</h4>
+					if role.dates != "" {
+						<p class="resume-dates">{ role.dates }</p>
+					}
+				</header>
+				if role.body != "" {
+					<div class="resume-body">{! string(role.body) }</div>
+				}
+			</section>
+		}
+	</article>
+}

@@ -87,7 +87,7 @@ terminal_command :: proc(
 	case .Chat:
 		views.terminal_chat_prompt(writer, notice)
 	case:
-		views.terminal_prompt(writer)
+		views.terminal_prompt(writer, busy = result == .Navigate)
 	}
 	httpx.queue_elements(stream, {selector = "#terminal-prompt", mode = .Replace})
 
@@ -97,6 +97,7 @@ terminal_command :: proc(
 @(private)
 Command_Result :: enum {
 	Append, // output is appended to the log
+	Navigate, // output is appended, and the prompt waits for the next page
 	Clear, // output is an empty log that replaces the old one
 	Password, // output is appended, and the prompt asks for sudo's password
 	Chat, // any output is appended, and the room replaces the log (chat mode)
@@ -137,17 +138,46 @@ run_command :: proc(
 			"dev. reading, writing, breaking things. doing the dad thing. bird by bird.",
 		)
 		views.terminal_link(output, "more in /about", "/about")
+		views.terminal_link(output, "the short version: /resume", "/resume")
 	case "cd":
 		target, found := resolve_place(argument, repository)
 		if !found {
 			views.terminal_error(
 				output,
-				"cd: no such place. try blog, guestbook, about, ~, or a post from ls",
+				"cd: no such place. try blog, guestbook, about, resume, ~, or a post from ls",
 			)
 			return
 		}
 		views.terminal_line(output, target)
 		views.terminal_navigate(output, target)
+		return .Navigate
+	case "cat":
+		switch strings.trim_prefix(argument, "./") {
+		case "":
+			views.terminal_line(output, "usage: cat <file>. there's one worth reading: resume")
+		case "resume", "resume.md":
+			print_resume(output, repository)
+		case:
+			views.terminal_error(
+				output,
+				fmt.tprintf("cat: %s: no such file. try cat resume", argument),
+			)
+		}
+	case "man":
+		switch argument {
+		case "":
+			views.terminal_line(output, "what manual page do you want? try man dev")
+		case "dev", "devon", "wlls":
+			print_resume(output, repository)
+		case:
+			views.terminal_line(output, fmt.tprintf("no manual entry for %s. try help", argument))
+		}
+	case "vim", "vi", "nvim", "nano", "emacs", "ed":
+		views.terminal_line(output, "no editors here. if there were, you'd know the way out: :q")
+	case ":q", ":q!", ":wq", ":x":
+		views.terminal_line(output, "you're not in vim. but you're free to go: exit")
+	case "rm":
+		views.terminal_error(output, "rm: nice try.")
 	case "who":
 		// A visitor without a cookie has no live stream yet, so isn't listed.
 		render_who(output, ctx.live)
@@ -358,9 +388,22 @@ change_nick :: proc(
 	return "", false
 }
 
-// Visitors get their cookie (and so their name) from the page's live stream.
+// Visitors get their cookie (and so their name) from the page's live stream,
+// which opens a moment after the page loads.
 @(private = "file")
-NOT_CONNECTED :: "reload the page first, so it can connect."
+NOT_CONNECTED :: "still connecting. try again in a second."
+
+// print_resume is `cat resume` (and `man dev`): who, and the latest roles.
+@(private = "file")
+print_resume :: proc(output: ^strings.Builder, repository: ^content.Repository) {
+	resume := content.resume_page(repository)
+	recent: []content.Resume_Entry
+	for section in resume.sections {
+		if section.id != "experience" do continue
+		recent = section.entries[:min(3, len(section.entries))]
+	}
+	views.terminal_resume(output, resume^, recent)
+}
 
 @(private = "file")
 command_not_found :: proc(output: ^strings.Builder, name: string) {
@@ -441,6 +484,8 @@ resolve_place :: proc(
 		return "/blog", true
 	case "about":
 		return "/about", true
+	case "resume", "cv":
+		return "/resume", true
 	case "guestbook":
 		return "/guestbook", true
 	}

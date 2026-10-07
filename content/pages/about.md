@@ -3,6 +3,8 @@ title: Roots
 description: The journey so far
 ---
 
+> The short version is [my resume](/resume).
+
 ## Past
 
 It all started in the Blue Ridge Mountains, Southern Virginia.

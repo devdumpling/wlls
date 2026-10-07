@@ -12,7 +12,7 @@ terminal :: templ() {
 		@terminal_output()
 		<div id="terminal-chat" class="terminal-chat"></div>
 		<div class="terminal-bar">
-			@terminal_prompt()
+			@terminal_prompt(false)
 			<span class="terminal-hint" aria-hidden="true">/ to toggle</span>
 		</div>
 	</wlls-terminal>
@@ -48,9 +48,10 @@ terminal_output :: templ() {
 
 // A prompt is aria-busy while its request is in flight (<wlls-terminal> sets
 // it), and the "working…" hint fades in only after 3 s (site.css), so a
-// normal reply never flashes it.
-terminal_prompt :: templ() {
-	<form id="terminal-prompt" class="terminal-prompt" data-on:submit__prevent="@post('/terminal', {contentType: 'form'})">
+// normal reply never flashes it. After cd, the server sends the next prompt
+// already busy: it stays that way until the next page arrives.
+terminal_prompt :: templ(busy: bool) {
+	<form id="terminal-prompt" class="terminal-prompt" if busy { aria-busy="true" } data-on:submit__prevent={ TERMINAL_POST }>
 		<label for="terminal-input" class="terminal-ps1">~ $</label>
 		<input id="terminal-input" name="command" value="" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="120" enterkeyhint="send"/>
 		<span class="terminal-sending" aria-hidden="true">working…</span>
@@ -85,7 +86,7 @@ terminal_help :: templ() {
 		<dt>ls</dt>
 		<dd>list posts</dd>
 		<dt>cd &lt;place&gt;</dt>
-		<dd>go somewhere: blog, guestbook, about, ~, or a post</dd>
+		<dd>go somewhere: blog, guestbook, about, resume, ~, or a post</dd>
 		<dt>whoami</dt>
 		<dd>about me</dd>
 		<dt>who</dt>
@@ -97,13 +98,26 @@ terminal_help :: templ() {
 		<dt>nick &lt;name&gt;</dt>
 		<dd>go by a name of your choosing</dd>
 		<dt>play</dt>
-		<dd>start the game</dd>
+		<dd>a game, coming soon</dd>
 		<dt>clear</dt>
 		<dd>clear the screen</dd>
 		<dt>exit</dt>
 		<dd>close the terminal</dd>
 	</dl>
 	<p class="terminal-line">press / on any page to open the terminal</p>
+}
+
+// terminal_resume is `cat resume`: the short version, with the ways to get
+// the long one.
+terminal_resume :: templ(resume: content.Resume, recent: []content.Resume_Entry) {
+	<p class="terminal-line">{ resume.name }. { resume.headline }.</p>
+	<dl class="terminal-list">
+		for entry in recent {
+			<dt>{ entry.dates }</dt>
+			<dd>{ entry.name }</dd>
+		}
+	</dl>
+	<p class="terminal-line"><a href="/resume">/resume</a> · <a href="/resume.pdf">pdf</a> · <a href="/resume.md">markdown</a></p>
 }
 
 terminal_posts :: templ(posts: []content.Post) {
@@ -117,7 +131,7 @@ terminal_posts :: templ(posts: []content.Post) {
 // terminal_password_prompt replaces the prompt after `sudo`. The input is a
 // password field, which <wlls-terminal> keeps out of history.
 terminal_password_prompt :: templ() {
-	<form id="terminal-prompt" class="terminal-prompt" data-on:submit__prevent="@post('/terminal', {contentType: 'form'})">
+	<form id="terminal-prompt" class="terminal-prompt" data-on:submit__prevent={ TERMINAL_POST }>
 		<label for="terminal-input" class="terminal-ps1">[sudo] password:</label>
 		<input id="terminal-input" name="password" type="password" value="" autocomplete="current-password" enterkeyhint="send"/>
 	</form>
@@ -156,7 +170,7 @@ terminal_chat :: templ(lines: []Chat_Row, summary: string) {
 // The leave button is the way out of the room besides :q, which it sends
 // through the form; closing the sheet keeps you in the room.
 terminal_chat_prompt :: templ(notice: string) {
-	<form id="terminal-prompt" class="terminal-prompt" data-chat="lobby" data-on:submit__prevent="@post('/terminal', {contentType: 'form'})">
+	<form id="terminal-prompt" class="terminal-prompt" data-chat="lobby" data-on:submit__prevent={ TERMINAL_POST }>
 		if notice != "" {
 			<p class="terminal-line terminal-notice">{ notice }</p>
 		}

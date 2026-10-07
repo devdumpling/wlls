@@ -633,6 +633,128 @@
     margin-block-start: 0.4rem;
   }
 
+  /* Resume: sections of entries (a company, school, or project), each with
+     its roles. Where main has room beside the text column, an entry's or
+     role's dates hang in the margin like a sidenote; otherwise they sit
+     under the heading. */
+  .resume-section {
+    margin-block-start: clamp(2.5rem, 6vw, 3.5rem);
+  }
+  .resume-header + .resume-section {
+    margin-block-start: 0;
+  }
+  .resume :is(h2, h3) {
+    position: relative;
+    scroll-margin-block-start: 2rem;
+  }
+  .resume-section > h2 {
+    margin-block-end: 1.5rem;
+  }
+  .resume-entry + .resume-entry {
+    margin-block-start: 2.25rem;
+  }
+  .resume-entry-head,
+  .resume-role-head {
+    position: relative;
+  }
+  .resume-dates {
+    margin-block-start: 0.2rem;
+  }
+  .resume-role {
+    margin-block-start: 1.1rem;
+  }
+  :is(.resume-entry-head, .resume-role-head) + .resume-body {
+    margin-block-start: 0.6rem;
+  }
+  .resume-body > * + * {
+    margin-block-start: 0.7em;
+  }
+  .resume-body ul {
+    padding-inline-start: 1.2em;
+  }
+  .resume-body li + li {
+    margin-block-start: 0.35em;
+  }
+  @container main (min-width: 50rem) {
+    .resume-dates {
+      position: absolute;
+      inset-block-start: 0.35em;
+      inset-inline-start: calc(100% + var(--sidenote-gap));
+      inline-size: 7rem;
+      margin: 0;
+    }
+  }
+  /* A list right under a section (Toolkit) is a list of labels: each
+     item's bold lead hangs in a column of its own. */
+  .resume-section > .resume-body ul {
+    padding: 0;
+    list-style: none;
+  }
+  .resume-section > .resume-body li {
+    padding-inline-start: 7.5rem;
+    text-indent: -7.5rem;
+  }
+  .resume-section > .resume-body li > strong:first-child {
+    display: inline-block;
+    inline-size: 7.5rem;
+    text-indent: 0;
+  }
+  @container main (max-width: 30rem) {
+    .resume-section > .resume-body li {
+      padding: 0;
+      text-indent: 0;
+    }
+    .resume-section > .resume-body li > strong:first-child {
+      display: block;
+    }
+    .resume-section > .resume-body li + li {
+      margin-block-start: 0.75em;
+    }
+  }
+  /* A paragraph of nothing but code spans is a project's tags. */
+  .resume-body p:has(> code):not(:has(> :not(code))) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+  /* A story: a quote collapsed behind its summary. */
+  .resume-story {
+    margin-block-start: 1rem;
+  }
+  .resume-story summary {
+    inline-size: fit-content;
+    list-style: none;
+    cursor: pointer;
+  }
+  .resume-story summary::-webkit-details-marker {
+    display: none;
+  }
+  .resume-story-body {
+    margin-block-start: 0.6rem;
+    padding-inline-start: 1rem;
+  }
+  .resume-story-body > * + * {
+    margin-block-start: 0.7em;
+  }
+  .resume-actions {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0;
+    list-style: none;
+  }
+  .resume-actions li + li::before {
+    content: "·";
+    padding-inline: 1ch;
+  }
+  .resume-actions button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+
   /* The terminal waits behind a trigger at the end of the breadcrumb row,
      and opens in a sheet pinned to the bottom. */
   /* A long breadcrumb wraps beside the trigger, which keeps to the first
@@ -657,6 +779,12 @@
     color: inherit;
     font: inherit;
     cursor: pointer;
+  }
+  /* Until terminal.js defines <wlls-terminal> (or without script at all),
+     the trigger can't open anything, so it rests dimmed and inert. */
+  body:has(wlls-terminal:not(:defined)) .terminal-trigger {
+    opacity: 0.4;
+    pointer-events: none;
   }
   /* The dialog has no padding, so a click on the dialog element itself
      can only be on its backdrop; the terminal inside carries the spacing. */
@@ -792,4 +920,103 @@
     justify-items: start;
     gap: 1rem;
   }
+
+  /* Print: the page alone, without the shell around it. Footnotes print as
+     the notes section, since a sheet has no margin to hang them in. */
+  @media print {
+    .skip-link,
+    .column-head,
+    .rail,
+    .terminal-sheet,
+    .footnote-preview,
+    .heading-anchor,
+    .sidenote {
+      display: none;
+    }
+    .footnotes {
+      display: block;
+    }
+    .shell {
+      display: block;
+      min-block-size: 0;
+    }
+    .column {
+      padding: 0;
+    }
+    main {
+      grid-template-columns: [full-start text-start wide-start] minmax(0, 1fr) [text-end wide-end full-end];
+      padding-block-start: 0;
+    }
+
+    /* The resume prints on its own page size (the @page rule below), as
+       work history: no stories, projects, or links to other forms. Dates
+       move to the end of their heading's line. */
+    .resume {
+      page: resume;
+    }
+    .resume-actions,
+    .resume-story,
+    .resume-header .article-date,
+    .resume-section:has(> #projects) {
+      display: none;
+    }
+    .resume-header {
+      margin-block-end: 1.1rem;
+    }
+    .resume-header > * + * {
+      margin-block-start: 0.3rem;
+    }
+    .resume-section {
+      margin-block-start: 1.1rem;
+    }
+    .resume-section > h2 {
+      margin-block-end: 0.6rem;
+    }
+    .resume-entry + .resume-entry {
+      margin-block-start: 0.9rem;
+    }
+    .resume-role {
+      margin-block-start: 0.45rem;
+    }
+    :is(.resume-entry-head, .resume-role-head) + .resume-body {
+      margin-block-start: 0.25rem;
+    }
+    .resume-body li + li {
+      margin-block-start: 0.15em;
+    }
+    .resume-entry-head,
+    .resume-role-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1.5rem;
+    }
+    .resume-dates {
+      position: static;
+      flex: none;
+      inline-size: auto;
+      margin: 0;
+    }
+    /* Keep headings with what follows them, and short things whole. */
+    .resume :is(h2, h3, h4),
+    .resume-entry-head,
+    .resume-role-head {
+      break-after: avoid;
+    }
+    .resume-body li,
+    .resume-role:not(:has(li:nth-child(6))),
+    .resume-section:not(:has(.resume-role)) {
+      break-inside: avoid;
+    }
+  }
+}
+
+/* Page boxes can't be layered. Every printed page gets a plain margin; the
+   resume's named page is US letter and a little tighter, to fit two sheets. */
+@page {
+  margin: 0.75in;
+}
+@page resume {
+  size: letter;
+  margin: 0.55in 0.6in;
 }

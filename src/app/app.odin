@@ -67,6 +67,9 @@ run :: proc() {
 			stream_get("/blog", serve_page),
 			stream_get("/blog/:slug", serve_page),
 			stream_get("/about", serve_page),
+			stream_get("/resume", serve_page),
+			stream_get("/resume.md", serve_page),
+			stream_get("/resume.pdf", serve_page),
 			stream_get("/feed.xml", serve_page),
 			stream_get("/sitemap.xml", serve_page),
 			stream_get("/robots.txt", serve_page),
@@ -154,6 +157,7 @@ load :: proc(allocator: runtime.Allocator) -> (ctx: Application_Context, error: 
 		if strings.has_prefix(page.content_type, "text/html") do place_add(&ctx.live.places, page.path)
 	}
 	place_add(&ctx.live.places, "/guestbook")
+	place_add(&ctx.live.places, views.NOT_FOUND_PLACE)
 
 	// #lobby starts empty, but its frame and prompt are sent as soon as
 	// someone joins, so render both now.

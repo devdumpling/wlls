@@ -29,6 +29,9 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 			if metadata.noindex {
 				<meta name="robots" content="noindex"/>
 			}
+			if metadata.structured_data != "" {
+				{! json_ld_script(metadata.structured_data) }
+			}
 			<link rel="alternate" type="application/rss+xml" title="wlls.dev" href={ assets.feed }/>
 			<link rel="icon" href={ assets.favicon } type="image/svg+xml"/>
 			<link rel="stylesheet" href={ assets.stylesheet }/>
@@ -54,9 +57,7 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 				@rail(metadata, assets)
 			</div>
 			@terminal_sheet()
-			if metadata.page != .Not_Found {
-				@live_mount(metadata.path)
-			}
+			@live_mount(live_place(metadata))
 		</body>
 	</html>
 }

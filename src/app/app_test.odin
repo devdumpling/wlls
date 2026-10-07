@@ -19,6 +19,9 @@ test_startup_prerenders_every_page :: proc(t: ^testing.T) {
 		"/",
 		"/blog",
 		"/about",
+		"/resume",
+		"/resume.md",
+		"/resume.pdf",
 		"/feed.xml",
 		"/sitemap.xml",
 		"/robots.txt",
@@ -83,7 +86,8 @@ test_terminal_commands :: proc(t: ^testing.T) {
 	ctx.content.by_slug["devex"] = 0
 
 	output := strings.builder_make()
-	run_command(&output, "cd devex", &ctx, {})
+	navigated := run_command(&output, "cd devex", &ctx, {})
+	testing.expect_value(t, navigated, Command_Result.Navigate)
 	testing.expect(
 		t,
 		strings.contains(

@@ -1,5 +1,7 @@
 package content
 
+import "core:crypto/sha2"
+import "core:encoding/hex"
 import "core:mem/virtual"
 import "core:strings"
 import "core:testing"
@@ -36,6 +38,38 @@ test_embedded_blog_content_loads_and_sorts_by_publication_date :: proc(t: ^testi
 	about := about_page(&repository)
 	testing.expect_value(t, about.title, "Roots")
 	testing.expect(t, strings.contains(string(about.html), "Blue Ridge Mountains"))
+
+	resume := resume_page(&repository)
+	testing.expect_value(t, resume.name, "Devon Wells")
+	testing.expect_value(t, resume.sections[0].id, "experience")
+	goodrx := resume.sections[0].entries[1]
+	testing.expect_value(t, goodrx.id, "goodrx")
+	testing.expect_value(t, goodrx.dates, "Jan 2022 – Feb 2025")
+	testing.expect_value(t, len(goodrx.roles), 3)
+	story := string(goodrx.roles[2].body)
+	testing.expect(t, strings.contains(story, `<summary>The story</summary>`))
+	testing.expect(t, !strings.contains(story, "blockquote"))
+	testing.expect(t, strings.contains(resume.markdown, "](https://wlls.dev/blog/"))
+}
+
+// The PDF is printed from the page by `just resume-pdf`, which records the
+// SHA-256 of the resume.md it printed. Editing the resume without printing
+// it again fails here, before a stale PDF ships.
+@(test)
+test_resume_pdf_matches_its_source :: proc(t: ^testing.T) {
+	digest: [sha2.DIGEST_SIZE_256]byte
+	hash: sha2.Context_256
+	sha2.init_256(&hash)
+	sha2.update(&hash, EMBEDDED_RESUME)
+	sha2.final(&hash, digest[:])
+	printed_from := strings.trim_space(EMBEDDED_RESUME_PDF_SOURCE)
+	current := string(hex.encode(digest[:], context.temp_allocator))
+	testing.expectf(
+		t,
+		current == printed_from,
+		"content/pages/resume.pdf was printed from an older resume.md: run just resume-pdf",
+	)
+	free_all(context.temp_allocator)
 }
 
 @(test)

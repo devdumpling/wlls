@@ -17,9 +17,10 @@ guestbook_page :: templ(entries: string, metadata: Metadata, assets: Asset_URLs)
 	}
 }
 
-// guestbook_form posts with Datastar and shows _signing while it waits.
+// guestbook_form posts with Datastar and shows _signing while it waits. A
+// network failure isn't retried (it might sign twice); _failed says so.
 guestbook_form :: templ() {
-	<form id="guestbook-sign" class="guestbook-sign" data-signals:_signing="false" data-indicator:_signing data-on:submit__prevent="@post('/guestbook', {contentType: 'form'})">
+	<form id="guestbook-sign" class="guestbook-sign" data-signals:_signing="false" data-signals:_failed="false" data-indicator:_signing data-on:submit__prevent="$_failed = false; @post('/guestbook', {contentType: 'form', retryMaxCount: 0})" data-on:datastar-fetch__document="evt.detail.el === el && evt.detail.type === 'retries-failed' && ($_failed = true)">
 		<label for="guestbook-name">name</label>
 		<input id="guestbook-name" name="name" required maxlength="40" autocomplete="nickname"/>
 		<label for="guestbook-message">message</label>
@@ -27,6 +28,7 @@ guestbook_form :: templ() {
 		<div class="guestbook-actions">
 			<button type="submit" data-attr:disabled="$_signing">sign</button>
 			<p id="guestbook-status" class="guestbook-status" role="status"></p>
+			<p class="guestbook-status guestbook-failed" role="alert" hidden data-attr:hidden="!$_failed">Couldn't reach the server. Check your connection and try again.</p>
 		</div>
 	</form>
 }

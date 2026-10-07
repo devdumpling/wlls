@@ -31,6 +31,26 @@ run port="8080":
     just build {{port}}
     ./{{app}}
 
+# Print /resume to content/pages/resume.pdf with Chrome's print engine, and
+# record the SHA-256 of the resume.md it printed; `just check` fails when the
+# two drift apart. Set CHROME to use another Chrome or Chromium binary.
+resume-pdf port="8097":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if lsof -nP -iTCP:{{port}} -sTCP:LISTEN >/dev/null; then
+        printf 'Port %s is in use; pass another: just resume-pdf <port>\n' '{{port}}' >&2
+        exit 1
+    fi
+    just build {{port}}
+    ./{{app}} >/dev/null 2>&1 &
+    server=$!
+    trap 'kill $server' EXIT
+    for _ in $(seq 50); do curl -sf localhost:{{port}}/healthz >/dev/null && break; sleep 0.1; done
+    "${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}" \
+        --headless=new --disable-gpu --no-pdf-header-footer --hide-scrollbars \
+        --print-to-pdf=content/pages/resume.pdf "http://localhost:{{port}}/resume"
+    shasum -a 256 content/pages/resume.md | cut -d ' ' -f 1 > content/pages/resume.pdf.sha256
+
 check port="8080":
     just generate
     odin check src {{odin_flags}} -vet -vet-packages:main -define:WLLS_PORT={{port}}

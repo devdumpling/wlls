@@ -44,7 +44,7 @@ write_feed :: proc(writer: ^strings.Builder, posts: []content.Post) {
 write_sitemap :: proc(writer: ^strings.Builder, posts: []content.Post) {
 	strings.write_string(writer, `<?xml version="1.0" encoding="UTF-8"?>`)
 	strings.write_string(writer, `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
-	static_paths := [?]string{"/", "/blog", "/about"}
+	static_paths := [?]string{"/", "/blog", "/about", "/resume", "/guestbook"}
 	for path in static_paths {
 		write_sitemap_url(writer, path, "")
 	}

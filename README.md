@@ -16,6 +16,7 @@ just check           # generate views, vet Odin, run every package's tests
 just build           # write bin/wlls
 just generate        # compile authored src/views/*.templ to Odin
 just format          # format authored Odin files with odinfmt on PATH
+just resume-pdf      # print /resume to content/pages/resume.pdf with Chrome
 ```
 
 Local and release builds listen on 8080.
@@ -24,6 +25,11 @@ The local build enables Tina's internal assertions. Bounds checks stay enabled
 in both development and production. Nix pins the cmark-gfm Markdown parser
 alongside the Odin/Tempo toolchain. Author HTML components in
 `src/views/*.templ` and posts in `content/posts/*.md`.
+
+The resume is `content/pages/resume.md`, ordinary Markdown with a light
+structure (see `src/content/resume.odin`). After editing it, run
+`just resume-pdf` to print the committed PDF again; `just check` fails until
+you do. Chrome comes from `$CHROME`, or the macOS app by default.
 
 `just` and Nix regenerate the components before compilation and embed the content and assets into the binary.
 
@@ -53,7 +59,8 @@ release runs behind Caddy on the DigitalOcean Droplet. See
 The application binds to loopback only; Caddy provides compression and the
 public HTTPS endpoint. `/` is a dedicated homepage;
 `/blog` lists all posts, `/blog/{slug}` serves each post,
-and `/about` serves about. `POST /terminal` answers the
+`/about` serves about, and `/resume` serves the resume (also as
+`/resume.md` and `/resume.pdf`). `POST /terminal` answers the
 terminal with Datastar SSE patches. `/feed.xml`, `/sitemap.xml`, and
 `/robots.txt` provide discovery; `/rss.xml` redirects to the feed. CSS,
 browser code, fonts, and images are embedded, including legacy `/images/*`,

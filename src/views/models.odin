@@ -7,14 +7,17 @@ import "core:strings"
 Metadata :: struct {
 	// page names the resource kind for the shell: it becomes <body data-page>
 	// for stylesheet hooks and marks the current primary navigation link.
-	page:        Page_Kind,
+	page:            Page_Kind,
 	// path is the request path; the shell renders it as a breadcrumb.
-	path:        string,
-	title:       string,
-	description: string,
-	canonical:   string,
-	open_graph:  string,
-	noindex:     bool,
+	path:            string,
+	title:           string,
+	description:     string,
+	canonical:       string,
+	open_graph:      string,
+	noindex:         bool,
+	// structured_data is a JSON-LD document for the <head>, already escaped
+	// for a <script> element. It is data, never run, so the CSP allows it.
+	structured_data: string,
 }
 
 Page_Kind :: enum {
@@ -22,6 +25,7 @@ Page_Kind :: enum {
 	Blog,
 	Post,
 	About,
+	Resume,
 	Guestbook,
 	Not_Found,
 }
@@ -37,6 +41,8 @@ page_name :: proc(kind: Page_Kind) -> string {
 		return "post"
 	case .About:
 		return "about"
+	case .Resume:
+		return "resume"
 	case .Guestbook:
 		return "guestbook"
 	case .Not_Found:
@@ -78,6 +84,24 @@ breadcrumbs :: proc(path: string) -> []Crumb {
 	return crumbs[:]
 }
 
+// TERMINAL_POST sends a terminal prompt's form. Network failures aren't
+// retried: a command may have run before the connection dropped.
+TERMINAL_POST :: "@post('/terminal', {contentType: 'form', retryMaxCount: 0})"
+
+// json_ld_script wraps a JSON-LD document in its <script> element. Tempo
+// writes a <script>'s contents literally, so the element is built here.
+json_ld_script :: proc(data: string) -> string {
+	return strings.concatenate(
+		{`<script type="application/ld+json">`, data, "</script>"},
+		context.temp_allocator,
+	)
+}
+
+// fragment is a same-page link to an element id: "#goodrx".
+fragment :: proc(id: string) -> string {
+	return strings.concatenate({"#", id}, context.temp_allocator)
+}
+
 // navigate_expression is the Datastar expression that loads path. Callers pass
 // site paths only, never request input.
 navigate_expression :: proc(path: string) -> string {
@@ -95,6 +119,15 @@ Who_Row :: struct {
 Chat_Row :: struct {
 	name, text, event: string,
 	root:              bool,
+}
+
+// NOT_FOUND_PLACE is where `who` shows a visitor on a 404: every missing
+// path is one place, so request paths never become places.
+NOT_FOUND_PLACE :: "/404"
+
+// live_place is the place a page's live stream reports.
+live_place :: proc(metadata: Metadata) -> string {
+	return NOT_FOUND_PLACE if metadata.page == .Not_Found else metadata.path
 }
 
 // live_expression is the Datastar expression that opens a page's live stream.
