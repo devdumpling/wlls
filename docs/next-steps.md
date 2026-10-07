@@ -64,8 +64,8 @@ shipping except the first section.
 
 - [x] **`/resume`**, from `content/pages/resume.md`: Markdown with a light
       structure (`src/content/resume.odin`), rendered at startup. Dates hang
-      in the margin, roles' stories collapse, companies have permalinks, and
-      projects show on screen only. Linked from About and the terminal
+      in the margin, roles' stories collapse, and companies have permalinks.
+      Linked from About and the terminal
       (`cd resume`, `cat resume`, `whoami`), not the rail or landing.
 - [x] **Other forms.** `/resume.md` (the source, links made absolute), and
       `/resume.pdf`, printed by `just resume-pdf` and committed. A test fails

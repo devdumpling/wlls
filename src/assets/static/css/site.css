@@ -736,6 +736,9 @@
   .resume-story-body > * + * {
     margin-block-start: 0.7em;
   }
+  .resume-intro > * + * {
+    margin-block-start: 0.9rem;
+  }
   .resume-actions {
     display: flex;
     flex-wrap: wrap;
@@ -948,16 +951,15 @@
       padding-block-start: 0;
     }
 
-    /* The resume prints on its own page size (the @page rule below), as
-       work history: no stories, projects, or links to other forms. Dates
+    /* The resume prints on its own page size (the @page rule below),
+       without its stories or links to its other forms. Dates
        move to the end of their heading's line. */
     .resume {
       page: resume;
     }
     .resume-actions,
     .resume-story,
-    .resume-header .article-date,
-    .resume-section:has(> #projects) {
+    .resume-header .article-date {
       display: none;
     }
     .resume-header {

@@ -15,7 +15,6 @@ import "core:strings"
 //	*Dates*                 an emphasized line right under an entry or role
 //	#### Role               a title held at the entry
 //	> **The story**         a quote is a story: collapsed on screen, not printed
-//
 // Text under any heading is ordinary Markdown.
 Resume :: struct {
 	title:       string,
@@ -80,6 +79,11 @@ parse_resume :: proc(
 	if link_error := check_post_links(path, body, repository); link_error != "" {
 		return resume, link_error
 	}
+
+	// The resume leaves the site as Markdown and as a PDF, where a relative
+	// link means nothing (or points at whatever server printed it), so its
+	// site links are made absolute before anything renders.
+	body, _ = strings.replace_all(body, "](/", fmt.tprintf("](%s/", base_url))
 
 	ids := make(map[string]bool, allocator = context.temp_allocator)
 	for block in split_headings(body) {
@@ -152,12 +156,7 @@ parse_resume :: proc(
 	}
 
 	resume.pdf_name = fmt.aprintf("%s-resume.pdf", heading_slug(resume.name))
-	// Relative links mean nothing once the file leaves the site.
-	resume.markdown, _ = strings.replace_all(
-		strings.trim_left(body, "\n"),
-		"](/",
-		fmt.tprintf("](%s/", base_url),
-	)
+	resume.markdown = strings.trim_left(body, "\n")
 	return resume, ""
 }
 

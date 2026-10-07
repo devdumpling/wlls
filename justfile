@@ -47,7 +47,7 @@ resume-pdf port="8097":
     trap 'kill $server' EXIT
     for _ in $(seq 50); do curl -sf localhost:{{port}}/healthz >/dev/null && break; sleep 0.1; done
     "${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}" \
-        --headless=new --disable-gpu --no-pdf-header-footer --hide-scrollbars \
+        --headless=new --disable-gpu --no-pdf-header-footer --hide-scrollbars --log-level=3 \
         --print-to-pdf=content/pages/resume.pdf "http://localhost:{{port}}/resume"
     shasum -a 256 content/pages/resume.md | cut -d ' ' -f 1 > content/pages/resume.pdf.sha256
 

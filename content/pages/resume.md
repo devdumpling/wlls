@@ -1,7 +1,7 @@
 ---
 title: Devon Wells | Resume
 description: Devon Wells, principal software engineer. Fast, accessible interfaces for complex domains, and platforms that help teams build them.
-date: 2026-10-06
+date: 2026-10-07
 ---
 
 # Devon Wells
@@ -9,6 +9,8 @@ date: 2026-10-06
 Principal Software Engineer
 
 [dev@wlls.dev](mailto:dev@wlls.dev) · [github.com/devdumpling](https://github.com/devdumpling) · [linkedin.com/in/devon-a-wells](https://www.linkedin.com/in/devon-a-wells/)
+
+Frontend and platform engineer: design systems, performance, and the tooling that helps teams ship.
 
 ## Experience
 
@@ -18,12 +20,12 @@ _Feb 2025 – Present_
 
 #### Principal Software Engineer
 
+- Built an AI chat experience integrating Judi's in-house AI into consumer apps
 - Modernized frontends across all Judi Care consumer products (50M+ plan members)
-- Built AI chat experience integrating Judi in-house AI into Consumer apps
-- Architected accessible, tokenized, multi-tenant Design System (tailwind, shadcn, Base-UI)
-- Rebuilt Amino legacy Flask/React 16 to Next.js 15, React 19, Tailwind, and shadcn
-- Drove metrics-driven development, analytics and observability integrations (OTEL, Grafana, Posthog/Pendo)
-- Reduced JS payload improving slow page loads on marginal devices
+- Architected an accessible, tokenized, multi-tenant design system (Tailwind, shadcn, Base UI)
+- Rebuilt Amino's legacy Flask/React 16 app in Next.js 15, React 19, Tailwind, and shadcn
+- Led metrics-driven development with analytics and observability integrations (OTel, Grafana, PostHog, Pendo)
+- Cut the JS payload from multiple megabytes to under 500 KB, speeding page loads on marginal devices
 - Established full test coverage across user journeys with Vitest, Playwright, Turborepo, and pnpm, cutting CI feedback from hours to minutes
 - Architected BFF layer enabling a thin client while keeping backend services decoupled
 
@@ -117,7 +119,7 @@ Bachelor of Arts, Computer Science
 - **Runtimes** Node, Bun, Deno, BEAM
 - **Tooling** Turborepo/Nx, pnpm, uv, oxc, Playwright, Vite, Nix, Sentry, Grafana, Figma, Terraform
 - **Data** Postgres, SQLite, Zero
-- **Platforms** AWS, GCP, Cloudflare
+- **Platforms** AWS, GCP, Cloudflare, Docker, Kubernetes, OrbStack
 - **AI** Claude, Pi, Custom harnesses
 
 ## Recent Projects
