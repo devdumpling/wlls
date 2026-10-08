@@ -2,19 +2,19 @@
 
 Summer 2021, I was toying around with the OG technical preview for "GitHub Copilot", blissfully ignorant of the moment I was in.
 
-I pulled my friend and coworker, Brad, into a Slack huddle, as I often did when I found something shiny. I liked working with Brad. He was pragmatic and would humor my delusions. I'd rant to him about whatever was on my mind, and he would nod along until I felt heard. Then, we'd both go back to writing Next.js and Graphql and pretending things were ok. Everyone should have a Brad.
+I pulled my friend and coworker, Brad, into a Slack huddle, as I often did when I found something shiny. I liked working with Brad. He was pragmatic and would humor my delusions. I'd rant to him about whatever was on my mind, and he would nod along until I felt heard. Then, we'd both go back to writing Next.js and GraphQL and pretending things were ok. Everyone should have a Brad.
 
 I remember that huddle clearly. I remember Brad mostly not saying anything, a lot of "...huh." Not a good sign from Brad--he's supposed to bring me back down.
 
-I remember the shock and awe at the, albeit awkward and rudimentary, autocompleted solutions copilot spat out to shitty Leetcode problems we threw it.
+I remember the shock and awe at the, albeit awkward and rudimentary, autocompleted solutions Copilot spat out to shitty Leetcode problems we threw at it.
 
 Back then you had to really nudge AI, and the UX was terrible. But it was a fun toy and oh boy... the rush I felt from the _latency_ of "solving" a problem quickly. If you'll indulge me for a moment, it reminded me of the rush I got from writing my first programs as a kid with my dad.
 
-The difference, of course, is I actually had to work quite hard to write those programs. Most of it was flailing around in DOS. Many others have already written at length about the difference in this lasting satisfacting, of how paradoxically friction creates joy and novelty, of how healthy it is for our brains. Of how it leads to a deep sense of fulfillment (and a nice, slow drippity droppity of dopamine).
+The difference, of course, is I actually had to work quite hard to write those programs. Most of it was flailing around in DOS. Many others have already written at length about the difference in this lasting satisfaction, of how paradoxically friction creates joy and novelty, of how healthy it is for our brains. Of how it leads to a deep sense of fulfillment (and a nice, slow drippity droppity of dopamine).
 
 Conversely, pressing the easy button gives a rush with comparatively no work.
 
-I have, like everyone else, spent a lot of time marinating on AI. Over the past 5 years of using AI in some form or another, I have swung on the pro-anti AI pendulum back and forth, back and forth. I have drank and administered the kool-aid to excess. I have _also_ been a staunch critic and exisentially questioned my relationship to AI, its ethics and impact on the environment, society, and communities, all of which are interesting to me as an ethical vegan for almost two decades.
+I have, like everyone else, spent a lot of time marinating on AI. Over the past 5 years of using AI in some form or another, I have swung on the pro-anti AI pendulum back and forth, back and forth. I have drunk and administered the kool-aid to excess. I have _also_ been a staunch critic and existentially questioned my relationship to AI, its ethics and impact on the environment, society, and communities, all of which are interesting to me as an ethical vegan for almost two decades.
 
 I have feverishly run agents well into the night, marveling at the (I'm going to repeat this word a lot in this essay) comparatively _low latency_ with which I could experiment, test, and create. I have also sworn off AI entirely for weeks at a time, after noticing the burnout symptoms and general apathy I had toward my work.
 
@@ -26,13 +26,13 @@ You can read the first two parts of this journey, if you're interested, but lo! 
 
 At times this journey has been _exhausting_, particularly the hyperbolic takes with little data. Luckily, we are finally getting to the point where we are seeing real evidence of claims! I will share some of that in this essay, but this essay isn't really about that evidence. Rather, it's about my feelings.
 
-> Sorry, this is after-all, my blog. My thoughts and ugly emotions. Also I hate that I have to say this, but it's written by me and me alone. If there is one hill I will die on it is that AI has no place writing prose. Editing, fine. Pick your poison. But writing is thinking. If I'm reading something you claim is _your writing_, _your_ thoughts, I want to know what _you_ think!
+> Sorry, this is after all, my blog. My thoughts and ugly emotions. Also I hate that I have to say this, but it's written by me and me alone. If there is one hill I will die on it is that AI has no place writing prose. Editing, fine. Pick your poison. But writing is thinking. If I'm reading something you claim is _your writing_, _your_ thoughts, I want to know what _you_ think!
 
-As I was saying, I have swung back and forth now a few times. Recently, I had one of those aforementioned existential crises. I was sitting on my back porch eating lunch when I decided to pull the YouTube slot machine and hit the jackpot: a innocuous but enticing video titled "[I'm done coding with AI](https://www.youtube.com/watch?v=2ZU3j4GQ4K8)" by Brett Codes.
+As I was saying, I have swung back and forth now a few times. Recently, I had one of those aforementioned existential crises. I was sitting on my back porch eating lunch when I decided to pull the YouTube slot machine and hit the jackpot: an innocuous but enticing video titled "[I'm done coding with AI](https://www.youtube.com/watch?v=2ZU3j4GQ4K8)" by Brett Codes.
 
-Brett expresses a similar journey to mine with AI--back and forth on the pendulum. He talks about some relatively minor issues he has had with it. What got me, though, was how he didn't feel his experience with AI was aligning _with his values_. That hit hard. It made me lose my appetite, made me question.
+Brett expresses a similar journey to mine with AI--back and forth on the pendulum. He talks about some (relatively) minor issues he has had with it. What got me, though, was how he didn't feel his experience with AI was aligning _with his values_. That hit hard. It made me lose my appetite, made me question.
 
-Maybe it was something about my general annoyance at the results I was seeing or the midsummer, Ohio sun hitting me just right, but Brett's uncut monologue resonated.
+Maybe it was something about my general annoyance at the results I was seeing or the midsummer Ohio sun hitting me just right, but Brett's uncut monologue resonated.
 
 I stopped using AI entirely for three weeks after that. I didn't go around criticizing people who still did because to me it felt like a personal decision, but I did completely abstain. I turned off AI entirely in Zed, dropped my harnesses from my nix setup, hung up my tokens at work, and even toggled it off in my search engines.
 
@@ -44,7 +44,7 @@ But it didn't feel like all was somehow right in the world. If anything, I thoug
 
 The problem, I realized, is that I'm genuinely fascinated by the science and technology behind LLMs. I'm fortunate to have been born in 1993, young enough to be curious about the rapidly evolving digital world, while also early enough to have to figure a lot of it out myself. My curiosity about technology is a core part of my identity, and I cherish it.
 
-In introspecting a bit, I felt like I was rejecting that to focus on some gray definition of craftmanship that assumes that AI-usage is a binary decision.
+In introspecting a bit, I felt like I was rejecting that to focus on some gray definition of craftsmanship that assumes that AI-usage is a binary decision.
 
 The problem is that there _are_ problems with the modern era of LLM-assisted coding. On a personal level, since that is what I'm interested in in this essay, I'm most concerned with skill atrophy and cognitive debt. I _love_ programming and building software, and at present I know (I measured, self study but hey) that I grok what I'm building better when I'm primarily writing it by hand. I'm in it for the journey, for the long-haul, and I'm not convinced that letting an LLM do all of the coding for me is necessarily the path I want to take. I don't know that that path leads to the person I want to be.
 
@@ -54,7 +54,7 @@ Unlike many of the hype-y takes I see, though, this benefit isn't coming in the 
 
 Let me be frank: this is challenging. It also--at least currently--feels right for me. It isn't an outright "all-in" acceptance of use AI to do everything, which I'm still staunchly critical of, nor is it an outright rejection of the _potential_ value of AI as part of my workflow.
 
-I often reference Adam Grant's novel, [Rethinking](link here). He posits that rarely in life are controversial, complex problems binary. However, it's human nature for us to treat them that way. We tend to categorize into convenient buckets... right, wrong, yes, no, love, hate.
+I often reference Adam Grant's novel, [Think Again](link here). He posits that rarely in life are controversial, complex problems binary. However, it's human nature for us to treat them that way. We tend to categorize into convenient buckets... right, wrong, yes, no, love, hate.
 
 Reality isn't like that, though!
 
@@ -62,7 +62,7 @@ One of my favorite quotes is from Anne Lamott's _Bird by Bird_ (which is a book 
 
 > "I used to think that paired opposites were a given, that love was the opposite of hate, right the opposite of wrong. But now I think we sometimes buy into these concepts because it is so much easier to embrace absolutes than to suffer reality. I don’t think anything is the opposite of love. Reality is unforgivingly complex."
 
-When debating it a controverisal subject, our tendency is to _simplify_ or reduce the problem into a baser form, but this ends up isolating our positions and alienating alternative viewpoints, says Grant. Instead, when we _add complexity/nuance_ to the discussion (unlike in software engineering), that is when we tend to move to more open-minded discussions and see progress.
+When debating a controversial subject, our tendency is to _simplify_ or reduce the problem into a baser form, but this ends up isolating our positions and alienating alternative viewpoints, says Grant. Instead, when we _add complexity/nuance_ to the discussion (unlike in software engineering), that is when we tend to move to more open-minded discussions and see progress.
 
 Ironically, right now this means I'm still writing a lot of code by hand _yet_ extensively experimenting and refining my work via LLMs in ways that would've been prohibitively expensive before because of the latency/effort required to do that.
 
@@ -110,13 +110,13 @@ Please, please, please I do not want to read your AI novel. I do not want to hea
 
 It may be _technically_ fascinating that you can do it, but we must ask ourselves... why make art?
 
-> "We can forgive a man for making a useful thing as long as he does not admire it. The only excuse for making a useless thing is that one admires it intensely. All art is quite useless. - Oscar Wilde, The Picture of Dorian Gray
+> "We can forgive a man for making a useful thing as long as he does not admire it. The only excuse for making a useless thing is that one admires it intensely. All art is quite useless." - Oscar Wilde, The Picture of Dorian Gray
 
-It's not much of a conclusion, but this is where I'm at. I reserve the right to change my mind in the future, but right now I feel similar to how I did 4 years ago watching copilot in awe for the first time: conflicted, horrified, ecstatic, curious.
+It's not much of a conclusion, but this is where I'm at. I reserve the right to change my mind in the future, but right now I feel similar to how I did 4 years ago watching Copilot in awe for the first time: conflicted, horrified, ecstatic, curious.
 
-Conflicted because of the packaging around AI, of the obsession with commoditizing it, the shaky societal impacts looming as we plunge into a technology on the heels of seeing the destruction that social media has wraught.
+Conflicted because of the packaging around AI, of the obsession with commoditizing it, the shaky societal impacts looming as we plunge into a technology on the heels of seeing the destruction that social media has wrought.
 
-Horrified because of the environmental and community impacts looming, the general blase hand-waving of frontier labs to the legality and ethical dilemmas being raised.
+Horrified because of the environmental and community impacts looming, the general blasé hand-waving of frontier labs to the legality and ethical dilemmas being raised.
 
 Ecstatic because I, perhaps naively, am optimistic about what responsible, disciplined usage of LLMs for building could look like that doesn't delegate away the satisfaction or lead to burnout and apathy.
 
