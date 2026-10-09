@@ -51,6 +51,8 @@ Markdown_Error :: enum {
 	Parse_Failed,
 	Render_Failed,
 	Unsupported_Footnote,
+	Unknown_Embed,
+	Invalid_Embed,
 }
 
 // Cmark's extension registry is process-wide. Register it during Odin package
@@ -64,11 +66,13 @@ register_gfm_extensions :: proc "contextless" () {
 // render_markdown uses the upstream CommonMark/GFM parser so authored content
 // is handled consistently without growing a project-specific Markdown parser.
 // Cmark's safe default replaces raw HTML and unsafe URL schemes in its output.
-// On an image error, detail names the offending URL or option.
+// On an image or embed error, detail names the offending URL, option, or
+// embed. embeds, when given, receives the embed kinds the source uses.
 @(require_results)
 render_markdown :: proc(
 	source: string,
 	images := Image_Sizes{},
+	embeds: ^Embeds = nil,
 ) -> (
 	html: Markdown_HTML,
 	error: Markdown_Error,
@@ -99,12 +103,25 @@ render_markdown :: proc(
 
 	// Cmark owns its NUL-terminated return buffer. Copy it out through the
 	// post-render passes before the deferred free so the repository can retain it.
-	plated, plate_error, plate_detail := transform_plates(string(rendered), images)
-	switch plate_error {
+	embedded, used, embed_error, embed_detail := transform_embeds(string(rendered))
+	switch embed_error {
 	case .None:
 	case .Allocation:
 		return html, .Output_Allocation, ""
 	// The detail borrows cmark's buffer, which is freed on return.
+	case .Unknown:
+		return html, .Unknown_Embed, strings.clone(embed_detail, context.temp_allocator)
+	case .Misused:
+		return html, .Invalid_Embed, strings.clone(embed_detail, context.temp_allocator)
+	}
+	defer delete(embedded)
+	if embeds != nil do embeds^ = used
+	plated, plate_error, plate_detail := transform_plates(embedded, images)
+	switch plate_error {
+	case .None:
+	case .Allocation:
+		return html, .Output_Allocation, ""
+	// The detail borrows the embedded buffer, which is freed on return.
 	case .Missing_Image:
 		return html, .Missing_Image, strings.clone(plate_detail, context.temp_allocator)
 	case .Unknown_Option:

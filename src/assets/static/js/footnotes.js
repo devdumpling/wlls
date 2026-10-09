@@ -5,12 +5,15 @@
 // that would collide are nudged apart. Elsewhere, hovering or focusing a
 // reference shows its note in a popover beside it, so reading never has to
 // jump to the bottom of the page. Without this script (or on touch) the
-// reference is still a plain link.
+// reference is still a plain link. Embeds that hang in the margin
+// (css/embeds.css) are laid out with the sidenotes, so neither covers the
+// other.
 
 const GAP = 8
 const HIDE_DELAY = 180
 const BREAKOUTS =
   ':scope > :is(pre, table, .plates, .plate[data-size="wide"], .plate[data-size="full"])'
+const MARGIN_EMBEDS = ":scope > .embed[data-margin] > *"
 
 const preview = document.createElement("aside")
 preview.className = "footnote-preview"
@@ -103,14 +106,20 @@ function referenceFrom(event) {
 }
 
 /**
- * Each sidenote sits level with its reference. Walk them in reading order and
- * move each one down just enough to clear the note above it and any code,
- * table, or plate that reaches into the margin.
+ * Each sidenote sits level with its reference, and each margin embed where
+ * it falls in the text. Walk them in reading order and move each one down
+ * just enough to clear the one above it and any code, table, or plate that
+ * reaches into the margin.
  * @param {Element} body
  */
 function layout(body) {
-  for (const note of sidenotes.values()) note.style.translate = ""
-  const notes = [...sidenotes.values()].filter((note) => note.checkVisibility())
+  /** @type {HTMLElement[]} */
+  const embeds = [...body.querySelectorAll(MARGIN_EMBEDS)]
+  for (const item of [...sidenotes.values(), ...embeds]) item.style.translate = ""
+  const notes = [
+    ...[...sidenotes.values()].filter((note) => note.checkVisibility()),
+    ...embeds.filter((embed) => getComputedStyle(embed).position === "absolute"),
+  ].sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top)
   if (notes.length === 0) return
 
   const breakouts = [...body.querySelectorAll(BREAKOUTS)].map((element) =>
@@ -136,18 +145,29 @@ function layout(body) {
 const references = /** @type {NodeListOf<HTMLAnchorElement>} */ (
   document.querySelectorAll("a[data-footnote-ref]")
 )
+for (const reference of references) {
+  const sibling = reference.parentElement?.nextElementSibling
+  if (sibling instanceof HTMLElement && sibling.classList.contains("sidenote")) {
+    sidenotes.set(reference.hash, sibling)
+  }
+}
+
+// Fonts, images, and the viewport all move notes; each resizes the body.
+// Margin embeds take no room in it, so they're watched on their own, and
+// laid out again once their component (a later script) defines them.
+const body = document.querySelector(".article-body")
+const marginEmbeds = body ? [...body.querySelectorAll(MARGIN_EMBEDS)] : []
+if (body && (sidenotes.size > 0 || marginEmbeds.length > 0)) {
+  const watch = new ResizeObserver(() => layout(body))
+  watch.observe(body)
+  for (const embed of marginEmbeds) {
+    watch.observe(embed)
+    customElements.whenDefined(embed.localName).then(() => layout(body))
+  }
+}
+
 if (references.length > 0) {
   document.body.append(preview)
-  for (const reference of references) {
-    const sibling = reference.parentElement?.nextElementSibling
-    if (sibling instanceof HTMLElement && sibling.classList.contains("sidenote")) {
-      sidenotes.set(reference.hash, sibling)
-    }
-  }
-
-  // Fonts, images, and the viewport all move notes; each resizes the body.
-  const body = document.querySelector(".article-body")
-  if (body && sidenotes.size > 0) new ResizeObserver(() => layout(body)).observe(body)
 
   document.addEventListener("pointerover", (event) => {
     if (/** @type {PointerEvent} */ (event).pointerType !== "mouse") return

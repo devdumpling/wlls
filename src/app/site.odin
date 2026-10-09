@@ -107,6 +107,7 @@ prerender :: proc(ctx: ^Application_Context) -> (site: Site, error: string) {
 				description = post.description,
 				canonical = post.canonical,
 				open_graph = "article",
+				embeds = post.embeds,
 			},
 			ctx.view_assets,
 		)

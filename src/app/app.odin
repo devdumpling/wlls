@@ -157,8 +157,18 @@ load :: proc(allocator: runtime.Allocator) -> (ctx: Application_Context, error: 
 		terminal      = assets.url(&ctx.assets, "js/terminal.js"),
 		relative_time = assets.url(&ctx.assets, "js/sb-relative-time.js"),
 		pixel_board   = assets.url(&ctx.assets, "js/sb-pixel-board.js"),
+		embeds        = assets.url(&ctx.assets, "css/embeds.css"),
 		favicon       = "/favicon.svg",
 		feed          = "/feed.xml",
+	}
+	// Every embed a post can name must ship its component.
+	for spec, embed in content.EMBED_SPECS {
+		script := fmt.tprintf("js/embed-%s.js", spec.name)
+		if _, found := assets.find(&ctx.assets, script); !found {
+			error = fmt.tprintf("embed:%s has no component at %s", spec.name, script)
+			return
+		}
+		ctx.view_assets.embed_scripts[embed] = assets.url(&ctx.assets, script)
 	}
 
 	ctx.site, error = prerender(&ctx)

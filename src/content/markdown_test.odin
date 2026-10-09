@@ -175,3 +175,46 @@ test_markdown_rejects_footnotes_a_sidenote_cannot_hold :: proc(t: ^testing.T) {
 	testing.expect_value(t, error, Markdown_Error.Unsupported_Footnote)
 	testing.expect_value(t, detail, "list")
 }
+
+@(test)
+test_markdown_wraps_embeds_in_their_components :: proc(t: ^testing.T) {
+	source :=
+		"```embed:copilot\n// is <this> a palindrome?\n```\n\n" +
+		"```embed:ping\n```\n\n" +
+		"```embed:slow\n```\n\"No, _no_.\"\n\n" +
+		"```js\nplain();\n```\n"
+	embeds: Embeds
+	html, error, _ := render_markdown(source, embeds = &embeds)
+	testing.expect_value(t, error, Markdown_Error.None)
+	defer delete(string(html))
+	rendered := string(html)
+	testing.expect(
+		t,
+		strings.contains(
+			rendered,
+			`<div class="embed" data-embed="copilot" data-margin><wlls-copilot>` +
+			"<pre><code>// is &lt;this&gt; a palindrome?\n</code></pre></wlls-copilot></div>",
+		),
+	)
+	testing.expect(
+		t,
+		strings.contains(rendered, `<div class="embed" data-embed="ping"><wlls-ping></wlls-ping></div>`),
+	)
+	testing.expect(
+		t,
+		strings.contains(
+			rendered,
+			`<div class="embed" data-embed="slow"><wlls-slow><p>&quot;No, <em>no</em>.&quot;</p></wlls-slow></div>`,
+		),
+	)
+	testing.expect(t, strings.contains(rendered, `<code class="language-js">`))
+	testing.expect_value(t, embeds, Embeds{.Copilot, .Ping, .Slow})
+
+	detail: string
+	_, error, detail = render_markdown("```embed:nope\n```\n")
+	testing.expect_value(t, error, Markdown_Error.Unknown_Embed)
+	testing.expect_value(t, detail, "nope")
+	_, error, detail = render_markdown("```embed:ping\nunexpected\n```\n")
+	testing.expect_value(t, error, Markdown_Error.Invalid_Embed)
+	testing.expect_value(t, detail, "ping")
+}

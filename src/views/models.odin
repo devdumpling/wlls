@@ -2,6 +2,8 @@ package views
 
 import "core:strings"
 
+import content "../content"
+
 // Metadata and Asset_URLs are the small shared contract between feature routes
 // and the common document shell. URL fingerprints are built by src/assets.
 Metadata :: struct {
@@ -18,6 +20,9 @@ Metadata :: struct {
 	// structured_data is a JSON-LD document for the <head>, already escaped
 	// for a <script> element. It is data, never run, so the CSP allows it.
 	structured_data: string,
+	// embeds are a post's interactive components: the shell loads their
+	// stylesheet and scripts on that page alone.
+	embeds:          content.Embeds,
 }
 
 Page_Kind :: enum {
@@ -62,6 +67,9 @@ Asset_URLs :: struct {
 	// Guestbook only: Starbase components (vendored).
 	relative_time: string,
 	pixel_board:   string,
+	// Posts with embeds only: one stylesheet, and a script per component.
+	embeds:        string,
+	embed_scripts: [content.Embed]string,
 	favicon:       string,
 	feed:          string,
 }

@@ -199,3 +199,36 @@ after a `|`, options:
 Sizes are `wide` (out into the margin) and `full` (all of `main`'s width);
 `color` skips the warm tone, `raw` the mat and tone, and `pixel` scales
 pixel art crisply. Images must be embedded, and each is sized at startup.
+
+## Embeds
+
+Raw HTML stays off in posts, so a post asks for an interactive component
+with a fenced code block whose language is `embed:<name>`:
+
+````md
+```embed:copilot
+// check if a string is a palindrome
+function isPalindrome(s) { … }
+```
+````
+
+`transform_embeds` (`src/content/embeds.odin`) wraps the block in its custom
+element, and `EMBED_SPECS` there lists each embed: its element, whether it
+hangs in the margin, and its fallback, which is what readers without
+JavaScript, feed readers, and print see. The fallback is the fence itself
+(`copilot`: the code doubles as the component's script), nothing (`latency`,
+`ping`: the fence must be empty), or the paragraph after an empty fence
+(`slow`, which enhances it in place). An unknown name fails startup.
+
+Each component is `src/assets/static/js/embed-<name>.js`; startup fails if
+one is missing. A post records the embeds it uses (`Post.embeds`), and the
+shell loads `css/embeds.css` and just those scripts on that page, so other
+pages carry none of it. They're plain custom elements, not Rocket
+components: they read no signals and the server never patches them.
+
+Margin embeds sit in the text column until `main` reaches 58rem, then hang
+beside the text like a wider sidenote, from where they fall in the text.
+`footnotes.js` lays them out with the sidenotes, moving each down just
+enough to clear the one above it, so place a fence before the paragraph it
+belongs beside, and expect a long sidenote above it to push it down.
+Components respect `prefers-reduced-motion` and never trap keyboard focus.

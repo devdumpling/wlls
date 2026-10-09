@@ -20,6 +20,32 @@ Not a good sign from Brad--he's supposed to bring me back down.
 
 Back then the UX was... dodgy? Make comment, hit tab, get code. In the eternal words of Ryan Lockwood ([Streets 1:12](https://www.youtube.com/watch?v=oYmqJl4MoNI)), _what a rush._
 
+```embed:copilot
+// check if a string is a palindrome
+function isPalindrome(s) {
+  var reversed = "";
+  for (var i = s.length - 1; i >= 0; i--) {
+    reversed += s[i];
+  }
+  if (reversed == s) {
+    return true;
+  } else {
+    return false;
+  }
+}
+// alt+]
+function isPalindrome(s) {
+  return s == s.split("").reverse().join("");
+}
+// alt+]
+function isPalindrome(s) {
+  // TODO: handle spaces
+  // TODO: handle capital letters
+  // TODO: handle anything but racecar
+  return s === "racecar";
+}
+```
+
 Brad and I (innocently) joked about how maybe kids wouldn't have to learn to code anymore! Just press tab, ha ha. That made me remember how I wrote my first programs: flailing around in DOS, frustrated, my dad consoling me... "no, no, that's how it's _supposed_ to feel."
 
 And he was right. That _is_ how it's supposed to feel. The challenge prepended the reward. It came slowly, a nice drippity droppity of dopamine that kept me coming back for decades.
@@ -102,9 +128,13 @@ Okay? So what? I could do all of that without AI.
 
 Yes, and... it's an investment! Often that investment is worth it, often it's a frustrating argument with stakeholders.
 
-Building the same solution twice, the benchmarking suite, and still having time to do the quality analysis I want is a _much_ harder sell to my boss. With a relatively trivial amount of effort, AI gives me the approximation, and I get _hard numbers_ to inform an actual engineering decision. It's still work, but the latency is low enough that the possibility space for how I work has opened up.[^quality]
+Building the same solution twice, the benchmarking suite, and still having time to do the quality analysis I want is a _much_ harder sell to my boss. With a relatively trivial amount of effort [^quality], AI gives me the approximation, and I get _hard numbers_ to inform an actual engineering decision. It's still work, but the latency is low enough that the possibility space for how I work has opened up.
 
 It reminds me of a Bret Victor talk [Inventing on Principle](https://vimeo.com/36579366). In it he demonstrates how critical the feedback loop is for inventing. When you can see the result of a change immediately, solutions open up that you'd never consider if you were waiting minutes, hours, or days. He goes further, emphasizing that missed ideas are a kind of moral wrong, and encourages us to build interfaces that give us more control over faster feedback loops.
+
+```embed:latency
+
+```
 
 Generalizing, more control and faster feedback means higher quality and a bigger possibility space, which means novel solutions.
 
@@ -114,11 +144,17 @@ In the paradise that is product development, we like to pretend perf is a nice-t
 
 But Steve _knows_ things. Steve has seen some proverbial shit. Steve knows latency is the difference between MapQuest and Google Maps. Between a working product and an incident.
 
+```embed:ping
+
+```
+
 And yet perf is fashionably left to the periphery of our industry, done only in large orgs with hallmark enterprise lethargy, after they're forced to pay attention to the "sudden" influx of user complaints on marginal devices. AI makes building the measurement cheap enough that I actually do it. Steve finally has some company.
 
 The benefit I'm seeing isn't some 2, 5, or 10x in development speed. It's that I can take the _ideas_ in works like Cal Newport's _Slow Productivity_ (Do Fewer Things, Work At A Natural Pace, Obsess Over Quality) and use the low latency of AI in service of them. Slow work, fast loop.
 
 At least, that's the idea. Across the industry, the loop seems to be heading the other way. DX's data puts the median throughput gain from AI at just under 8%, while the median pull request nearly doubled in size.[^dx] More code per change, slower reviews, longer loops.
+
+![Bell-curve meme. Both tails, the simple guy and the hooded master, say "My code should work." The crying midwit in the middle says "Move fast and break things."](/images/posts/move-fast.webp "| wide raw")
 
 ## Discipline
 
@@ -140,7 +176,7 @@ Is it a fair comparison? Veganism, at least as it applies to non-human animals, 
 
 I would like to see a world where AI is used and built responsibly and we don't plummet head first into another social media disaster or worse. My gut is that means getting _more involved_, rather than putting my head in the sand and scoffing at the juniors DeStRoYiNg programming.
 
-[insert meme about AI building crappy SaaS]
+![Stick-figure comic. A person tells their computer "build a crappy SAAS." The monitor answers "HERE IS YOUR CRAPPY SAAS." The person, flatly: "oh my god."](/images/posts/oh-my-god.webp "| raw")
 
 ## Resolve
 
@@ -151,6 +187,10 @@ I reserve the right to change my mind. Right now, I feel conflicted yet curious.
 Conflicted because of the packaging around AI, the obsession with commoditizing it, and the shaky societal impacts looming as we plunge into a technology on the heels of seeing the destruction social media has wrought. Because of the environmental and community impacts, and the general blasé hand-waving of frontier labs at the legal and ethical dilemmas being raised.
 
 Curious because I, perhaps naively, am optimistic about what responsible, disciplined use of LLMs for building could look like: use that doesn't delegate away the satisfaction or lead to burnout and apathy. Use that doesn't glaze over 10,000 lines of code and rubber stamp it.
+
+```embed:slow
+
+```
 
 "No, no, that's how it's _supposed_ to feel."
 
@@ -168,7 +208,7 @@ Thank you, Dad.
 
 [^irony]: I, uh, recognize the wee bit of irony in using the vestigial profession of blacksmithing as my analogy.
 
-[^quality]: I want to stress that the point I'm trying to make is not to move quality engineering or analysis wholesale to AI. I'm using this as an example of high-leverage information/work that might otherwise be too costly or inaccessible in an organization. It can still be extremely valuable to measure yourself, and always double check results, folks! But there is no world where I'm going to parse thousands of lines of logs or unravel HAR files faster than an LLM. While that's a useful skill that I still keep, it's not _the skill_ I'm interested in.
+[^quality]: I want to stress my point is **not** to move quality engineering or analysis wholesale to AI. It's one example of high-leverage work that is (often) costly/ignored in an organization. It's still valuable to measure yourself and double check results! But I'm not going to parse thousands of lines of logs or unravel HAR files faster than an LLM. Useful skill, it's not _the skill_ I'm interested in. YMMV.
 
 [^horror]: See: _measuring_, the horror...
 

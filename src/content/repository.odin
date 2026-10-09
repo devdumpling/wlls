@@ -24,6 +24,9 @@ Post :: struct {
 	date:        string, // as authored, YYYY-MM-DD
 	published:   time.Time, // date at midnight UTC
 	html:        Markdown_HTML,
+	// embeds are the interactive components the post places, so its page
+	// loads only their scripts.
+	embeds:      Embeds,
 }
 
 Page :: struct {
@@ -155,7 +158,8 @@ parse_post :: proc(
 		return Post{slug = slug}, true, ""
 	}
 
-	html, markdown_error, detail := render_markdown(body, images)
+	embeds: Embeds
+	html, markdown_error, detail := render_markdown(body, images, &embeds)
 	if markdown_error != .None {
 		return post, false, markdown_error_message(path, markdown_error, detail)
 	}
@@ -169,6 +173,7 @@ parse_post :: proc(
 			date = fields.date,
 			published = published,
 			html = html,
+			embeds = embeds,
 		},
 		false,
 		""
@@ -210,6 +215,14 @@ markdown_error_message :: proc(path: string, error: Markdown_Error, detail: stri
 	case .Unsupported_Footnote:
 		return fmt.tprintf(
 			"%s: footnote [^%s] has lists, code, or quotes; a sidenote takes paragraphs only",
+			path,
+			detail,
+		)
+	case .Unknown_Embed:
+		return fmt.tprintf("%s uses an unknown embed: embed:%s", path, detail)
+	case .Invalid_Embed:
+		return fmt.tprintf(
+			"%s: embed:%s has text it doesn't take, or isn't followed by the paragraph it enhances",
 			path,
 			detail,
 		)

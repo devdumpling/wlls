@@ -40,6 +40,14 @@ document :: templ(metadata: Metadata, assets: Asset_URLs) {
 			if metadata.page == .Post {
 				<script type="module" src={ assets.footnotes }></script>
 			}
+			if card(metadata.embeds) > 0 {
+				<link rel="stylesheet" href={ assets.embeds }/>
+				for script, embed in assets.embed_scripts {
+					if embed in metadata.embeds {
+						<script type="module" src={ script }></script>
+					}
+				}
+			}
 			if metadata.page == .Guestbook {
 				<script type="module" src={ assets.relative_time }></script>
 				<script type="module" src={ assets.pixel_board }></script>
