@@ -1,0 +1,3 @@
+# Vendored files keep upstream formatting so they diff cleanly against it.
+src/assets/static/js/sb-*.js
+src/assets/static/js/datastar-rocket.js
