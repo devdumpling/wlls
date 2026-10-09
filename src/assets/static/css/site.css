@@ -70,7 +70,6 @@
     --rail-slim: 4.5rem;
     --flow: 1.25em;
     --radius: 0.4rem;
-
   }
 }
 
@@ -388,13 +387,13 @@
     inset-block-start: 0.5rem;
     inset-inline-start: 0.5rem;
     z-index: 10;
-    translate: 0 -200%;
     padding: 0.5rem 0.75rem;
     background: var(--ink);
     color: var(--paper);
+    clip-path: inset(50%);
   }
   .skip-link:focus {
-    translate: 0;
+    clip-path: none;
   }
 
   .eyebrow,
@@ -1077,7 +1076,9 @@
       padding: 0;
     }
     main {
-      grid-template-columns: [full-start text-start wide-start] minmax(0, 1fr) [text-end wide-end full-end];
+      grid-template-columns:
+        [full-start text-start wide-start] minmax(0, 1fr)
+        [text-end wide-end full-end];
       padding-block-start: 0;
     }
 
