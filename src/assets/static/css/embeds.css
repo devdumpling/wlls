@@ -192,10 +192,13 @@
     .copilot-accepted {
       animation: copilot-accept 900ms var(--ease-out);
     }
+    /* Nothing here loops for good: a page left open on this post should
+       go quiet. The Tab key nudges a few times, and the caret blinks only
+       while the editor types or has focus, as a real one does. */
     .copilot[data-state="suggesting"] .copilot-key:first-child kbd {
-      animation: copilot-nudge 1.6s var(--ease-in-out) 1s infinite;
+      animation: copilot-nudge 1.6s var(--ease-in-out) 1s 3;
     }
-    .copilot-caret {
+    .copilot:is([data-state="typing"], [data-state="thinking"], :focus-within) .copilot-caret {
       animation: embed-blink 1.05s steps(1) infinite;
     }
   }
@@ -222,7 +225,6 @@
     }
     80% {
       translate: 0 2px;
-      border-block-end-width: 1px;
     }
   }
   @keyframes embed-blink {
@@ -335,7 +337,9 @@
     line-height: 1.5;
   }
 
-  /* Steve's readout: one line in the rust ink, set apart from the prose. */
+  /* Steve's readout: one line in the rust ink, set apart from the prose.
+     It's written out with blanks as soon as the script runs and filled in
+     where it stands, so measuring never moves the text around it. */
   .ping {
     margin: 0;
     padding-inline-start: 0.75rem;

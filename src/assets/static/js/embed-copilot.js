@@ -238,14 +238,20 @@ class Copilot extends HTMLElement {
     })
 
     render()
-    // Start when the editor is mostly in view, once.
+    // Start once the editor is mostly in view, or fills most of a short
+    // viewport (a phone held sideways can't show 60% of it at once).
     this.#watch = new IntersectionObserver(
       (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return
+        const seen = entries.some(
+          (entry) =>
+            entry.intersectionRatio >= 0.6 ||
+            (entry.rootBounds !== null && entry.intersectionRect.height >= entry.rootBounds.height * 0.6),
+        )
+        if (!seen) return
         this.#watch?.disconnect()
         play()
       },
-      { threshold: 0.6 },
+      { threshold: [0, 0.2, 0.4, 0.6, 0.8, 1] },
     )
     this.#watch.observe(editor)
   }

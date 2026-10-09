@@ -171,11 +171,13 @@ Not everything _should_ be built. Just because you can, doesn't mean you should.
 
 Which brings me back to Brett, and to integrity.
 
-I said abstaining felt like a personal decision. That's the part I can't fully square. I've been vegan for almost two decades, and for a long time I reached for that as the comparison. Here's a technology with real costs to the environment and to communities, built by labs that hand-wave the legal and ethical questions. Shouldn't I just abstain, the way I do with animal products?
+I said abstaining felt like a personal decision. I've been vegan for a while, and I've reached for that as the comparison. Here's a technology with real costs to the environment and to communities, built by labs that hand-wave the legal and ethical questions. Why not abstain, the way I do with animal products?
 
-Is it a fair comparison? Veganism, at least as it applies to non-human animals, feels more cut and dry to me. Look inside a factory farm and you either hold that reality at arm's length, or you acknowledge it and abstain. (It isn't actually that simple either, as many will point out, but you get what I mean.) AI doesn't resolve that cleanly, at least not for me. It's one of Lamott's false paired opposites.
+Is it a fair comparison?
 
-I would like to see a world where AI is used and built responsibly and we don't plummet head first into another social media disaster or worse. My gut is that means getting _more involved_, rather than putting my head in the sand and scoffing at the juniors DeStRoYiNg programming.
+Veganism, at least as it applies to non-human animals, feels more cut and dry to me. Look inside a factory farm and you either hold that reality at arm's length, or you acknowledge it and abstain. (It isn't actually that simple either, as many will point out, but you get what I mean.) AI doesn't resolve that cleanly, at least not for me. It's one of Lamott's false paired opposites.
+
+I would like to see a world where AI is used and built responsibly and we don't plummet head first into enshittification or worse. My gut is that means getting _more involved_, rather than putting my head in the sand and scoffing at the juniors DeStRoYiNg programming.
 
 ![Stick-figure comic. A person tells their computer "build a crappy SAAS." The monitor answers "HERE IS YOUR CRAPPY SAAS." The person, flatly: "oh my god."](/images/posts/oh-my-god.webp "| raw")
 
@@ -183,7 +185,7 @@ I would like to see a world where AI is used and built responsibly and we don't 
 
 It's not much of a conclusion, but this is where I'm at. I'm committed to staying introspective, calling a spade a spade, looking for data, and keeping an open mind.
 
-I reserve the right to change my mind. Right now, I feel conflicted yet curious.
+I reserve the right to change my mind. Right now, I feel conflicted and curious.
 
 Conflicted because of the packaging around AI, the obsession with commoditizing it, and the shaky societal impacts looming as we plunge into a technology on the heels of seeing the destruction social media has wrought. Because of the environmental and community impacts, and the general blasé hand-waving of frontier labs at the legal and ethical dilemmas being raised.
 

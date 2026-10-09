@@ -2,7 +2,8 @@
 // <wlls-ping>: Steve's readout, for ```embed:ping (src/content/embeds.odin).
 // One line with this page's real latency, measured in the reader's browser:
 // how long the server took to start answering the page, and a round trip to
-// /healthz. Nothing without JavaScript; it's a garnish.
+// /healthz. Nothing without JavaScript; it's a garnish. Both are measured
+// once, when it first scrolls into view.
 
 const SAMPLES = 3
 
@@ -30,14 +31,26 @@ const roundTrip = async () => {
 /** @param {number} ms */
 const format = (ms) => `${Math.max(1, Math.round(ms))} ms`
 
+/** @param {string} page @param {string} trip */
+const readout = (page, trip) =>
+  `Steve's readout: this page reached you in ${page} and a round trip to the server takes ${trip}.`
+
 class Ping extends HTMLElement {
+  #line = document.createElement("p")
   #watch = new IntersectionObserver((entries) => {
     if (!entries.some((entry) => entry.isIntersecting)) return
     this.#watch.disconnect()
     this.#measure()
   })
 
+  // The line is written at once, with blanks, so it already has its space
+  // when the numbers arrive: filling them in doesn't move the page.
   connectedCallback() {
+    if (!this.#line.isConnected) {
+      this.#line.className = "ping"
+      this.#line.textContent = readout("… ms", "… ms")
+      this.replaceChildren(this.#line)
+    }
     this.#watch.observe(this)
   }
 
@@ -46,8 +59,6 @@ class Ping extends HTMLElement {
   }
 
   async #measure() {
-    const line = document.createElement("p")
-    line.className = "ping"
     const page = pageLatency()
     let trip = null
     try {
@@ -55,12 +66,10 @@ class Ping extends HTMLElement {
     } catch {
       // Offline, or the request was blocked: report what we have.
     }
-    if (page === null && trip === null) return
-    const parts = ["Steve's readout:"]
-    if (page !== null) parts.push(`this page reached you in ${format(page)}`)
-    if (trip !== null) parts.push(`${page !== null ? "and " : ""}a round trip to the server takes ${format(trip)}`)
-    line.textContent = `${parts.join(" ")}.`
-    this.replaceChildren(line)
+    this.#line.textContent = readout(
+      page === null ? "? ms" : format(page),
+      trip === null ? "? ms" : format(trip),
+    )
   }
 }
 

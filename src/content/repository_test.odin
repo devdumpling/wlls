@@ -18,10 +18,10 @@ test_embedded_blog_content_loads_and_sorts_by_publication_date :: proc(t: ^testi
 		return
 	}
 
-	testing.expect_value(t, len(repository.posts), 10)
+	testing.expect_value(t, len(repository.posts), 11)
 	if len(repository.posts) > 0 {
-		testing.expect_value(t, repository.posts[0].slug, "ai-reflections-fatigue")
-		testing.expect_value(t, repository.posts[0].date, "2026-04-13")
+		testing.expect_value(t, repository.posts[0].slug, "thats-how-its-supposed-to-feel")
+		testing.expect_value(t, repository.posts[0].date, "2026-10-08")
 	}
 
 	devex, found := find_post(&repository, "devex")
