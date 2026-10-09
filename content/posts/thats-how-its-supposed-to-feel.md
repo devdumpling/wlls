@@ -3,10 +3,9 @@ title: "That's How It's Supposed to Feel"
 topic: "Engineering"
 date: "2026-10-08"
 description: "Part 3 of my reflections on AI"
-draft: true
 ---
 
-> This is Part 3 in a series of reflections on AI over the past couple of years ([Part 1: Skepticism](https://wlls.dev/blog/ai-reflections), [Part 2: Fatigue](https://wlls.dev/blog/ai-reflections-fatigue)). Presented as my thoughts and emotions, written by me and me alone.
+> This is Part 3 in a series of reflections on AI over the past couple of years ([Part 1: Skepticism](https://wlls.dev/blog/ai-reflections), [Part 2: Fatigue](https://wlls.dev/blog/ai-reflections-fatigue)). Presented as my thoughts and emotions, YMMV.
 
 ## Oh, joyous toy
 
@@ -54,7 +53,7 @@ Conversely, Copilot was all rush, minimal flailing. But is that it? Obviously I 
 
 In this essay, I'll present some of my current thoughts on the nuance:
 
-- hand coding (and everything around it: thinking via writing, planning, communicating) still matters, maybe more than ever
+- hand coding (+ thinking via writing, planning, communicating) still matters, maybe more than ever
 - agentic engineering is powerful and easy to misuse
 - there is a middle ground that is worth exploring
 
@@ -68,13 +67,13 @@ What kept pulling me back, every time, was _latency_, particularly low latency. 
 
 **latency** (n.): from the Latin _latere_, "to lie hidden." The delay between stimulus and response.
 
-By latency I mean the time between an intention and a result. I have a thought, an input, a bit of information, and I'm waiting on a response. Literally, it's the stretch where the answer is still hidden. Fitting, because the costs of low latency tend to lie hidden, too.
+I have a thought, some intent, a bit of info, and I'm waiting on a response. Literally, it's the stretch where the answer is still hidden. Fitting, because the costs of low latency tend to lie hidden, too.
 
-Latency is two-faced. Low latency is what made Copilot feel like a slot machine. Low latency is _also_ what makes a lab instrument useful. You try something crazy, see the result, adjust, try again. It's the same property either way. The difference is what you do with the result.
+Latency is two-faced. Low latency is what made Copilot feel like a slot machine. Low latency is _also_ what makes a lab instrument useful. You try something crazy, see the result, adjust, try again. Same idea, different connotation.
 
 At the start of this year, I ran [a structured experiment on myself](https://wlls.dev/blog/devex) and wrote up [what I found](https://wlls.dev/blog/ai-reflections-fatigue). tldr: with heavy AI use, I started more low-value things and finished fewer. I shipped more and was ambivalent about what I shipped.[^data]
 
-So like any good burnt out dad, I took some time off. When I came back, I tried to use AI more intentionally. AI allowed in dayjob. No random side projects. Hand-coding katas. That felt sustainable, and I carried it through the spring and into summer.
+So like any good burnt out dad, I took some time off. When I came back, I tried to use AI more intentionally. AI allowed in dayjob. No random side projects. Hand-coding katas. That felt sustainable.
 
 ## Done coding with AI
 
@@ -88,7 +87,7 @@ Maybe it was my general annoyance at the results I was seeing, maybe the midsumm
 
 I stopped using AI for three weeks after that. I turned it off in Zed, dropped my harnesses from my nix setup, hung up my tokens at work, and toggled it off in my search engines. I didn't go around criticizing people who got value from it--it felt like a personal decision.
 
-However, during those three weeks, I didn't feel the kind of uplifting energy that Brett did. I _did_ feel better, enjoying the friction, the satisfaction of coding and problem solving by hand. I felt better not throwing tiny things at my clanker which didn't warrant clanking on, or shouldn't have been clanked in the first place.
+However, during those weeks, I didn't feel the kind of uplifting energy that Brett did. I _did_ feel better, enjoying the friction, the satisfaction of coding and problem solving by hand. I felt better not throwing tiny things at my clanker which didn't warrant clanking on, or shouldn't have been clanked in the first place.
 
 But it didn't feel like all was somehow right in the world.
 
@@ -100,7 +99,7 @@ One of my favorite quotes is from Anne Lamott's _Bird by Bird_:[^bird]
 
 > "I used to think that paired opposites were a given, that love was the opposite of hate, right the opposite of wrong. But now I think we sometimes buy into these concepts because it is so much easier to embrace absolutes than to suffer reality. I don't think anything is the opposite of love. Reality is unforgivingly complex."
 
-Adam Grant makes a similar case in [Think Again](https://adamgrant.net/book/think-again/): when we argue about complex things, we like to reduce them to neat little buckets, and the buckets isolate us from each other. Adding nuance moves the conversation forward.
+Adam Grant makes a similar case in [Think Again](https://adamgrant.net/book/think-again/). He says when we argue about complex things, we tend to reduce them to neat little buckets, and the buckets isolate us from each other. When we add nuance, the convos often progresses.
 
 "Use AI" or "don't use AI" is a pair of leaky buckets, a false, slightly damp dichotomy that smells of rust and mildew.
 
@@ -148,11 +147,13 @@ But Steve _knows_ things. Steve has seen some proverbial shit. Steve knows laten
 
 ```
 
-And yet perf is fashionably left to the periphery of our industry, done only in large orgs with hallmark enterprise lethargy, after they're forced to pay attention to the "sudden" influx of user complaints on marginal devices. AI makes building the measurement cheap enough that I actually do it. Steve finally has some company.
+And yet perf is fashionably left to the periphery of our industry, done only in large orgs with hallmark enterprise lethargy, after they're forced to pay attention to the "sudden" influx of user complaints on marginal devices. AI makes measurement (more) accessible, particularly to undisciplined orgs.
 
-The benefit I'm seeing isn't some 2, 5, or 10x in development speed. It's that I can take the _ideas_ in works like Cal Newport's _Slow Productivity_ (Do Fewer Things, Work At A Natural Pace, Obsess Over Quality) and use the low latency of AI in service of them. Slow work, fast loop.
+The benefit I'm seeing isn't some 2, 5, or 10x in development speed. It's that I can take the _ideas_ in works like Cal Newport's _Slow Productivity_ (Do Fewer Things, Work At A Natural Pace, Obsess Over Quality) and use AI strategically in service of them. Slow work, fast loop.
 
-At least, that's the idea. Across the industry, the loop seems to be heading the other way. DX's data puts the median throughput gain from AI at just under 8%, while the median pull request nearly doubled in size.[^dx] More code per change, slower reviews, longer loops.
+At least, that's the idea.
+
+Across the industry, the loop seems to be heading the other way. DX's data puts the median throughput gain from AI at just under 8%, while the median pull request nearly doubled in size.[^dx] More code per change, slower reviews, longer loops.
 
 ![Bell-curve meme. Both tails, the simple guy and the hooded master, say "My code should work." The crying midwit in the middle says "Move fast and break things."](/images/posts/move-fast.webp "| wide raw")
 
@@ -170,7 +171,7 @@ Not everything _should_ be built. Just because you can, doesn't mean you should.
 
 Which brings me back to Brett, and to integrity.
 
-I said abstaining felt like a personal decision. That's the part I can't fully square. I've been vegan for almost two decades, and for a long time I reached for that as the comparison. Here's a technology with real costs to the environment and to communities, built by labs that wave away the legal and ethical questions. Shouldn't I just abstain, the way I do with animal products?
+I said abstaining felt like a personal decision. That's the part I can't fully square. I've been vegan for almost two decades, and for a long time I reached for that as the comparison. Here's a technology with real costs to the environment and to communities, built by labs that hand-wave the legal and ethical questions. Shouldn't I just abstain, the way I do with animal products?
 
 Is it a fair comparison? Veganism, at least as it applies to non-human animals, feels more cut and dry to me. Look inside a factory farm and you either hold that reality at arm's length, or you acknowledge it and abstain. (It isn't actually that simple either, as many will point out, but you get what I mean.) AI doesn't resolve that cleanly, at least not for me. It's one of Lamott's false paired opposites.
 
@@ -213,12 +214,8 @@ Thank you, Dad.
 [^horror]: See: _measuring_, the horror...
 
 [^dx]:
-    [DX](https://getdx.com) tracks AI's impact across hundreds of engineering orgs. Grain of salt: they sell developer productivity measurement, their customers skew toward orgs already investing in developer experience, and at 90%+ adoption there's no real control group anymore. Still, it rhymes with my N=1 uncomfortably well.
+    [DX](https://getdx.com) tracks AI's impact across hundreds of engineering orgs. Note they sell developer productivity measurement and their customers skew toward orgs already investing in developer experience.
 
-    The throughput number is from their [longitudinal study](https://getdx.com/blog/ai-productivity-gains-more-modest-than-expected/) of 400+ orgs over 16 months: AI adoption up 65%, median PR throughput up just under 8%. The rest is from their [Q2 2026 report](https://getdx.com/blog/the-state-of-ai-impact-in-engineering-q2-2026/). Developers report saving about 6 hours a week (up from about 3 a year earlier), yet the share of time spent on new work barely moved (57% to 58%). Median PR size went from roughly 42 to 72 lines. Their Developer Experience Index fell for the first time, from 67 to 65, dragged down by local iteration speed, incremental delivery, and review turnaround. Code maintainability rose 3.8% while change confidence fell 6.1%: easier to read, harder to trust. On the bright side, documentation and onboarding improved, and smaller orgs (15 to 99 engineers) are pulling well ahead of large ones.
-
-    My read: AI cuts the latency of _generating_ code, not of the loop around it. Generate, understand, review, ship. Everything after "generate" is still slow, and getting slower.
-
-    [TODO: verify every number here against the report PDFs before publishing.]
+    The throughput number is from their [study](https://getdx.com/blog/ai-productivity-gains-more-modest-than-expected/) of 400+ orgs over 16 months. AI adoption up 65%, median PR throughput up just under 8%. The rest is from their [Q2 2026 report](https://getdx.com/blog/the-state-of-ai-impact-in-engineering-q2-2026/). Developers report saving about 6 hours a week (up from about 3 a year earlier), yet the share of time spent on new work barely moved (57% to 58%). Median PR size went from roughly 42 to 72 lines. Their Developer Experience Index fell for the first time, from 67 to 65, dragged down by local iteration speed, incremental delivery, and review turnaround. Code maintainability rose 3.8% while change confidence fell 6.1%. On the bright side, documentation and onboarding improved, and smaller orgs (15 to 99 engineers) are pulling ahead of large ones.
 
 [^art]: This goes double for art and anything creative. Using AI _is_ pressing the easy button, and if the _act_ is the point, offloading it robs you of exactly that. Brandon Sanderson says it best in [this talk](https://www.youtube.com/watch?v=mb3uK-_QkOo): "We are the art."
