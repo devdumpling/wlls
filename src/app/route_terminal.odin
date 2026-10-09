@@ -178,6 +178,10 @@ run_command :: proc(
 		views.terminal_line(output, "you're not in vim. but you're free to go: exit")
 	case "rm":
 		views.terminal_error(output, "rm: nice try.")
+	case "mellon", "Mellon":
+		// The answer to the riddle the browser console asks (terminal.js).
+		views.terminal_line(output, "the doors of durin swing open. welcome, friend.")
+		views.terminal_link(output, "friends sign the guestbook", "/guestbook")
 	case "who":
 		// A visitor without a cookie has no live stream yet, so isn't listed.
 		render_who(output, ctx.live)

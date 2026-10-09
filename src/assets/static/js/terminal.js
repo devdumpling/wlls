@@ -12,6 +12,15 @@ import { rocket } from "./datastar-rocket.js"
 const HISTORY_KEY = "wlls:terminal-history"
 const HISTORY_LIMIT = 50
 
+// For whoever opens the console: the Doors of Durin, and a hint that this
+// site has a door of its own. The answer is a hidden terminal command
+// (src/app/route_terminal.odin).
+console.log(
+  "%cSpeak, friend, and enter.%c\n\nThere's a terminal behind / on every page.\nThe password is the one Gandalf took far too long to find.",
+  "font: 600 16px/1.6 Georgia, serif; color: #8c6bff",
+  "font: 12px/1.6 ui-monospace, Menlo, monospace; color: inherit",
+)
+
 /** @returns {string[]} */
 const loadHistory = () => {
   try {
