@@ -32,6 +32,10 @@
 	# client sent.
 	reverse_proxy {$WLLS_UPSTREAM:127.0.0.1:8080} {
 		header_up X-Client-IP {client_ip}
+		# A deploy restarts the app. Requests that can't connect meanwhile
+		# wait and retry instead of failing with 502. They never reached the
+		# app, so retrying is safe for any method.
+		lb_try_duration 5s
 	}
 }
 

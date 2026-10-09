@@ -221,6 +221,11 @@ hub_handler :: proc(self_raw: rawptr, message: ^tina.Message) -> tina.Isolate_Tr
 	source := message.user.source
 
 	switch message.tag {
+	case tina.TAG_SHUTDOWN:
+		// The shard drains only once every isolate is done, so the hub must
+		// finish too or the watchdog force-kills the process at its deadline.
+		return tina.ISOLATE_TRANSITION_DONE
+
 	case TAG_HUB_SUBSCRIBE:
 		subscribe := tina.payload_as(Hub_Subscribe, message.user.payload[:])
 		entry := Presence_Entry {
