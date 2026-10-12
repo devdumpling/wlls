@@ -9,7 +9,7 @@ description: "Part 3 of my reflections on AI"
 
 ## Oh, joyous toy
 
-Summer 2021, I was toying around with the OG technical preview for GitHub Copilot.
+Summer 2022, I was toying around with the OG technical preview for GitHub Copilot.
 
 I pulled my coworker, Brad, into a Slack huddle, as I often did when I found something shiny. I liked working with Brad. He was pragmatic and would humor my delusions. I'd rant to him about whatever was on my mind, and he would nod along until I felt heard. Then, we'd both go back to writing Next.js and GraphQL and pretending things were ok. Everyone should have a Brad.[^brad]
 
@@ -51,7 +51,7 @@ And he was right. That _is_ how it's supposed to feel. The challenge prepended t
 
 Conversely, Copilot was all rush, minimal flailing. But is that it? Obviously I think not, otherwise I wouldn't be writing this. Much of AI discourse is polarizing. Give me sweet nuance!
 
-In this essay, I'll present some of my current thoughts on the nuance:
+In this essay, I'll present some of that nuance:
 
 - hand coding (+ thinking via writing, planning, communicating) still matters, maybe more than ever
 - agentic engineering is powerful and easy to misuse
@@ -59,21 +59,21 @@ In this essay, I'll present some of my current thoughts on the nuance:
 
 ## The pendulum
 
-Over the past 5 years (??? seriously how has it been that long) of using AI, I have swung on the pro-anti AI pendulum back and forth, back and forth. I have drunk and administered the kool-aid. I have _also_ been a staunch critic. I have questioned my relationship to AI, the ethics surrounding it, and its impact on the environment, society, and communities. Big, scary existential questions.[^vegan]
+Over the past 4 years (??? seriously how has it been that long) of using AI, I have swung on the pro-anti AI pendulum back and forth, back and forth. I have drunk and administered the kool-aid. I have _also_ been a staunch critic. I have questioned my relationship to AI, the ethics surrounding it, and its impact on the environment, society, and communities. Big, scary existential questions.[^vegan]
 
 I have feverishly run agents well into the night. I have also sworn off AI for weeks at a time, citing burnout symptoms and apathy.
 
-What kept pulling me back, every time, was _latency_, particularly low latency. Latency is a funny word. I'm going to say it a lot, so let me be precise about it.
+What kept pulling me back, every time, was _latency_--or really, low latency. Latency is a funny word. I'm going to say it a lot, so let's be precise.
 
 **latency** (n.): from the Latin _latere_, "to lie hidden." The delay between stimulus and response.
 
 I have a thought, some intent, a bit of info, and I'm waiting on a response. Literally, it's the stretch where the answer is still hidden. Fitting, because the costs of low latency tend to lie hidden, too.
 
-Latency is two-faced. Low latency is what made Copilot feel like a slot machine. Low latency is _also_ what makes a lab instrument useful. You try something crazy, see the result, adjust, try again. Same idea, different connotation.
+Latency is two-faced. Low latency is what made Copilot feel like a slot machine. Low latency is _also_ what makes a lab instrument useful. You try something, see the result, adjust, try again. Same idea, different connotation.
 
-At the start of this year, I ran [a structured experiment on myself](https://wlls.dev/blog/devex) and wrote up [what I found](https://wlls.dev/blog/ai-reflections-fatigue). tldr: with heavy AI use, I started more low-value things and finished fewer. I shipped more and was ambivalent about what I shipped.[^data]
+At the start of this year, I ran [a structured experiment on myself](https://wlls.dev/blog/devex) and wrote up [what I found](https://wlls.dev/blog/ai-reflections-fatigue). tldr: with heavy AI use, I started more low-value things and finished fewer. I shipped more but was ambivalent about what I shipped.[^data]
 
-So like any good burnt out dad, I took some time off. When I came back, I tried to use AI more intentionally. AI allowed in dayjob. No random side projects. Hand-coding katas. That felt sustainable.
+So like any good, burnt out dad, I took some time off. When I came back, I tried to use AI more intentionally. AI allowed in dayjob. No random side projects. Hand-coding katas. That felt sustainable.
 
 ## Done coding with AI
 
@@ -81,7 +81,7 @@ Then, midsummer, the pendulum swung again.
 
 I was sitting on my back porch eating lunch and watching YouTube when I came across an innocuous video titled "[I'm done coding with AI](https://www.youtube.com/watch?v=2ZU3j4GQ4K8)" by Brett Codes.
 
-Brett describes a journey similar to mine, back and forth on the pendulum. He expresses issues he has had with it, some I agree with more than others. What got me, though, was how he didn't feel his experience with AI was aligning _with his values_. Brett values integrity, something I cherish in my work these days.
+Brett describes a journey similar to mine, back and forth on the pendulum. He expresses his issue with it, some of which I agree with more than others. What got me, though, was how he didn't feel his experience with AI was aligning _with his values_. Brett values integrity, something I cherish in my work these days.
 
 Maybe it was my general annoyance at the results I was seeing, maybe the midsummer Ohio sun hitting me just right, but Brett's uncut monologue resonated.
 
@@ -89,9 +89,9 @@ I stopped using AI for three weeks after that. I turned it off in Zed, dropped m
 
 However, during those weeks, I didn't feel the kind of uplifting energy that Brett did. I _did_ feel better, enjoying the friction, the satisfaction of coding and problem solving by hand. I felt better not throwing tiny things at my clanker which didn't warrant clanking on, or shouldn't have been clanked in the first place.
 
-But it didn't feel like all was somehow right in the world.
+But it didn't feel like all was magically right in the world.
 
-Part of the problem, I realized, is that I'm genuinely fascinated by the science and technology behind LLMs. I grew up in ye olde early 90s, young enough to be infatuated with the rapidly evolving digital world and early enough to have to figure most of it out myself.[^dad]
+Part of the problem, I realized, is that I'm fascinated by the science and technology behind LLMs. I grew up in ye olde early 90s, young enough to be infatuated with the rapidly evolving digital world and early enough to have to figure most of it out myself.[^dad]
 
 Part of me felt like I was rejecting my fascination in favor of some mushy idealized version of craftsmanship, wherein AI usage is binary and absolute. I think this is a trap.
 
@@ -105,23 +105,27 @@ Adam Grant makes a similar case in [Think Again](https://adamgrant.net/book/thin
 
 ## The smith and their anvil
 
-Craft, to me, is active. It implies process, direction, and intention. It's creating something in a way that puts your identity into the work, and in turn, the work imprints on your identity. The smith shapes the metal on the anvil, and over years of smithing, the anvil shapes the smith too.
+Craft, to me, is active.
+
+It implies process, direction, and intention. It's creating something in a way that puts your identity into the work, and in turn, the work imprints on your identity. The smith shapes the metal on the anvil, and over years of smithing, the anvil shapes the smith too.
 
 I think AI is _part_ of the anvil. A new, magical anvil that sometimes tells you useful things and sometimes throws up on your apron, which you have to then explain to your fellow smiths.[^irony]
 
 And so we have a dilemma. My biggest (personal) concerns are still skill atrophy and cognitive debt, the smith slowly degrading, producing homogenous longswords instead of anything interesting.
 
-I _love_ programming and building software, and I know (I measured!) that I grok what I'm building better when I'm primarily writing it by hand. I'm in it for the long haul.
+I _love_ programming and building software, and I know (I [measured](https://wlls.dev/blog/devex)! that I grok what I'm building better when I'm primarily writing it by hand. I'm in it for the long haul.
 
-However, and maybe it's the copium talking, but I'm not sure the answer is to throw out the anvils, rolling our eyes at our coworkers' vomit covered aprons, as self-gratifying as that may be. I think there's a way to use AI to improve the craft and hone the crafter, to expand what's possible without degrading the smith.
+However, and maybe it's the copium talking, but I'm not sure the answer is to throw out the anvils, rolling our eyes at our coworkers' vomit covered aprons, as self-gratifying as that may be. I suspect there's a way to use AI to improve the craft and hone the crafter, to expand what's possible without degrading the smith.
 
-In practice, right now, that means a split.
+In practice, for me, that means a split.
 
 I hand-write the code that _is_ the craft, e.g. API design, the parts I need to understand deeply and be able to explain in a meeting, the parts I don't fully intuit. The parts that make me happy. I use AI for the instruments _around_ the craft... the comparisons, the benchmarks, test generators, prototypes, approximate migrations, research where I don't care about the journey to the answer, where I'm not looking for the detour that might be on the way to the waterfall. Or where I just need to hold my nose and pump out some React components.
 
 ## Latency, in practice
 
 I've recently been spending a lot of time with [Datastar](https://data-star.dev), a hypermedia framework that's making waves in some bleeding-edge corners of the frontend hivemind. When I build a feature, I can build it in Datastar _and_ in React (or [insert competing technology]). I can safely ship the boring React one, keep my health insurance, get an approximation in my Datastar stack, and then measure, benchmark, and observe the two.
+
+> Aside: datastar is incredible and you should try it.
 
 Okay? So what? I could do all of that without AI.
 
