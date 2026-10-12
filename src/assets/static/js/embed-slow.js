@@ -67,7 +67,11 @@ class Slow extends HTMLElement {
         await sleep(2400);
         previous?.classList.remove("is-caret");
       },
-      { threshold: 1, rootMargin: "0px 0px -15% 0px" },
+      // Wait until the line is all in view, but take no margin off the
+      // viewport: where sidenotes show, the notes section is hidden and the
+      // page ends just below this, so a margin can make it unreachable. Just
+      // under 1, since a fractional position can keep the ratio shy of it.
+      { threshold: 0.99 },
     );
     this.#watch.observe(paragraph);
   }
