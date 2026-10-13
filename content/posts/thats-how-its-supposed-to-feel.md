@@ -113,7 +113,7 @@ I think AI is _part_ of the anvil. A new, magical anvil that sometimes tells you
 
 And so we have a dilemma. My biggest (personal) concerns are still skill atrophy and cognitive debt, the smith slowly degrading, producing homogenous longswords instead of anything interesting.
 
-I _love_ programming and building software, and I know (I [measured](https://wlls.dev/blog/devex)! that I grok what I'm building better when I'm primarily writing it by hand. I'm in it for the long haul.
+I _love_ programming and building software, and I know (I [measured](https://wlls.dev/blog/devex)!) that I grok what I'm building better when I'm primarily writing it by hand. I'm in it for the long haul.
 
 However, and maybe it's the copium talking, but I'm not sure the answer is to throw out the anvils, rolling our eyes at our coworkers' vomit covered aprons, as self-gratifying as that may be. I suspect there's a way to use AI to improve the craft and hone the crafter, to expand what's possible without degrading the smith.
 
